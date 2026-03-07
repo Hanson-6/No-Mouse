@@ -9,6 +9,16 @@
       },
       "hash": "2f00b18547141dd25768d6a6ff75ac831028e02c"
     },
+    "com.coplaydev.unity-mcp": {
+      "version": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.0.2",
+        "com.unity.test-framework": "1.1.31"
+      },
+      "hash": "d01ac7cf8d2f3ec1c478ddc815f9768c86769b66"
+    },
     "com.unity.2d.animation": {
       "version": "9.2.0",
       "depth": 1,
