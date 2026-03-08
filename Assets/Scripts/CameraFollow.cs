@@ -6,6 +6,10 @@ public class CameraFollow : MonoBehaviour
     public float smoothSpeed = 5f;
     public Vector2 offset = new Vector2(0f, 2f);
 
+    [Header("Lock Y Position")]
+    public bool lockY = false;
+    public float fixedY = 0f;
+
     [Header("Bounds (optional)")]
     public bool useBounds = false;
     public float minX, maxX, minY, maxY;
@@ -14,7 +18,8 @@ public class CameraFollow : MonoBehaviour
     {
         if (target == null) return;
 
-        Vector3 desired = new Vector3(target.position.x + offset.x, target.position.y + offset.y, transform.position.z);
+        float targetY = lockY ? fixedY : target.position.y + offset.y;
+        Vector3 desired = new Vector3(target.position.x + offset.x, targetY, transform.position.z);
 
         if (useBounds)
         {
