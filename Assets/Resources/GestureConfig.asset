@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5310f5f37ee67f946bc7c40fe03e4a3b, type: 3}
+  m_Name: GestureConfig
+  m_EditorClassIdentifier: 
+  _gestureEntries:
+  - Type: 4
+    Sprite: {fileID: 21300000, guid: 1a596155ecff58e4b9a73ff66f5f1dbb, type: 3}
+    DisplayName: Fist
+  - Type: 3
+    Sprite: {fileID: 21300000, guid: be1a51144242b904f845e77064ff8b57, type: 3}
+    DisplayName: Shoot
+  - Type: 5
+    Sprite: {fileID: 21300000, guid: 3aafeef89ffdd5741bfd98ba2d071125, type: 3}
+    DisplayName: Open Palm
+  _confidenceThreshold: 0.6
+  _noneSprite: {fileID: 0}
