@@ -3,7 +3,8 @@
     "allow": [
       "mcp__UnityMCP__manage_material",
       "mcp__UnityMCP__script_apply_edits",
-      "mcp__UnityMCP__manage_scene"
+      "mcp__UnityMCP__manage_scene",
+      "mcp__UnityMCP__batch_execute"
     ]
   }
 }
