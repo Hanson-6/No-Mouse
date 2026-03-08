@@ -6,7 +6,6 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
     public float moveSpeed = 8f;
-    public float jumpForce = 16f;
 
     [Header("Ground Check")]
     public Transform groundCheck;
@@ -15,13 +14,19 @@ public class PlayerController : MonoBehaviour
 
     [Header("Jump Settings")]
     public int maxJumpCount = 2;
-    public float fallMultiplier = 2.5f;
-    public float lowJumpMultiplier = 2f;
+    [SerializeField] private float jumpForce = 14f;
+    // Multiplies gravityScale while the player is falling — higher = snappier landing
+    [SerializeField] private float fallGravityMultiplier = 2.5f;
+    // Multiplies gravityScale while rising with jump button released — controls short-hop height
+    [SerializeField] private float lowJumpMultiplier = 2f;
+    // Fraction of upward velocity kept when jump button is released early (0=instant cut, 1=no cut)
+    [SerializeField] private float jumpCutMultiplier = 0.45f;
 
     private Rigidbody2D rb;
     private Animator animator;
     private SpriteRenderer spriteRenderer;
 
+    private float defaultGravityScale;
     private float moveInput;
     private bool isGrounded;
     private int jumpCount;
@@ -32,6 +37,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        defaultGravityScale = rb.gravityScale;
     }
 
     void Update()
@@ -45,6 +51,12 @@ public class PlayerController : MonoBehaviour
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
             jumpCount++;
+        }
+
+        // Jump cut — bleed upward velocity when button is released early
+        if (Input.GetButtonUp("Jump") && rb.velocity.y > 0f)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * jumpCutMultiplier);
         }
 
         // Sprite flip
@@ -68,15 +80,21 @@ public class PlayerController : MonoBehaviour
         // Move
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
 
-        // Better jump feel
-        if (rb.velocity.y < 0)
-        {
-            rb.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
-        }
-        else if (rb.velocity.y > 0 && !Input.GetButton("Jump"))
-        {
-            rb.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
-        }
+        // Gravity modulation — heavier fall, snappier short-hop
+        if (rb.velocity.y < 0f)
+            rb.gravityScale = defaultGravityScale * fallGravityMultiplier;
+        else if (rb.velocity.y > 0f && !Input.GetButton("Jump"))
+            rb.gravityScale = defaultGravityScale * lowJumpMultiplier;
+        else
+            rb.gravityScale = defaultGravityScale;
+    }
+
+    public void LockInput()
+    {
+        isDead = true;
+        rb.velocity = Vector2.zero;
+        rb.gravityScale = defaultGravityScale;
+        animator.SetFloat("Speed", 0f);
     }
 
     public void Die()
@@ -91,6 +109,7 @@ public class PlayerController : MonoBehaviour
     void Respawn()
     {
         transform.position = GameManager.Instance.GetRespawnPoint();
+        rb.gravityScale = defaultGravityScale;
         isDead = false;
         animator.ResetTrigger("Die");
     }
