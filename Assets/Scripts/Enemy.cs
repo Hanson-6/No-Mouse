@@ -20,6 +20,7 @@ public class Enemy : MonoBehaviour
 
     private Rigidbody2D rb;
     private SpriteRenderer sr;
+    private Animator animator;
     private bool movingRight = true;
     private bool isDead = false;
 
@@ -27,6 +28,7 @@ public class Enemy : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
+        animator = GetComponent<Animator>();
         rb.gravityScale = 3f;
         rb.freezeRotation = true;
     }
@@ -41,7 +43,7 @@ public class Enemy : MonoBehaviour
         if (sr != null) sr.flipX = !movingRight;
 
         // 边缘检测
-        Vector2 edgeCheck = transform.position + new Vector3(dir * 0.4f, -0.6f, 0);
+        Vector2 edgeCheck = transform.position + new Vector3(dir * 0.4f, -0.1f, 0);
         bool ground = Physics2D.Raycast(edgeCheck, Vector2.down, edgeCheckDistance, groundLayer);
         if (!ground) Flip();
     }
@@ -86,7 +88,8 @@ public class Enemy : MonoBehaviour
         rb.velocity = Vector2.zero;
         rb.simulated = false;
         GetComponent<Collider2D>().enabled = false;
-        Destroy(gameObject, 0.3f);
+        if (animator != null) animator.SetTrigger("Die");
+        Destroy(gameObject, 0.5f);
     }
 
     void OnDrawGizmosSelected()
