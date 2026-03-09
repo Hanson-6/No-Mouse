@@ -19,18 +19,74 @@ All custom automation lives under the **Tools** menu in the Unity Editor:
 | `Tools/Setup PinkMan Animations` | `Assets/Editor/PinkManAnimationSetup.cs` | Creates/rebuilds all animation clips and the `PinkMan.controller` animator |
 | `Tools/Setup Level1 Scene` | `Assets/Editor/Level1Setup.cs` | Wires player, camera, GameManager references in the active scene |
 | `Tools/Build Terrain Visuals` | `Assets/Editor/TerrainBuilder.cs` | Rebuilds Ground, Platform1, Platform2 from terrain sprites |
+| `Tools/Setup Build Settings` | `Assets/Editor/BuildSettingsSetup.cs` | Sets scene build order (MainMenu→Level1→LevelComplete) |
+| `Tools/Setup Main Menu Scene` | `Assets/Editor/MainMenuSetup.cs` | Full main menu canvas/button wiring; includes BFS background removal on sprites |
+| `Tools/Setup EndPoint Sprites & Animation` | `Assets/Editor/EndPointSetup.cs` | Slices checkpoint sprite sheet and creates Idle/Pressed animator |
+| `Tools/Setup Phase3 Objects` | `Assets/Editor/Phase3Setup.cs` | Places Spikes, MovingSaw, MovingPlatform, Enemy in Level1 |
+| `Tools/Setup Phase3 Sprites` | `Assets/Editor/Phase3SpriteSetup.cs` | Assigns sprites to Phase3 obstacles after creation |
+| `Tools/Setup Terrain Sprites` | `Assets/Editor/TerrainSpriteSetup.cs` | Applies correct surface/underground sprites to platform tiles |
+| `Tools/Fix Platform Tiles` | `Assets/Editor/FixPlatformTiles.cs` | Repairs tile positions and recalculates BoxCollider2D from `tile_X_Y` naming |
+
+`AutoSave.cs` (`[InitializeOnLoad]`) automatically saves scenes before entering Play Mode — no menu item needed.
 
 To enter Play Mode from the MCP: use `mcp__coplay-mcp__play_game` / `mcp__coplay-mcp__stop_game`.
 
+## Running Tests
+
+Tests use the Unity Test Runner (Window > General > Test Runner in the Editor).
+
+- **EditMode** (`Assets/Tests/EditMode/`): `GestureClassifierTests` — pure math tests, no scene required.
+- **PlayMode** (`Assets/Tests/PlayMode/`): `GestureIntegrationTests` — requires entering Play Mode.
+
+`GestureClassifier` exposes static per-gesture methods (`ClassifyFist`, `ClassifyOpenPalm`, `ClassifyShoot`, `ClassifyLift`) that can be unit-tested directly with synthetic landmark arrays.
+
 ## Architecture
+
+### Scene Build Order
+
+| Index | Scene | Purpose |
+|---|---|---|
+| 0 | `Assets/Scenes/MainMenu.unity` | Title screen with Start/Quit |
+| 1 | `Assets/Scenes/Level1.unity` | Main gameplay level |
+| 2 | `Assets/Scenes/LevelComplete.unity` | Completion/transition screen |
+| — | `Assets/Scenes/SampleScene.unity` | Scratch/testing (not in build) |
+| — | `Assets/Scenes/GestureTestScene.unity` | Gesture recognition testing (not in build) |
+
+### Static Game State (`GameData.cs`)
+
+Not a MonoBehaviour — plain static class. Holds `CurrentLevel`, `Lives`, `Score`. Call `GameData.Reset()` at game start (done by `MainMenu.cs`).
 
 ### Runtime Scripts (`Assets/Scripts/`)
 
-- **`GameManager.cs`** — Singleton (`GameManager.Instance`). Holds the `respawnPoint` Transform and handles scene reloading (`RestartLevel`, `LoadNextLevel` by build index). Must exist in every gameplay scene.
-- **`PlayerController.cs`** — Requires `Rigidbody2D` + `Animator`. Reads `Input.GetAxisRaw("Horizontal")` and `Input.GetButtonDown("Jump")`. Supports double-jump (`maxJumpCount = 2`). Jump system uses **gravityScale modulation** (not velocity addition): `rb.gravityScale` is multiplied by `fallGravityMultiplier` when falling and by `lowJumpMultiplier` when rising without the button held. A **jump cut** (`jumpCutMultiplier`) immediately bleeds upward velocity on early button release. On death calls `GameManager.Instance.GetRespawnPoint()` and respawns after 1.5 s. Exposes `LockInput()` for external scripts (e.g. EndPoint) to freeze the player without triggering the Die animation. Ground detection uses `Physics2D.OverlapCircle` on a child `GroundCheck` Transform against the **Ground** layer.
-- **`CameraFollow.cs`** — Smooth lerp follow in `LateUpdate`. Optional `useBounds` clamping (minX/maxX/minY/maxY).
+- **`GameManager.cs`** — Singleton (`GameManager.Instance`). Holds the `respawnPoint` Transform and handles scene reloading (`RestartLevel` reloads current scene; `LoadNextLevel` loads by build index). Must exist in every gameplay scene.
+- **`PlayerController.cs`** — Requires `Rigidbody2D` + `Animator`. Reads `Input.GetAxisRaw("Horizontal")` and `Input.GetButtonDown("Jump")`. Supports double-jump (`maxJumpCount = 2`). Jump system uses **gravityScale modulation** (not velocity addition): `rb.gravityScale` is multiplied by `fallGravityMultiplier` (2.5f) when falling and by `lowJumpMultiplier` (2f) when rising without the button held. **Jump cut** (`jumpCutMultiplier = 0.45f`) bleeds upward velocity on early release. On death respawns after 1.5 s via `GameManager.Instance.GetRespawnPoint()`. `LockInput()` freezes the player without triggering Die animation. Ground detection uses `Physics2D.OverlapCircle` on a child `GroundCheck` Transform against the **Ground** layer.
+- **`CameraFollow.cs`** — Smooth lerp follow in `LateUpdate`. Optional `fixedY`, `useBounds` clamping (minX/maxX/minY/maxY), configurable `smoothSpeed` (default 5f).
 - **`DeathZone.cs`** — Any 2D trigger collider; calls `player.Die()` on overlap.
-- **`EndPoint.cs`** — _(teammate-owned, pull before editing)_ Trigger that calls `player.LockInput()` then `GameManager.Instance.LoadNextLevel()` after a delay. Swaps sprite from idle → pressed on activation.
+- **`EndPoint.cs`** — Trigger that calls `player.LockInput()`, sets `GameData.CurrentLevel`, then loads `"LevelComplete"` scene after 0.5 s. Swaps sprite Idle→Pressed on activation. Has a `triggered` guard to prevent re-entry.
+- **`LevelComplete.cs`** — UI controller for the LevelComplete scene. `NextLevel()` increments `GameData.CurrentLevel` and loads by build index. `GoToMainMenu()` loads scene index 0.
+- **`WinPanel.cs`** — Alternative win-panel UI; uses `transform.Find()` instead of `GameObject.Find()`, resets `Time.timeScale = 1f` before loading.
+- **`MainMenu.cs`** — Primary main menu script. Calls `GameData.Reset()` on Start, loads Level1 by build index (`firstLevelIndex = 1`). Auto-finds Start/Quit buttons by name.
+- **`MainMenuController.cs`** — Alternative main menu script (does NOT call `GameData.Reset()`). Loads by scene name `"Level1"`. Wires buttons in `Awake` with `RemoveAllListeners`. Has `#if UNITY_EDITOR` quit handler.
+- **`Enemy.cs`** — Patrol enemy. Walks left/right, flips at edges (downward raycast). Stomp detection: contact normal + falling velocity (`< 0.2f`) — bounces player up 8 f/s and destroys self after 0.3 s. Side contact kills player.
+- **`MovingPlatform.cs`** — Lerps between `pointA` / `pointB`. Parents the player to the platform on contact so they ride it; un-parents on exit.
+- **`MovingSaw.cs`** — Rotates continuously while lerping between `pointA` / `pointB`. IsTrigger — kills player on enter.
+- **`Spike.cs`** — Static trigger collider; kills player on enter.
+
+### Gesture Recognition Subsystem (`Assets/Scripts/GestureRecognition/`)
+
+Camera-based gesture input layer built on MediaPipe. Pipeline: Camera → `MediaPipeBridge` → `GestureClassifier` → `GestureEvents`.
+
+- **`GestureService`** — Singleton facade; add to a GameObject, assign a `GestureConfig` asset, call `StartRecognition()` or enable Auto Start. Three consumption options: singleton polling (`Instance.CurrentResult`), event subscription (`GestureEvents.OnGestureChanged`), or per-frame event (`GestureEvents.OnGestureUpdated`).
+- **`GestureClassifier`** — Classifies from 21 normalized MediaPipe landmarks. Supports `RegisterClassifier()` for custom gestures.
+- **`GestureConfig`** — ScriptableObject with `ConfidenceThreshold` and per-gesture sprite mappings.
+- **`GesturePanelManager`** / **`GestureOverlay`** / **`GestureDisplayPanel`** — UI feedback layer (in `Service`/`UI` sub-namespaces).
+
+**Current `GestureType` enum values**: `None`, `Push`, `Lift`, `Shoot`, `Fist`, `OpenPalm`.
+
+**To add a new gesture**:
+1. Add a value to `GestureType` enum (`Assets/Scripts/GestureRecognition/Core/GestureType.cs`) before `Count`.
+2. Add classification logic in `GestureClassifier.cs`.
+3. Add a `GestureEntry` in the `GestureConfig` ScriptableObject (Inspector).
 
 ### Animator Parameters (PinkMan.controller)
 
@@ -41,12 +97,6 @@ To enter Play Mode from the MCP: use `mcp__coplay-mcp__play_game` / `mcp__coplay
 | `VelocityY` | Float | `rb.velocity.y` — distinguishes Jump vs Fall |
 | `Die` | Trigger | Any-state → Hit animation |
 
-### Scenes
-
-- `Assets/Scenes/SampleScene.unity` — scratch/testing scene
-- `Assets/Scenes/Level1.unity` — main game level; use `Tools/Setup Level1 Scene` after initial setup
-- `Assets/Pixel Adventure 1/Scenes/Demo.unity` — asset pack demo (do not edit)
-
 ### Key Asset Paths
 
 - Player sprites: `Assets/Pixel Adventure 1/Assets/Main Characters/Pink Man/`
@@ -54,10 +104,11 @@ To enter Play Mode from the MCP: use `mcp__coplay-mcp__play_game` / `mcp__coplay
 - Animation clips & controller: `Assets/Animations/`
 - Background images: `Assets/Pixel Adventure 1/Assets/Background/`
 - End checkpoint sprites: `Assets/Pixel Adventure 1/Assets/Items/Checkpoints/End/`
+- UI button textures: `Assets/Textures/` (processed versions with transparent backgrounds)
 
 ### Physics Setup
 
-- Player `Rigidbody2D`: `gravityScale = 3` (base), Continuous collision detection, Freeze Z rotation. **gravityScale is modulated at runtime** by `PlayerController` — do not assume it stays at 3 during play.
+- Player `Rigidbody2D`: `gravityScale = 3` (base), Continuous collision detection, Freeze Z rotation. **gravityScale is modulated at runtime** by `PlayerController`.
 - Player `BoxCollider2D`: size `(0.2, 0.3)`, offset `(0, 0)`
-- Platforms use a single parent `BoxCollider2D` sized to the full tile grid; individual tile child objects are visual-only `SpriteRenderer`s
+- Platforms use a single parent `BoxCollider2D` sized to the full tile grid; individual tile child objects are visual-only `SpriteRenderer`s named `tile_X_Y`
 - Ground objects must be on the **Ground** layer for `PlayerController` ground detection to work
