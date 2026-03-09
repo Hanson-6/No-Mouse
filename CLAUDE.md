@@ -31,6 +31,15 @@ All custom automation lives under the **Tools** menu in the Unity Editor:
 
 To enter Play Mode from the MCP: use `mcp__coplay-mcp__play_game` / `mcp__coplay-mcp__stop_game`.
 
+## Running Tests
+
+Tests use the Unity Test Runner (Window > General > Test Runner in the Editor).
+
+- **EditMode** (`Assets/Tests/EditMode/`): `GestureClassifierTests` — pure math tests, no scene required.
+- **PlayMode** (`Assets/Tests/PlayMode/`): `GestureIntegrationTests` — requires entering Play Mode.
+
+`GestureClassifier` exposes static per-gesture methods (`ClassifyFist`, `ClassifyOpenPalm`, `ClassifyShoot`, `ClassifyLift`) that can be unit-tested directly with synthetic landmark arrays.
+
 ## Architecture
 
 ### Scene Build Order
@@ -45,7 +54,7 @@ To enter Play Mode from the MCP: use `mcp__coplay-mcp__play_game` / `mcp__coplay
 
 ### Static Game State (`GameData.cs`)
 
-Not a MonoBehaviour — plain static class. Holds `CurrentLevel`, `Lives`, `Score`. Call `GameData.Reset()` at game start (done by `MainMenuController`).
+Not a MonoBehaviour — plain static class. Holds `CurrentLevel`, `Lives`, `Score`. Call `GameData.Reset()` at game start (done by `MainMenu.cs`).
 
 ### Runtime Scripts (`Assets/Scripts/`)
 
@@ -56,7 +65,8 @@ Not a MonoBehaviour — plain static class. Holds `CurrentLevel`, `Lives`, `Scor
 - **`EndPoint.cs`** — Trigger that calls `player.LockInput()`, sets `GameData.CurrentLevel`, then loads `"LevelComplete"` scene after 0.5 s. Swaps sprite Idle→Pressed on activation. Has a `triggered` guard to prevent re-entry.
 - **`LevelComplete.cs`** — UI controller for the LevelComplete scene. `NextLevel()` increments `GameData.CurrentLevel` and loads by build index. `GoToMainMenu()` loads scene index 0.
 - **`WinPanel.cs`** — Alternative win-panel UI; uses `transform.Find()` instead of `GameObject.Find()`, resets `Time.timeScale = 1f` before loading.
-- **`MainMenuController.cs`** — Calls `GameData.Reset()` on Start; auto-finds Start/Quit buttons by name if not inspector-assigned; loads `"Level1"` scene on start.
+- **`MainMenu.cs`** — Primary main menu script. Calls `GameData.Reset()` on Start, loads Level1 by build index (`firstLevelIndex = 1`). Auto-finds Start/Quit buttons by name.
+- **`MainMenuController.cs`** — Alternative main menu script (does NOT call `GameData.Reset()`). Loads by scene name `"Level1"`. Wires buttons in `Awake` with `RemoveAllListeners`. Has `#if UNITY_EDITOR` quit handler.
 - **`Enemy.cs`** — Patrol enemy. Walks left/right, flips at edges (downward raycast). Stomp detection: contact normal + falling velocity (`< 0.2f`) — bounces player up 8 f/s and destroys self after 0.3 s. Side contact kills player.
 - **`MovingPlatform.cs`** — Lerps between `pointA` / `pointB`. Parents the player to the platform on contact so they ride it; un-parents on exit.
 - **`MovingSaw.cs`** — Rotates continuously while lerping between `pointA` / `pointB`. IsTrigger — kills player on enter.
@@ -64,13 +74,19 @@ Not a MonoBehaviour — plain static class. Holds `CurrentLevel`, `Lives`, `Scor
 
 ### Gesture Recognition Subsystem (`Assets/Scripts/GestureRecognition/`)
 
-Camera-based gesture input layer. Key classes:
+Camera-based gesture input layer built on MediaPipe. Pipeline: Camera → `MediaPipeBridge` → `GestureClassifier` → `GestureEvents`.
 
-- **`GestureService`** — Singleton service; coordinates `CameraManager`, `MediaPipeBridge`, `HandTracker`, `GestureClassifier`. Raises `GestureEvents`.
-- **`GestureClassifier`** — Classifies `GestureType` (enum) from normalized landmark data.
-- **`GesturePanelManager`** / **`GestureOverlay`** / **`GestureDisplayPanel`** — UI feedback.
-- **`GestureConfig`** — ScriptableObject with tuning parameters.
-- Tests: `GestureClassifierTests` (EditMode), `GestureIntegrationTests` (PlayMode) under `Assets/Tests/`.
+- **`GestureService`** — Singleton facade; add to a GameObject, assign a `GestureConfig` asset, call `StartRecognition()` or enable Auto Start. Three consumption options: singleton polling (`Instance.CurrentResult`), event subscription (`GestureEvents.OnGestureChanged`), or per-frame event (`GestureEvents.OnGestureUpdated`).
+- **`GestureClassifier`** — Classifies from 21 normalized MediaPipe landmarks. Supports `RegisterClassifier()` for custom gestures.
+- **`GestureConfig`** — ScriptableObject with `ConfidenceThreshold` and per-gesture sprite mappings.
+- **`GesturePanelManager`** / **`GestureOverlay`** / **`GestureDisplayPanel`** — UI feedback layer (in `Service`/`UI` sub-namespaces).
+
+**Current `GestureType` enum values**: `None`, `Push`, `Lift`, `Shoot`, `Fist`, `OpenPalm`.
+
+**To add a new gesture**:
+1. Add a value to `GestureType` enum (`Assets/Scripts/GestureRecognition/Core/GestureType.cs`) before `Count`.
+2. Add classification logic in `GestureClassifier.cs`.
+3. Add a `GestureEntry` in the `GestureConfig` ScriptableObject (Inspector).
 
 ### Animator Parameters (PinkMan.controller)
 
