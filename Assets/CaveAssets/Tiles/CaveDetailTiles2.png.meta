@@ -23,6 +23,30 @@ TextureImporter:
   - first:
       213: -7019198102699924240
     second: CaveDetailTiles2_6
+  - first:
+      213: 907423521
+    second: CaveDetailTiles2_7
+  - first:
+      213: 1366968645
+    second: CaveDetailTiles2_8
+  - first:
+      213: -1471618918
+    second: CaveDetailTiles2_9
+  - first:
+      213: 980314396
+    second: CaveDetailTiles2_10
+  - first:
+      213: 1378109176
+    second: CaveDetailTiles2_11
+  - first:
+      213: -154723885
+    second: CaveDetailTiles2_12
+  - first:
+      213: -785276495
+    second: CaveDetailTiles2_13
+  - first:
+      213: -1648798822
+    second: CaveDetailTiles2_14
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
