@@ -26,6 +26,8 @@ All custom automation lives under the **Tools** menu in the Unity Editor:
 | `Tools/Setup Phase3 Sprites` | `Assets/Editor/Phase3SpriteSetup.cs` | Assigns sprites to Phase3 obstacles after creation |
 | `Tools/Setup Terrain Sprites` | `Assets/Editor/TerrainSpriteSetup.cs` | Applies correct surface/underground sprites to platform tiles |
 | `Tools/Fix Platform Tiles` | `Assets/Editor/FixPlatformTiles.cs` | Repairs tile positions and recalculates BoxCollider2D from `tile_X_Y` naming |
+| `Tools/Setup Background` | `Assets/Editor/BackgroundSetup.cs` | Creates parallax mountain background prefab (`Assets/Prefabs/Background.prefab`), sets camera sky-blue, adds `Background` sorting layer |
+| `Tools/Rebuild Cave Ground` | `Assets/Editor/RebuildCaveGround.cs` | Rebuilds all scene `Ground*` objects with cave-style terrain sprites (20×30 tile grid) and recalculates their `BoxCollider2D` |
 
 `AutoSave.cs` (`[InitializeOnLoad]`) automatically saves scenes before entering Play Mode — no menu item needed.
 
@@ -71,12 +73,20 @@ Not a MonoBehaviour — plain static class. Holds `CurrentLevel`, `Lives`, `Scor
 - **`MovingPlatform.cs`** — Lerps between `pointA` / `pointB`. Parents the player to the platform on contact so they ride it; un-parents on exit.
 - **`MovingSaw.cs`** — Rotates continuously while lerping between `pointA` / `pointB`. IsTrigger — kills player on enter.
 - **`Spike.cs`** — Static trigger collider; kills player on enter.
+- **`ParallaxLayer.cs`** — Attach to any `SpriteRenderer` GameObject. Spawns a seamless tile copy at runtime and scrolls it based on `parallaxFactor` (0 = world-fixed / full parallax effect; 1 = camera-locked / no effect). Supports `autoScrollSpeed` for constant drift (e.g. drifting clouds) and `lockYToCamera` to pin the layer's bottom edge to the camera bottom regardless of vertical camera movement.
 
 ### Gesture Recognition Subsystem (`Assets/Scripts/GestureRecognition/`)
 
 Camera-based gesture input layer built on MediaPipe. Pipeline: Camera → `MediaPipeBridge` → `GestureClassifier` → `GestureEvents`.
 
+**Detection layer** (internal — do NOT add to GameObjects manually; `GestureService` creates these at runtime):
+- **`MediaPipeBridge`** — Wraps all MediaPipe Unity Plugin calls behind `#if MEDIAPIPE_INSTALLED`. When the plugin is absent, a stub compiles in so the rest of the project builds and mock data still flows through for UI/testing. Produces `HandLandmarkData` structs (21 `Vector3` landmarks, normalized [0,1]).
+- **`CameraManager`** — Manages `WebCamTexture` lifecycle; exposes `CameraTexture` (assign to `RawImage.texture`) and `GetCurrentFrame()` for per-frame CPU readback.
+- **`HandTracker`** — Pure-logic class (no `MonoBehaviour`). Derives a smoothed palm-center `Vector2` from landmarks via exponential lerp (`smoothingFactor`, default 0.5). Reset when hand is lost.
+
+**Service / consumption layer**:
 - **`GestureService`** — Singleton facade; add to a GameObject, assign a `GestureConfig` asset, call `StartRecognition()` or enable Auto Start. Three consumption options: singleton polling (`Instance.CurrentResult`), event subscription (`GestureEvents.OnGestureChanged`), or per-frame event (`GestureEvents.OnGestureUpdated`).
+- **`GestureResult`** — Immutable `readonly struct` passed to event subscribers. Fields: `Type`, `Confidence` [0,1], `HandPosition` ((-1,-1) when no hand), `IsHandDetected`, `Timestamp`. Use `GestureResult.Empty` as a sentinel.
 - **`GestureClassifier`** — Classifies from 21 normalized MediaPipe landmarks. Supports `RegisterClassifier()` for custom gestures.
 - **`GestureConfig`** — ScriptableObject with `ConfidenceThreshold` and per-gesture sprite mappings.
 - **`GesturePanelManager`** / **`GestureOverlay`** / **`GestureDisplayPanel`** — UI feedback layer (in `Service`/`UI` sub-namespaces).
