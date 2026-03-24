@@ -10,14 +10,23 @@ public class MovingPlatform : MonoBehaviour
     public Vector2 pointA;
     public Vector2 pointB;
     public float speed = 2f;
+    [Tooltip("If true, platform starts at Point B and moves toward Point A first")]
+    public bool startAtPointB = false;
 
-    private bool goingToB = true;
+    private bool goingToB;
     private Vector2 lastPos;
 
     void Start()
     {
-        pointA = (Vector2)transform.position;
-        pointB = pointA + Vector2.right * 5f;
+        // Only default to transform position if points were not set in the Inspector
+        if (pointA == Vector2.zero && pointB == Vector2.zero)
+        {
+            pointA = (Vector2)transform.position;
+            pointB = pointA + Vector2.right * 5f;
+        }
+        goingToB = !startAtPointB;
+        if (startAtPointB)
+            transform.position = pointB;
         lastPos = transform.position;
     }
 
