@@ -73,8 +73,8 @@ public class PlayerController : MonoBehaviour
     {
         if (isDead) return;
 
-        // Ground check
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        // Ground check — thin box so walls don't falsely trigger grounded state
+        isGrounded = Physics2D.OverlapBox(groundCheck.position, new Vector2(0.15f, 0.05f), 0f, groundLayer);
         if (isGrounded) jumpCount = 0;
 
         // Move
@@ -119,7 +119,7 @@ public class PlayerController : MonoBehaviour
         if (groundCheck != null)
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+            Gizmos.DrawWireCube(groundCheck.position, new Vector3(0.15f, 0.05f, 0f));
         }
     }
 }

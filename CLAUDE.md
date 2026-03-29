@@ -28,6 +28,11 @@ All custom automation lives under the **Tools** menu in the Unity Editor:
 | `Tools/Fix Platform Tiles` | `Assets/Editor/FixPlatformTiles.cs` | Repairs tile positions and recalculates BoxCollider2D from `tile_X_Y` naming |
 | `Tools/Setup Background` | `Assets/Editor/BackgroundSetup.cs` | Creates parallax mountain background prefab (`Assets/Prefabs/Background.prefab`), sets camera sky-blue, adds `Background` sorting layer |
 | `Tools/Rebuild Cave Ground` | `Assets/Editor/RebuildCaveGround.cs` | Rebuilds all scene `Ground*` objects with cave-style terrain sprites (20×30 tile grid) and recalculates their `BoxCollider2D` |
+| `Tools/Setup Cave Tilemap Prefab` / `Tools/Setup Cave Tilemap in Level1` | `Assets/Editor/CaveTilemapSetup.cs` | Two-step cave tilemap migration: first creates `CaveTilemapGrid.prefab` (Grid + three Tilemap children), then instantiates it in Level1 scaled to (0.16, 0.16, 1) and paints tiles from old terrain collider bounds |
+| `Tools/Fix Cave Tile FileIDs` | `Assets/Editor/FixCaveTileFileIDs.cs` | Repairs stale sprite fileIDs in cave tile `.asset` files by reading the texture `.meta` internalIDs and rewriting the YAML — fixes pink/magenta tiles after texture reimport |
+| `Tools/Fix Cave Tile Sprites` | `Assets/Editor/FixCaveTileSprites.cs` | Editor window that force-reimports cave textures and re-assigns sprites to any tile asset whose sprite reference is null |
+| `Tools/Rebuild Cave Tile Assets` | `Assets/Editor/RebuildCaveTileAssets.cs` | Comprehensive tile repair: validates texture import settings (PPU=8, Point, Uncompressed), updates existing tile assets in-place, creates missing ones, verifies `ScenePalette.prefab`, and prints a summary report |
+| `Tools/Create Puzzle Prefabs` | `Assets/Editor/PuzzleElementsSetup.cs` | Creates `PushableBox`, `PressureButton`, and `SwitchDoor` prefabs in `Assets/Prefabs/`; also adds the `Box` tag to TagManager |
 
 `AutoSave.cs` (`[InitializeOnLoad]`) automatically saves scenes before entering Play Mode — no menu item needed.
 
@@ -73,6 +78,9 @@ Not a MonoBehaviour — plain static class. Holds `CurrentLevel`, `Lives`, `Scor
 - **`MovingPlatform.cs`** — Lerps between `pointA` / `pointB`. Parents the player to the platform on contact so they ride it; un-parents on exit.
 - **`MovingSaw.cs`** — Rotates continuously while lerping between `pointA` / `pointB`. IsTrigger — kills player on enter.
 - **`Spike.cs`** — Static trigger collider; kills player on enter.
+- **`PushableBox.cs`** — Marker component on the pushable box. All movement is pure Rigidbody2D physics (mass=5, linearDamping=5, freeze rotation). Must have tag `"Box"`. Zero-friction `PhysicsMaterial2D` prevents sticking to walls.
+- **`ButtonController.cs`** — Pressure plate. Has an `isTrigger` `BoxCollider2D`; increments an overlap counter when anything tagged `"Box"` or `"Player"` enters. Calls `SwitchDoor.Open()` / `Close()` and swaps `unpressedSprite`/`pressedSprite` on the `SpriteRenderer`.
+- **`SwitchDoor.cs`** — Door that slides up by `openOffset` world units when `Open()` is called and drops back down on `Close()`. Disables its `Collider2D` when fully open so the player can pass through; re-enables immediately when starting to close.
 - **`ParallaxLayer.cs`** — Attach to any `SpriteRenderer` GameObject. Spawns a seamless tile copy at runtime and scrolls it based on `parallaxFactor` (0 = world-fixed / full parallax effect; 1 = camera-locked / no effect). Supports `autoScrollSpeed` for constant drift (e.g. drifting clouds) and `lockYToCamera` to pin the layer's bottom edge to the camera bottom regardless of vertical camera movement.
 
 ### Gesture Recognition Subsystem (`Assets/Scripts/GestureRecognition/`)

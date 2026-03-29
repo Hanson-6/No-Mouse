@@ -26,9 +26,23 @@ public class Level1Setup : EditorWindow
             sr.sortingOrder = 1;
         }
 
-        // BoxCollider2D size
+        // BoxCollider2D size + zero-friction material (prevents wall-sticking)
         var bc = player.GetComponent<BoxCollider2D>();
-        if (bc != null) { bc.size = new Vector2(0.2f, 0.3f); bc.offset = new Vector2(0, 0); }
+        if (bc != null)
+        {
+            bc.size   = new Vector2(0.2f, 0.3f);
+            bc.offset = new Vector2(0, 0);
+
+            const string pmPath = "Assets/Prefabs/Player_Physics.physicsMaterial2D";
+            var pm = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(pmPath);
+            if (pm == null)
+            {
+                pm = new PhysicsMaterial2D("Player_Physics") { friction = 0f, bounciness = 0f };
+                System.IO.Directory.CreateDirectory("Assets/Prefabs");
+                AssetDatabase.CreateAsset(pm, pmPath);
+            }
+            bc.sharedMaterial = pm;
+        }
 
         // PlayerController references
         var pc = player.GetComponent<PlayerController>();
