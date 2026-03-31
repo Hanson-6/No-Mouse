@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(10)]    // 确保在 CameraFollow 之后执行
 /// <summary>
 /// Seamlessly tiles a SpriteRenderer and parallax-scrolls it with the camera.
 /// Spawns a second copy of the sprite at runtime so the layer loops

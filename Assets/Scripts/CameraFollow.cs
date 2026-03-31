@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(-10)]   // 确保在 ParallaxLayer 之前执行
 public class CameraFollow : MonoBehaviour
 {
     public Transform target;

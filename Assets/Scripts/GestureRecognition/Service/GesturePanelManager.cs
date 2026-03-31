@@ -276,14 +276,14 @@ namespace GestureRecognition.Service
 
             RectTransform rt = _panelInstance.GetComponent<RectTransform>();
 
-            // Center pivot
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchorMin = new Vector2(0.5f, 0.5f);
-            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            // Anchor to top-left corner — works at any resolution
+            rt.pivot     = new Vector2(0f, 1f);
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(0f, 1f);
 
-            // Apply default size and position
-            rt.sizeDelta = _defaultSize;
-            rt.anchoredPosition = _defaultPosition;
+            // Apply default size; position = small padding from top-left edge
+            rt.sizeDelta        = _defaultSize;
+            rt.anchoredPosition = new Vector2(10f, -10f);
 
             // Apply default display mode
             _panelInstance.CurrentMode = _defaultDisplayMode;
@@ -294,11 +294,10 @@ namespace GestureRecognition.Service
         /// </summary>
         private Canvas EnsureCanvas()
         {
-            Canvas canvas = FindObjectOfType<Canvas>();
-            if (canvas != null) return canvas;
-
-            GameObject canvasObj = new GameObject("Canvas");
-            canvas = canvasObj.AddComponent<Canvas>();
+            // Always create a dedicated canvas — never reuse the game's UI canvases
+            // (e.g. WinCanvas) to avoid inheriting their full-screen backgrounds.
+            GameObject canvasObj = new GameObject("GestureCanvas");
+            Canvas canvas = canvasObj.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 100; // render on top
             canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();

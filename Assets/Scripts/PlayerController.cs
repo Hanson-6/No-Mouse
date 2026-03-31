@@ -31,6 +31,7 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
     private int jumpCount;
     private bool isDead;
+    public bool jumpLocked;
 
     void Awake()
     {
@@ -47,7 +48,7 @@ public class PlayerController : MonoBehaviour
         moveInput = Input.GetAxisRaw("Horizontal");
 
         // Jump
-        if (Input.GetButtonDown("Jump") && jumpCount < maxJumpCount)
+        if (Input.GetButtonDown("Jump") && jumpCount < maxJumpCount && !jumpLocked)
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
             jumpCount++;
@@ -59,11 +60,9 @@ public class PlayerController : MonoBehaviour
             rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * jumpCutMultiplier);
         }
 
-        // Sprite flip
         if (moveInput > 0) spriteRenderer.flipX = false;
         else if (moveInput < 0) spriteRenderer.flipX = true;
 
-        // Animations
         animator.SetFloat("Speed", Mathf.Abs(moveInput));
         animator.SetBool("IsGrounded", isGrounded);
         animator.SetFloat("VelocityY", rb.velocity.y);
@@ -77,7 +76,6 @@ public class PlayerController : MonoBehaviour
         isGrounded = Physics2D.OverlapBox(groundCheck.position, new Vector2(0.15f, 0.05f), 0f, groundLayer);
         if (isGrounded) jumpCount = 0;
 
-        // Move
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
 
         // Gravity modulation — heavier fall, snappier short-hop
@@ -108,10 +106,7 @@ public class PlayerController : MonoBehaviour
 
     void Respawn()
     {
-        transform.position = GameManager.Instance.GetRespawnPoint();
-        rb.gravityScale = defaultGravityScale;
-        isDead = false;
-        animator.ResetTrigger("Die");
+        GameManager.Instance.RestartLevel();
     }
 
     void OnDrawGizmosSelected()

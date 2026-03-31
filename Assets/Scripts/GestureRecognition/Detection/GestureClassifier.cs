@@ -71,7 +71,6 @@ namespace GestureRecognition.Detection
             // Register built-in gesture classifiers.
             // Order does not matter — the highest-confidence one wins.
             RegisterClassifier(GestureType.Fist, ClassifyFist);
-            RegisterClassifier(GestureType.OpenPalm, ClassifyOpenPalm);
             RegisterClassifier(GestureType.Push, ClassifyPush);
             RegisterClassifier(GestureType.Lift, ClassifyLift);
             RegisterClassifier(GestureType.Shoot, ClassifyShoot);
@@ -212,28 +211,8 @@ namespace GestureRecognition.Detection
         /// </summary>
         public static float ClassifyPush(Vector3[] lm)
         {
-            // First check it looks like an open palm
-            float palmScore = ClassifyOpenPalm(lm);
-            if (palmScore < 0.6f) return 0f;
-
-            // Check if fingers are spread relatively evenly (push posture)
-            // and the palm faces forward (z values of tips are similar)
-            float avgZ = (lm[MediaPipeBridge.IndexTip].z +
-                          lm[MediaPipeBridge.MiddleTip].z +
-                          lm[MediaPipeBridge.RingTip].z +
-                          lm[MediaPipeBridge.PinkyTip].z) / 4f;
-
-            float zVariance = 0f;
-            zVariance += Mathf.Abs(lm[MediaPipeBridge.IndexTip].z - avgZ);
-            zVariance += Mathf.Abs(lm[MediaPipeBridge.MiddleTip].z - avgZ);
-            zVariance += Mathf.Abs(lm[MediaPipeBridge.RingTip].z - avgZ);
-            zVariance += Mathf.Abs(lm[MediaPipeBridge.PinkyTip].z - avgZ);
-            zVariance /= 4f;
-
-            // Low z-variance means flat hand = push
-            float flatScore = Mathf.Clamp01(1f - zVariance * 20f);
-
-            return palmScore * 0.6f + flatScore * 0.4f;
+            // Open palm = push
+            return ClassifyOpenPalm(lm);
         }
 
         /// <summary>
