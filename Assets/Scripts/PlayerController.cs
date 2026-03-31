@@ -25,6 +25,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D rb;
     private Animator animator;
     private SpriteRenderer spriteRenderer;
+    private Collider2D ownCollider;
 
     private float defaultGravityScale;
     private float moveInput;
@@ -38,6 +39,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        ownCollider = GetComponent<Collider2D>();
         defaultGravityScale = rb.gravityScale;
     }
 
@@ -74,6 +76,16 @@ public class PlayerController : MonoBehaviour
 
         // Ground check — thin box so walls don't falsely trigger grounded state
         isGrounded = Physics2D.OverlapBox(groundCheck.position, new Vector2(0.15f, 0.05f), 0f, groundLayer);
+        if (!isGrounded)
+        {
+            // 站在箱子上也算落地：RaycastAll 过滤掉自身碰撞体
+            var hits = Physics2D.RaycastAll(groundCheck.position, Vector2.down, 0.2f);
+            foreach (var h in hits)
+            {
+                if (h.collider == ownCollider) continue;
+                if (h.collider.CompareTag("Box")) { isGrounded = true; break; }
+            }
+        }
         if (isGrounded) jumpCount = 0;
 
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);

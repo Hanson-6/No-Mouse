@@ -41,8 +41,8 @@ public class PushableBox : MonoBehaviour
         }
         else
         {
-            // 冻结 X 轴：物理引擎级别的锁定，碰撞冲量也无法移动
-            rb.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation;
+            // 同时冻结 XY：防止碰撞冲量或重力导致微震动
+            rb.constraints = RigidbodyConstraints2D.FreezePosition | RigidbodyConstraints2D.FreezeRotation;
         }
     }
 
