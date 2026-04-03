@@ -6,18 +6,14 @@
 // FEATURES:
 //   - Draggable title bar — click and drag to move the panel
 //   - Resizable — drag the bottom-right corner to resize
-//   - Auto start/stop — showing the panel starts recognition, hiding stops it
+//   - Pure UI — showing/hiding the panel does NOT affect GestureService
 //   - Content scales proportionally with panel size
 //   - Close button in the title bar
 //
 // FRONTEND USAGE:
-//   // Show the panel (starts recognition automatically):
+//   // Show the panel (pure UI, does not affect recognition):
 //   GestureDisplayPanel panel = FindObjectOfType<GestureDisplayPanel>();
 //   panel.Show();
-//
-//   // Or use GesturePanelManager for a simpler API:
-//   GesturePanelManager.Instance.ShowPanel();
-//   GesturePanelManager.Instance.HidePanel();
 //
 // UNITY SETUP (creating the Prefab from scratch):
 //   See the detailed instructions in the AGENTS.md "Step-by-step" section,
@@ -78,7 +74,7 @@ namespace GestureRecognition.UI
 
         [Header("Display Settings")]
         [SerializeField]
-        private DisplayMode _displayMode = DisplayMode.CartoonSprite;
+        private DisplayMode _displayMode = DisplayMode.CameraFeed;
 
         [Tooltip("Reference to GestureConfig for sprite lookup. " +
                  "If null, will try to get from GestureService.")]
@@ -86,11 +82,6 @@ namespace GestureRecognition.UI
         private GestureConfig _gestureConfig;
 
         [Header("Panel Behaviour")]
-        [Tooltip("Automatically start/stop gesture recognition when " +
-                 "the panel is shown/hidden.")]
-        [SerializeField]
-        private bool _autoManageRecognition = true;
-
         [Tooltip("Minimum panel size in pixels.")]
         [SerializeField]
         private Vector2 _minSize = new Vector2(200f, 180f);
@@ -157,32 +148,18 @@ namespace GestureRecognition.UI
         }
 
         /// <summary>
-        /// Shows the panel. If <see cref="_autoManageRecognition"/> is true,
-        /// also starts gesture recognition.
+        /// Shows the panel (pure UI — does not affect GestureService).
         /// </summary>
         public void Show()
         {
             gameObject.SetActive(true);
-
-            if (_autoManageRecognition && GestureService.Instance != null &&
-                !GestureService.Instance.IsRunning)
-            {
-                GestureService.Instance.StartRecognition();
-            }
         }
 
         /// <summary>
-        /// Hides the panel. If <see cref="_autoManageRecognition"/> is true,
-        /// also stops gesture recognition.
+        /// Hides the panel (pure UI — does not affect GestureService).
         /// </summary>
         public void Hide()
         {
-            if (_autoManageRecognition && GestureService.Instance != null &&
-                GestureService.Instance.IsRunning)
-            {
-                GestureService.Instance.StopRecognition();
-            }
-
             gameObject.SetActive(false);
         }
 

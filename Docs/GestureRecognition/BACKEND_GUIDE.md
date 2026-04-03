@@ -436,7 +436,6 @@ _tracker = new HandTracker(0.3f);  // 0.1=非常平滑 ~ 1.0=无平滑
 | `GestureResult.cs` | 通用数据结构，不因手势类型而变 |
 | `GestureConfig.cs` | 通用配置类，Inspector 操作即可 |
 | `GestureService.cs` | 通用编排器，自动调用所有注册的分类器 |
-| `GesturePanelManager.cs` | 通用面板管理 |
 | `GestureDisplayPanel.cs` | 通用显示面板 |
 | `GestureOverlay.cs` | 调试覆盖层 |
 | `CameraManager.cs` | 摄像头管理 |

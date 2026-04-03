@@ -68,7 +68,7 @@ Assets/
 |------|------|----------|
 | 1 | 在你的游戏场景中创建一个空 GameObject，挂载 `GestureService` 组件 | **必须** |
 | 2 | 在你的游戏脚本中订阅 `GestureEvents` 事件 | **必须** |
-| 3 | 调用 `GesturePanelManager.Instance.ShowPanel()` 显示手势面板 | 可选 |
+| 3 | 调用 `FindObjectOfType<GestureDisplayPanel>().Show()` 显示手势面板 | 可选 |
 | 4 | 在 `GestureConfig.asset` 中编辑手势精灵图和阈值 | 可选 |
 
 ### 步骤 1：添加 GestureService 到场景
@@ -248,69 +248,70 @@ public class GesturePoller : MonoBehaviour
 
 ```csharp
 using UnityEngine;
-using GestureRecognition.Service;
 using GestureRecognition.UI;
 
 public class GesturePanelToggle : MonoBehaviour
 {
+    // 缓存面板引用（Inspector 拖拽 或 FindObjectOfType）
+    [SerializeField] private GestureDisplayPanel _panel;
+
+    void Awake()
+    {
+        if (_panel == null)
+            _panel = FindObjectOfType<GestureDisplayPanel>(true);
+    }
+
     // 这个方法绑定到 UI Button 的 OnClick 事件
     public void OnToggleButtonClicked()
     {
-        GesturePanelManager.Instance.TogglePanel();
+        _panel.Toggle();
     }
 
     // 或者分开控制
     public void OnShowButtonClicked()
     {
-        GesturePanelManager.Instance.ShowPanel();
+        _panel.Show();
     }
 
     public void OnHideButtonClicked()
     {
-        GesturePanelManager.Instance.HidePanel();
+        _panel.Hide();
     }
 
     // 设置面板大小
     public void SetSmallPanel()
     {
-        GesturePanelManager.Instance.SetPanelSize(200, 150);
+        _panel.SetSize(200, 150);
     }
 
     public void SetLargePanel()
     {
-        GesturePanelManager.Instance.SetPanelSize(400, 300);
+        _panel.SetSize(400, 300);
     }
 
     // 切换显示模式
     public void SetSpriteMode()
     {
         // 只显示卡通精灵图（隐私模式，不显示摄像头画面）
-        GesturePanelManager.Instance.SetDisplayMode(
-            GestureDisplayPanel.DisplayMode.CartoonSprite
-        );
+        _panel.CurrentMode = GestureDisplayPanel.DisplayMode.CartoonSprite;
     }
 
     public void SetCameraMode()
     {
         // 显示实时摄像头画面
-        GesturePanelManager.Instance.SetDisplayMode(
-            GestureDisplayPanel.DisplayMode.CameraFeed
-        );
+        _panel.CurrentMode = GestureDisplayPanel.DisplayMode.CameraFeed;
     }
 
     public void SetOverlayMode()
     {
         // 摄像头画面 + 右下角小精灵图
-        GesturePanelManager.Instance.SetDisplayMode(
-            GestureDisplayPanel.DisplayMode.CameraWithOverlay
-        );
+        _panel.CurrentMode = GestureDisplayPanel.DisplayMode.CameraWithOverlay;
     }
 }
 ```
 
 **要点**：
-- `ShowPanel()` 会自动创建 Canvas 和面板（如果不存在），并自动启动手势识别
-- `HidePanel()` 会自动停止手势识别
+- `Show()` / `Hide()` 是纯 UI 操作，不会影响 GestureService 的运行状态
 - 面板可拖拽、可缩放——用户可以自由移动和调整大小
 
 ---
@@ -487,18 +488,19 @@ GestureService.Instance.GetAvailableCameras()     // 获取摄像头列表
 GestureService.Instance.SwitchCamera("设备名")    // 切换摄像头
 ```
 
-### GesturePanelManager（面板管理）
+### GestureDisplayPanel（面板控制）
 
 ```csharp
-using GestureRecognition.Service;
 using GestureRecognition.UI;
 
-GesturePanelManager.Instance.ShowPanel()              // 显示面板
-GesturePanelManager.Instance.HidePanel()              // 隐藏面板
-GesturePanelManager.Instance.TogglePanel()             // 切换面板
-GesturePanelManager.Instance.IsPanelVisible            // 是否可见
-GesturePanelManager.Instance.SetPanelSize(400, 300)    // 设置大小
-GesturePanelManager.Instance.SetDisplayMode(mode)      // 设置显示模式
+// 获取面板引用（面板存在于 DontDestroyOnLoad 中）
+GestureDisplayPanel panel = FindObjectOfType<GestureDisplayPanel>(true);
+
+panel.Show()                                           // 显示面板（纯 UI）
+panel.Hide()                                           // 隐藏面板（纯 UI）
+panel.Toggle()                                         // 切换面板
+panel.SetSize(400, 300)                                // 设置大小
+panel.CurrentMode = GestureDisplayPanel.DisplayMode.CartoonSprite  // 设置显示模式
 ```
 
 ### GestureType（手势枚举）

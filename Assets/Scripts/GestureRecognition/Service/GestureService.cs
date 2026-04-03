@@ -25,14 +25,23 @@
 
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using GestureRecognition.Core;
 using GestureRecognition.Detection;
+using GestureRecognition.UI;
 
 namespace GestureRecognition.Service
 {
     /// <summary>
     /// Facade / singleton that orchestrates the entire gesture recognition
     /// pipeline: Camera -> MediaPipe -> Classifier -> Events.
+    /// <para>
+    /// 摄像头和 MediaPipe 在首次 StartRecognition 后保持运行，
+    /// StopRecognition 只暂停处理循环（不关硬件），
+    /// 再次 StartRecognition 时零延迟恢复。
+    /// 硬件仅在 OnDestroy（退出应用）时释放。
+    /// </para>
     /// </summary>
     public class GestureService : MonoBehaviour
     {
@@ -73,6 +82,19 @@ namespace GestureRecognition.Service
         [SerializeField]
         private bool _autoStart;
 
+        [Tooltip("Automatically create and show the gesture display panel on start.")]
+        [SerializeField]
+        private bool _autoShowPanel = true;
+
+        [Tooltip("Default display mode for the auto-created panel.")]
+        [SerializeField]
+        private GestureDisplayPanel.DisplayMode _defaultDisplayMode =
+            GestureDisplayPanel.DisplayMode.CameraFeed;
+
+        [Tooltip("Default panel size in pixels.")]
+        [SerializeField]
+        private Vector2 _defaultPanelSize = new Vector2(320f, 280f);
+
         [Header("Camera Settings")]
         [Tooltip("Camera device name. Leave empty to use the default camera.")]
         [SerializeField]
@@ -93,7 +115,15 @@ namespace GestureRecognition.Service
         private GestureClassifier _gestureClassifier;
         private HandTracker _handTracker;
 
+        /// <summary>处理循环是否在跑（对外的"识别中"状态）</summary>
         private bool _isRunning;
+
+        /// <summary>硬件（摄像头+MediaPipe）是否已初始化就绪</summary>
+        private bool _hardwareReady;
+
+        /// <summary>自动创建的显示面板（如果有）</summary>
+        private GestureDisplayPanel _displayPanel;
+
         private GestureResult _currentResult = GestureResult.Empty;
         private GestureType _previousGestureType = GestureType.None;
         private bool _previousHandDetected;
@@ -123,8 +153,9 @@ namespace GestureRecognition.Service
         // -----------------------------------------------------------------
 
         /// <summary>
-        /// Starts the camera and gesture recognition pipeline.
-        /// This is a coroutine because camera initialization is async.
+        /// Starts the gesture recognition pipeline.
+        /// 首次调用时初始化摄像头和 MediaPipe（异步）；
+        /// 之后的调用直接恢复处理循环，零延迟。
         /// </summary>
         public void StartRecognition()
         {
@@ -138,7 +169,8 @@ namespace GestureRecognition.Service
         }
 
         /// <summary>
-        /// Stops recognition and releases camera resources.
+        /// Stops the recognition processing loop.
+        /// 摄像头和 MediaPipe 保持运行（不关硬件），再次 Start 时零延迟。
         /// </summary>
         public void StopRecognition()
         {
@@ -150,21 +182,12 @@ namespace GestureRecognition.Service
             _isRunning = false;
             StopAllCoroutines();
 
-            if (_cameraManager != null)
-            {
-                _cameraManager.StopCamera();
-            }
-
-            if (_mediaPipeBridge != null)
-            {
-                _mediaPipeBridge.Shutdown();
-            }
-
+            // 不关闭摄像头和 MediaPipe — 它们继续在后台运行
             _currentResult = GestureResult.Empty;
             _previousGestureType = GestureType.None;
 
             GestureEvents.InvokeRecognitionStateChanged(false);
-            Debug.Log("[GestureService] Recognition stopped.");
+            Debug.Log("[GestureService] Recognition paused (hardware still running).");
         }
 
         /// <summary>
@@ -177,6 +200,7 @@ namespace GestureRecognition.Service
 
         /// <summary>
         /// Switches to a different camera (stops and restarts).
+        /// 这是唯一需要真正重启摄像头的场景。
         /// </summary>
         public void SwitchCamera(string deviceName)
         {
@@ -186,6 +210,12 @@ namespace GestureRecognition.Service
                 StopRecognition();
             }
 
+            // 切换摄像头时需要真正重启硬件
+            if (_cameraManager != null)
+            {
+                _cameraManager.StopCamera();
+            }
+            _hardwareReady = false;
             _cameraDeviceName = deviceName;
 
             if (wasRunning)
@@ -210,12 +240,41 @@ namespace GestureRecognition.Service
 
             _instance = this;
 
+            // 跨场景保留：摄像头和 MediaPipe 只初始化一次
+            DontDestroyOnLoad(gameObject);
+
             // Create sub-components on the same GameObject
             _cameraManager = gameObject.AddComponent<CameraManager>();
             _mediaPipeBridge = gameObject.AddComponent<MediaPipeBridge>();
             _gestureClassifier = new GestureClassifier(
                 _gestureConfig != null ? _gestureConfig.ConfidenceThreshold : 0.6f);
             _handTracker = new HandTracker(_positionSmoothing);
+        }
+
+        private void OnEnable()
+        {
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        /// <summary>
+        /// 场景加载后回调。
+        /// SceneManager.LoadScene() 会中断 DontDestroyOnLoad 对象上的协程，
+        /// 导致 ProcessOneFrame 的 while 循环停止，但 _isRunning 仍为 true。
+        /// 这里检测到这种状态后重新启动协程。
+        /// </summary>
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (_isRunning && _hardwareReady)
+            {
+                // 协程被场景加载中断了，重新启动处理循环
+                Debug.Log($"[GestureService] Scene '{scene.name}' loaded — restarting processing loop.");
+                StartCoroutine(ProcessingLoopCoroutine());
+            }
         }
 
         private void Start()
@@ -228,13 +287,101 @@ namespace GestureRecognition.Service
 
         private void OnDestroy()
         {
-            StopRecognition();
-            GestureEvents.ClearAll();
-
-            if (_instance == this)
+            // ── 重复实例被销毁（场景重载时 Awake 里 Destroy 的那个）──
+            // 绝对不能碰硬件、不能清事件，直接返回。
+            if (_instance != null && _instance != this)
             {
-                _instance = null;
+                Debug.Log("[GestureService] Duplicate instance destroyed — skipping cleanup.");
+                return;
             }
+
+            // ── 真正的 singleton 被销毁（退出应用 / 手动 Destroy）──
+            _isRunning = false;
+            StopAllCoroutines();
+
+            if (_cameraManager != null)
+            {
+                _cameraManager.StopCamera();
+            }
+
+            if (_mediaPipeBridge != null)
+            {
+                _mediaPipeBridge.Shutdown();
+            }
+
+            GestureEvents.ClearAll();
+            _instance = null;
+
+            Debug.Log("[GestureService] Destroyed — hardware released.");
+        }
+
+        // -----------------------------------------------------------------
+        // Display panel auto-creation
+        // -----------------------------------------------------------------
+
+        /// <summary>
+        /// 如果场景中不存在 GestureDisplayPanel，自动创建一个 Canvas + Panel。
+        /// Panel 使用 DontDestroyOnLoad 跨场景保留。
+        /// </summary>
+        private void EnsureDisplayPanel()
+        {
+            // 如果面板已经存在（之前创建过，或手动放在场景里），直接用
+            if (_displayPanel != null)
+            {
+                _displayPanel.Show();
+                return;
+            }
+
+            // 检查场景里是否已经有面板（可能用户手动添加的）
+            _displayPanel = FindObjectOfType<GestureDisplayPanel>(true);
+            if (_displayPanel != null)
+            {
+                _displayPanel.Show();
+                return;
+            }
+
+            // ── 纯代码创建 Canvas + Panel ──────────────────────────────────
+
+            // 1. 创建 Canvas（UI 根节点）
+            GameObject canvasGO = new GameObject("GestureCanvas");
+            Canvas canvas = canvasGO.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100; // 确保在最上层
+
+            CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+            canvasGO.AddComponent<GraphicRaycaster>();
+
+            // Canvas 跨场景保留
+            DontDestroyOnLoad(canvasGO);
+
+            // 2. 创建 Panel（挂 GestureDisplayPanel 组件）
+            GameObject panelGO = new GameObject("GesturePanel");
+            panelGO.transform.SetParent(canvasGO.transform, false);
+
+            RectTransform panelRect = panelGO.AddComponent<RectTransform>();
+            // 左上角
+            panelRect.anchorMin = new Vector2(0f, 1f);
+            panelRect.anchorMax = new Vector2(0f, 1f);
+            panelRect.pivot = new Vector2(0f, 1f);
+            panelRect.anchoredPosition = new Vector2(16f, -16f);
+            panelRect.sizeDelta = _defaultPanelSize;
+
+            _displayPanel = panelGO.AddComponent<GestureDisplayPanel>();
+            _displayPanel.CurrentMode = _defaultDisplayMode;
+
+            // 3. 确保 EventSystem 存在（UI 交互需要）
+            if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                GameObject eventSystemGO = new GameObject("EventSystem");
+                eventSystemGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                eventSystemGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                DontDestroyOnLoad(eventSystemGO);
+            }
+
+            Debug.Log("[GestureService] Display panel created and shown.");
         }
 
         // -----------------------------------------------------------------
@@ -243,25 +390,36 @@ namespace GestureRecognition.Service
 
         private IEnumerator StartRecognitionCoroutine()
         {
-            Debug.Log("[GestureService] Starting recognition...");
-
-            // 1. Start camera
-            string device = string.IsNullOrEmpty(_cameraDeviceName)
-                ? null
-                : _cameraDeviceName;
-
-            yield return _cameraManager.StartCamera(device);
-
-            if (!_cameraManager.IsRunning)
+            // ── 首次启动：初始化硬件 ─────────────────────────────────────────
+            if (!_hardwareReady)
             {
-                Debug.LogError("[GestureService] Failed to start camera.");
-                yield break;
+                Debug.Log("[GestureService] First start — initializing hardware...");
+
+                // 1. Start camera
+                string device = string.IsNullOrEmpty(_cameraDeviceName)
+                    ? null
+                    : _cameraDeviceName;
+
+                yield return _cameraManager.StartCamera(device);
+
+                if (!_cameraManager.IsRunning)
+                {
+                    Debug.LogError("[GestureService] Failed to start camera.");
+                    yield break;
+                }
+
+                // 2. Initialize MediaPipe (async — model loading may take time)
+                yield return _mediaPipeBridge.InitializeAsync();
+
+                _hardwareReady = true;
+                Debug.Log("[GestureService] Hardware ready (camera + MediaPipe).");
+            }
+            else
+            {
+                Debug.Log("[GestureService] Hardware already running — resuming immediately.");
             }
 
-            // 2. Initialize MediaPipe (async — model loading may take time)
-            yield return _mediaPipeBridge.InitializeAsync();
-
-            // 3. Mark as running
+            // ── 恢复处理循环 ─────────────────────────────────────────────────
             _isRunning = true;
             _startTime = Time.time;
             _previousGestureType = GestureType.None;
@@ -270,19 +428,26 @@ namespace GestureRecognition.Service
             GestureEvents.InvokeRecognitionStateChanged(true);
             Debug.Log("[GestureService] Recognition started.");
 
-            // 3b. Auto-show the display panel so the user can see something
-            if (GesturePanelManager.HasInstance &&
-                !GesturePanelManager.Instance.IsPanelVisible)
+            // ── 自动显示面板 ─────────────────────────────────────────────────
+            if (_autoShowPanel)
             {
-                GesturePanelManager.Instance.ShowPanel();
-                Debug.Log("[GestureService] Auto-showed gesture panel.");
+                EnsureDisplayPanel();
             }
 
-            // 4. Main loop
+            // Main loop
+            yield return ProcessingLoopCoroutine();
+        }
+
+        /// <summary>
+        /// 独立的处理循环协程。
+        /// 可由 StartRecognitionCoroutine 调用，也可由 OnSceneLoaded 重新启动。
+        /// </summary>
+        private IEnumerator ProcessingLoopCoroutine()
+        {
             while (_isRunning)
             {
                 ProcessOneFrame();
-                yield return null; // wait one frame
+                yield return null;
             }
         }
 

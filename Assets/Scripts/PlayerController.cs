@@ -30,9 +30,20 @@ public class PlayerController : MonoBehaviour
     private float defaultGravityScale;
     private float moveInput;
     private bool isGrounded;
+    /// <summary>玩家是否在地面上。GestureInputBridge 用于判断跳跃释放抓取。</summary>
+    public bool IsGrounded => isGrounded;
     private int jumpCount;
     private bool isDead;
-    public bool jumpLocked;
+    // ── 手势系统控制字段 ──────────────────────────────────────────────────
+    // facingLocked: Pull 时锁定面朝方向，防止 sprite 翻转
+    // moveDirection: 0=不限制, 1=只能往右, -1=只能往左
+    //   Push 时设为面朝方向（只能推着走）
+    //   Pull 时设为面朝反方向（只能拉着走）
+    [HideInInspector] public bool facingLocked;
+    [HideInInspector] public int moveDirection;
+
+    /// <summary>玩家当前是否面朝右。GestureInputBridge 用来判断面朝 Box 条件。</summary>
+    public bool FacingRight => !spriteRenderer.flipX;
 
     void Awake()
     {
@@ -49,8 +60,15 @@ public class PlayerController : MonoBehaviour
 
         moveInput = Input.GetAxisRaw("Horizontal");
 
+        // 方向限制：Push 时只能往面朝方向走，Pull 时只能往反方向走
+        if (moveDirection != 0 && moveInput != 0f)
+        {
+            if (Mathf.Sign(moveInput) != Mathf.Sign(moveDirection))
+                moveInput = 0f;
+        }
+
         // Jump
-        if (Input.GetButtonDown("Jump") && jumpCount < maxJumpCount && !jumpLocked)
+        if (Input.GetButtonDown("Jump") && jumpCount < maxJumpCount)
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
             jumpCount++;
@@ -62,8 +80,12 @@ public class PlayerController : MonoBehaviour
             rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * jumpCutMultiplier);
         }
 
-        if (moveInput > 0) spriteRenderer.flipX = false;
-        else if (moveInput < 0) spriteRenderer.flipX = true;
+        // 面朝方向翻转（Pull 时锁定，不允许翻转）
+        if (!facingLocked)
+        {
+            if (moveInput > 0) spriteRenderer.flipX = false;
+            else if (moveInput < 0) spriteRenderer.flipX = true;
+        }
 
         animator.SetFloat("Speed", Mathf.Abs(moveInput));
         animator.SetBool("IsGrounded", isGrounded);
@@ -109,15 +131,17 @@ public class PlayerController : MonoBehaviour
 
     public void Die()
     {
-        if (isDead) return;
-        isDead = true;
-        rb.velocity = Vector2.zero;
-        animator.SetTrigger("Die");
-        Invoke(nameof(Respawn), 1.5f);
+        if (isDead) return; // 守卫：防止 Die() 被重复调用
+        isDead = true; // 标记死亡状态，阻止后续 Update/FixedUpdate 逻辑
+
+        rb.velocity = Vector2.zero; // Unity 内置 --> 停止玩家移动
+        animator.SetTrigger("Die"); // Unity 内置 --> 播放死亡动画
+        Invoke(nameof(Respawn), 1.5f); // Unity 内置 --> 1.5 秒后调用 Respawn()，重置关卡
     }
 
     void Respawn()
     {
+        // 调用 GameManager 单例的重新加载关卡方法
         GameManager.Instance.RestartLevel();
     }
 

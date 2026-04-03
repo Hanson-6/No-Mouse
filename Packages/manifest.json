@@ -2,7 +2,7 @@
   "dependencies": {
     "cn.unity.uos.launcher": "https://cnb.cool/unity/uos/UOSLauncher.git",
     "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity",
-    "com.github.homuler.mediapipe": "file:C:/Users/caiji/Downloads/com.github.homuler.mediapipe-0.16.3.tgz",
+    "com.github.homuler.mediapipe": "file:D:/HKU/OneDrive - The University of Hong Kong - Connect/Year 4/sem_2/COMP3329/Project/Code/com.github.homuler.mediapipe-0.16.3.tgz",
     "com.unity.collab-proxy": "2.11.3",
     "com.unity.feature.2d": "2.0.1",
     "com.unity.ide.rider": "3.0.36",

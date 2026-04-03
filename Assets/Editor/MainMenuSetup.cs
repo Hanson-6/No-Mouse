@@ -9,28 +9,33 @@ using UnityEngine.UI;
 /// Tools/Setup Main Menu Scene
 ///
 /// What this script does:
-///  1. Processes StartButton.png, QuitButton.png, GameTile.png:
-///       - Enables Read/Write on import so we can read pixel data.
-///       - Runs a BFS flood-fill from every edge pixel to transparentise the
-///         outer white background while preserving interior white pixels
-///         (e.g. the "START" / "QUIT" lettering).
-///       - Saves the result as Assets/*_processed.png and imports it as a Sprite.
-///  2. Wires up the MainMenu scene:
-///       - Replaces TitleText with a logo Image (GameTile_processed.png).
-///       - Assigns the processed sprites to StartButton / QuitButton Images.
-///       - Attaches MainMenuController to MenuManager.
-///       - Wires Button.onClick events to MainMenuController methods.
-///       - Configures CanvasScaler for 1920×1080.
-///  3. Saves the scene.
+///  1. Processes button images (removes white background via BFS flood-fill).
+///  2. Wires up the MainMenu scene with three buttons:
+///       - NewGameButton   → 新游戏（删除存档，从头开始）
+///       - ContinueButton  → 继续游戏（读取存档，有存档时才显示）
+///       - QuitButton      → 退出游戏
+///  3. Replaces TitleText with a logo Image (GameTile_processed.png).
+///  4. Attaches MainMenuController to MenuManager.
+///  5. Configures CanvasScaler for 1920×1080.
+///  6. Saves the scene.
+///
+/// 如果场景中有旧的 StartButton，会被删除并替换为 NewGameButton。
 /// </summary>
 public static class MainMenuSetup
 {
-    private const string SrcStart    = "Assets/StartButton.png";
-    private const string SrcQuit     = "Assets/QuitButton.png";
-    private const string SrcLogo     = "Assets/GameTile.png";
-    private const string OutStart    = "Assets/StartButton_processed.png";
-    private const string OutQuit     = "Assets/QuitButton_processed.png";
-    private const string OutLogo     = "Assets/GameTile_processed.png";
+    // 旧版原始图片路径（用于 BFS 处理）
+    private const string SrcStart    = "Assets/Textures/StartButton.png";
+    private const string SrcQuit     = "Assets/Textures/QuitButton.png";
+    private const string SrcLogo     = "Assets/Textures/GameTile.png";
+    private const string OutStart    = "Assets/Textures/StartButton_processed.png";
+    private const string OutQuit     = "Assets/Textures/QuitButton_processed.png";
+    private const string OutLogo     = "Assets/Textures/GameTile_processed.png";
+
+    // 新版按钮图片路径（Gemini 生成的，已在 Textures 目录下）
+    private const string TexNewGame    = "Assets/Textures/NewGameButton.png";
+    private const string TexContinue   = "Assets/Textures/ContinueButton.png";
+    private const string TexQuitBtn    = "Assets/Textures/QuitButton.png";
+
     private const string ScenePath   = "Assets/Scenes/MainMenu.unity";
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -50,14 +55,39 @@ public static class MainMenuSetup
     [MenuItem("Tools/Setup Main Menu Scene")]
     public static void Run()
     {
-        // ── 1. Process sprites ──────────────────────────────────────────────
-        Sprite startSprite = BuildTransparentSprite(SrcStart, OutStart);
-        Sprite quitSprite  = BuildTransparentSprite(SrcQuit,  OutQuit);
+        // ── 1. Process logo sprite (BFS background removal) ─────────────────
         Sprite logoSprite  = BuildTransparentSprite(SrcLogo,  OutLogo);
 
-        if (startSprite == null || quitSprite == null || logoSprite == null)
+        if (logoSprite == null)
         {
-            Debug.LogError("[MainMenuSetup] One or more source sprites could not be processed. Aborting.");
+            Debug.LogError("[MainMenuSetup] Logo sprite could not be processed. Aborting.");
+            return;
+        }
+
+        // ── 1b. Configure new button sprites (Point filter, etc.) ───────────
+        ConfigureSpriteImport(TexNewGame);
+        ConfigureSpriteImport(TexContinue);
+        ConfigureSpriteImport(TexQuitBtn);
+
+        Sprite newGameSprite  = AssetDatabase.LoadAssetAtPath<Sprite>(TexNewGame);
+        Sprite continueSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexContinue);
+        Sprite quitSprite     = AssetDatabase.LoadAssetAtPath<Sprite>(TexQuitBtn);
+
+        if (newGameSprite == null)
+        {
+            // 回退：尝试使用旧版 BFS 处理过的 StartButton
+            Debug.LogWarning("[MainMenuSetup] NewGameButton.png not found, falling back to StartButton_processed.png");
+            newGameSprite = BuildTransparentSprite(SrcStart, OutStart);
+        }
+        if (quitSprite == null)
+        {
+            Debug.LogWarning("[MainMenuSetup] QuitButton.png (Textures) not found, falling back to processed version");
+            quitSprite = BuildTransparentSprite(SrcQuit, OutQuit);
+        }
+
+        if (newGameSprite == null || quitSprite == null)
+        {
+            Debug.LogError("[MainMenuSetup] Required button sprites missing. Aborting.");
             return;
         }
 
@@ -89,19 +119,21 @@ public static class MainMenuSetup
             scaler.matchWidthOrHeight   = 0.5f;
         }
 
-        // ── 5. Replace TitleText with a Logo Image ───────────────────────────
+        // ── 5. Replace TitleText / Logo ──────────────────────────────────────
+        // 删除旧的 TitleText 或 Logo
         Transform titleTextTf = canvasGO.transform.Find("TitleText");
-        if (titleTextTf != null)
-            Object.DestroyImmediate(titleTextTf.gameObject);
+        if (titleTextTf != null) Object.DestroyImmediate(titleTextTf.gameObject);
+        Transform oldLogoTf = canvasGO.transform.Find("Logo");
+        if (oldLogoTf != null) Object.DestroyImmediate(oldLogoTf.gameObject);
 
         GameObject logoGO = new GameObject("Logo");
         logoGO.transform.SetParent(canvasGO.transform, false);
-        logoGO.transform.SetSiblingIndex(0);                         // behind buttons
+        logoGO.transform.SetSiblingIndex(0);
 
         var logoRect = logoGO.AddComponent<RectTransform>();
         logoRect.anchorMin        = new Vector2(0.5f, 0.5f);
         logoRect.anchorMax        = new Vector2(0.5f, 0.5f);
-        logoRect.anchoredPosition = new Vector2(0f, 200f);           // upper-centre
+        logoRect.anchoredPosition = new Vector2(0f, 250f);
         logoRect.sizeDelta        = new Vector2(600f, 200f);
 
         var logoImg = logoGO.AddComponent<Image>();
@@ -109,12 +141,62 @@ public static class MainMenuSetup
         logoImg.preserveAspect     = true;
         logoImg.raycastTarget      = false;
 
-        // ── 6. Assign sprites to StartButton / QuitButton ────────────────────
-        AssignButtonSprite(canvasGO, "StartButton", startSprite, new Vector2(0f,  30f));
-        AssignButtonSprite(canvasGO, "QuitButton",  quitSprite,  new Vector2(0f, -140f));
+        // ── 6. Remove old StartButton, create new buttons ───────────────────
+        // 删除旧的 StartButton（如果存在）
+        Transform oldStartBtn = canvasGO.transform.Find("StartButton");
+        if (oldStartBtn != null) Object.DestroyImmediate(oldStartBtn.gameObject);
+
+        // 删除旧的 NewGameButton / ContinueButton（如果已存在，用于重复运行）
+        Transform oldNewGame = canvasGO.transform.Find("NewGameButton");
+        if (oldNewGame != null) Object.DestroyImmediate(oldNewGame.gameObject);
+        Transform oldContinue = canvasGO.transform.Find("ContinueButton");
+        if (oldContinue != null) Object.DestroyImmediate(oldContinue.gameObject);
+        Transform oldQuit = canvasGO.transform.Find("QuitButton");
+        if (oldQuit != null) Object.DestroyImmediate(oldQuit.gameObject);
+
+        // 三个按钮的垂直布局（屏幕中心偏下）
+        float btnWidth  = 450f;
+        float btnHeight = 140f;
+        float spacing   = 20f;
+
+        // 如果有继续按钮图片，创建三个按钮；否则只创建两个
+        bool hasContinue = (continueSprite != null);
+
+        // 按钮组整体垂直偏移（负数 = 往下移）
+        float groupOffsetY = -100f;
+
+        float topY, midY, botY;
+        if (hasContinue)
+        {
+            // 三个按钮：新游戏 / 继续游戏 / 退出
+            topY = (btnHeight + spacing)  + groupOffsetY;   // 新游戏
+            midY = 0f                     + groupOffsetY;   // 继续游戏
+            botY = -(btnHeight + spacing) + groupOffsetY;   // 退出
+        }
+        else
+        {
+            // 两个按钮：新游戏 / 退出
+            topY = (btnHeight + spacing) * 0.5f  + groupOffsetY;
+            midY = 0f; // unused
+            botY = -(btnHeight + spacing) * 0.5f + groupOffsetY;
+        }
+
+        // 新游戏按钮
+        CreateMenuButton(canvasGO, "NewGameButton", newGameSprite, btnWidth, btnHeight,
+                         new Vector2(0f, topY));
+
+        // 继续游戏按钮
+        if (hasContinue)
+        {
+            CreateMenuButton(canvasGO, "ContinueButton", continueSprite, btnWidth, btnHeight,
+                             new Vector2(0f, midY));
+        }
+
+        // 退出按钮
+        CreateMenuButton(canvasGO, "QuitButton", quitSprite, btnWidth, btnHeight,
+                         new Vector2(0f, botY));
 
         // ── 7. Attach MainMenuController ─────────────────────────────────────
-        // Remove old MainMenu component if present to avoid duplicate handling.
         var oldMenu = managerGO.GetComponent<MainMenu>();
         if (oldMenu != null) Object.DestroyImmediate(oldMenu);
 
@@ -122,8 +204,10 @@ public static class MainMenuSetup
                       ?? managerGO.AddComponent<MainMenuController>();
 
         // ── 8. Wire onClick events ───────────────────────────────────────────
-        WireButton(canvasGO, "StartButton", controller, "StartGame");
-        WireButton(canvasGO, "QuitButton",  controller, "QuitGame");
+        WireButton(canvasGO, "NewGameButton",  controller, nameof(MainMenuController.NewGame));
+        if (hasContinue)
+            WireButton(canvasGO, "ContinueButton", controller, nameof(MainMenuController.ContinueGame));
+        WireButton(canvasGO, "QuitButton",     controller, nameof(MainMenuController.QuitGame));
 
         // ── 9. Ensure EventSystem exists ─────────────────────────────────────
         if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
@@ -138,21 +222,84 @@ public static class MainMenuSetup
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
 
-        Debug.Log("[MainMenuSetup] Main Menu scene set up successfully.");
+        Debug.Log("[MainMenuSetup] 主菜单场景设置完成！按钮: NewGame" +
+                  (hasContinue ? " + Continue" : "") + " + Quit");
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Sprite processing helpers
+    // Button creation helper
     // ──────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Imports <paramref name="srcPath"/> as a readable sprite, removes its outer
-    /// white background via BFS flood-fill from all edge pixels, and saves the
-    /// result to <paramref name="outPath"/>. Returns the processed Sprite asset.
+    /// 在 Canvas 下创建一个带 Image + Button 的菜单按钮。
     /// </summary>
+    static void CreateMenuButton(GameObject canvas, string name, Sprite sprite,
+                                  float width, float height, Vector2 anchoredPos)
+    {
+        GameObject btnGO = new GameObject(name);
+        btnGO.transform.SetParent(canvas.transform, false);
+
+        var rt = btnGO.AddComponent<RectTransform>();
+        rt.anchorMin        = new Vector2(0.5f, 0.5f);
+        rt.anchorMax        = new Vector2(0.5f, 0.5f);
+        rt.pivot            = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = anchoredPos;
+        rt.sizeDelta        = new Vector2(width, height);
+
+        var img = btnGO.AddComponent<Image>();
+        img.sprite         = sprite;
+        img.type           = Image.Type.Simple;
+        img.preserveAspect = true;
+        img.color          = Color.white;
+        img.raycastTarget  = true;
+
+        var btn = btnGO.AddComponent<Button>();
+        btn.transition = Selectable.Transition.ColorTint;
+        var colors = btn.colors;
+        colors.normalColor      = Color.white;
+        colors.highlightedColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+        colors.pressedColor     = new Color(0.7f, 0.7f, 0.7f, 1f);
+        colors.selectedColor    = Color.white;
+        btn.colors = colors;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Sprite import helper
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// 确保图片以正确的 Sprite 设置导入（Point 过滤、无压缩、透明度）。
+    /// </summary>
+    static void ConfigureSpriteImport(string assetPath)
+    {
+        var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+        if (importer == null) return;
+
+        bool needsReimport = false;
+
+        if (importer.textureType != TextureImporterType.Sprite)
+        { importer.textureType = TextureImporterType.Sprite; needsReimport = true; }
+        if (importer.spriteImportMode != SpriteImportMode.Single)
+        { importer.spriteImportMode = SpriteImportMode.Single; needsReimport = true; }
+        if (importer.filterMode != FilterMode.Point)
+        { importer.filterMode = FilterMode.Point; needsReimport = true; }
+        if (!importer.alphaIsTransparency)
+        { importer.alphaIsTransparency = true; needsReimport = true; }
+        if (importer.mipmapEnabled)
+        { importer.mipmapEnabled = false; needsReimport = true; }
+        if (importer.textureCompression != TextureImporterCompression.Uncompressed)
+        { importer.textureCompression = TextureImporterCompression.Uncompressed; needsReimport = true; }
+
+        if (needsReimport)
+            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Sprite processing helpers (BFS background removal)
+    // ──────────────────────────────────────────────────────────────────────────
+
     static Sprite BuildTransparentSprite(string srcPath, string outPath)
     {
-        // ── Step A: enable Read/Write so we can sample pixels ────────────────
         var imp = AssetImporter.GetAtPath(srcPath) as TextureImporter;
         if (imp == null)
         {
@@ -160,7 +307,7 @@ public static class MainMenuSetup
             return null;
         }
 
-        imp.textureType      = TextureImporterType.Default;   // Default allows isReadable
+        imp.textureType      = TextureImporterType.Default;
         imp.isReadable       = true;
         imp.filterMode       = FilterMode.Point;
         imp.alphaSource      = TextureImporterAlphaSource.FromInput;
@@ -175,20 +322,16 @@ public static class MainMenuSetup
             return null;
         }
 
-        // ── Step B: BFS flood-fill from edges ────────────────────────────────
         Texture2D processed = RemoveWhiteBackground(srcTex);
 
-        // ── Step C: write PNG to disk ─────────────────────────────────────────
         File.WriteAllBytes(Path.Combine(Directory.GetCurrentDirectory(), outPath),
                            processed.EncodeToPNG());
         Object.DestroyImmediate(processed);
 
-        // ── Step D: reimport the original without Read/Write ─────────────────
         imp.textureType = TextureImporterType.Sprite;
         imp.isReadable  = false;
         AssetDatabase.ImportAsset(srcPath, ImportAssetOptions.ForceUpdate);
 
-        // ── Step E: import processed file as a Sprite ─────────────────────────
         AssetDatabase.Refresh();
         var outImp = AssetImporter.GetAtPath(outPath) as TextureImporter;
         if (outImp == null)
@@ -209,12 +352,6 @@ public static class MainMenuSetup
         return AssetDatabase.LoadAssetAtPath<Sprite>(outPath);
     }
 
-    /// <summary>
-    /// BFS flood-fill from every edge pixel that is "near-white".
-    /// Returns a new Texture2D with those pixels made transparent.
-    /// Interior white pixels (e.g. button text) are left intact because they
-    /// are not reachable from the image border without crossing dark pixels.
-    /// </summary>
     static Texture2D RemoveWhiteBackground(Texture2D src, byte threshold = 220)
     {
         int w = src.width;
@@ -223,7 +360,6 @@ public static class MainMenuSetup
         bool[] visited = new bool[w * h];
         var queue = new Queue<int>();
 
-        // Seed from all four edges
         for (int x = 0; x < w; x++)
         {
             TryEnqueue(queue, visited, px, x, 0,     w, threshold);
@@ -235,13 +371,12 @@ public static class MainMenuSetup
             TryEnqueue(queue, visited, px, w - 1, y, w, threshold);
         }
 
-        // BFS
         while (queue.Count > 0)
         {
             int idx = queue.Dequeue();
             int x   = idx % w;
             int y   = idx / w;
-            px[idx].a = 0;   // make transparent
+            px[idx].a = 0;
 
             if (x > 0)     TryEnqueue(queue, visited, px, x - 1, y,     w, threshold);
             if (x < w - 1) TryEnqueue(queue, visited, px, x + 1, y,     w, threshold);
@@ -272,47 +407,6 @@ public static class MainMenuSetup
     // Scene-wiring helpers
     // ──────────────────────────────────────────────────────────────────────────
 
-    static void AssignButtonSprite(GameObject canvas, string buttonName, Sprite sprite,
-                                    Vector2 anchoredPos)
-    {
-        Transform tf = canvas.transform.Find(buttonName);
-        if (tf == null) { Debug.LogWarning($"[MainMenuSetup] '{buttonName}' not found."); return; }
-
-        // Size and position
-        var rt = tf.GetComponent<RectTransform>();
-        if (rt != null)
-        {
-            rt.anchorMin        = new Vector2(0.5f, 0.5f);
-            rt.anchorMax        = new Vector2(0.5f, 0.5f);
-            rt.pivot            = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta        = new Vector2(450f, 140f);
-        }
-
-        // The Image is on the button root itself (not the child Text label)
-        var img = tf.GetComponent<Image>();
-        if (img == null) { Debug.LogWarning($"[MainMenuSetup] No Image on '{buttonName}'."); return; }
-
-        img.sprite         = sprite;
-        img.type           = Image.Type.Simple;
-        img.preserveAspect = true;
-        img.color          = Color.white;
-
-        // Remove the default Unity button transition colours so our sprite is
-        // shown without tinting, and use a subtle scale animation instead.
-        var btn = tf.GetComponent<Button>();
-        if (btn != null)
-        {
-            btn.transition = Selectable.Transition.ColorTint;
-            var colors = btn.colors;
-            colors.normalColor      = Color.white;
-            colors.highlightedColor = new Color(0.9f, 0.9f, 0.9f, 1f);
-            colors.pressedColor     = new Color(0.7f, 0.7f, 0.7f, 1f);
-            colors.selectedColor    = Color.white;
-            btn.colors = colors;
-        }
-    }
-
     static void WireButton(GameObject canvas, string buttonName,
                            MainMenuController controller, string methodName)
     {
@@ -324,13 +418,28 @@ public static class MainMenuSetup
 
         btn.onClick.RemoveAllListeners();
 
-        // Persistent (serialised) listener so it survives play mode
-        UnityEditor.Events.UnityEventTools.AddPersistentListener(
-            btn.onClick,
-            methodName == "StartGame"
-                ? (UnityEngine.Events.UnityAction)controller.StartGame
-                : (UnityEngine.Events.UnityAction)controller.QuitGame);
+        // 根据方法名选择正确的委托
+        UnityEngine.Events.UnityAction action = null;
+        switch (methodName)
+        {
+            case nameof(MainMenuController.NewGame):
+                action = controller.NewGame;
+                break;
+            case nameof(MainMenuController.ContinueGame):
+                action = controller.ContinueGame;
+                break;
+            case nameof(MainMenuController.QuitGame):
+                action = controller.QuitGame;
+                break;
+            case "StartGame": // 兼容旧版
+                action = controller.StartGame;
+                break;
+            default:
+                Debug.LogWarning($"[MainMenuSetup] Unknown method: {methodName}");
+                return;
+        }
 
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(btn.onClick, action);
         EditorUtility.SetDirty(btn);
     }
 }
