@@ -47,7 +47,7 @@
 	"backupRelPath": null,
 	"levelNamePattern": "Level_%idx",
 	"tutorialDesc": null,
-	"customCommands": [],
+	"customCommands": [{ "command": "../../Library/LDtkTilesetExporter/ExportTilesetDefinition.exe \"Levels\"", "when": "AfterSave" }],
 	"flags": [],
 	"defs": { "layers": [
 		{

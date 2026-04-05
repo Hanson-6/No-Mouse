@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "cn.unity.uos.launcher": "https://cnb.cool/unity/uos/UOSLauncher.git",
+    "com.cammin.ldtkunity": "6.12.2",
     "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity",
     "com.github.homuler.mediapipe": "file:D:/HKU/OneDrive - The University of Hong Kong - Connect/Year 4/sem_2/COMP3329/Project/Code/com.github.homuler.mediapipe-0.16.3.tgz",
     "com.unity.collab-proxy": "2.11.3",
@@ -43,5 +44,14 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
-  }
+  },
+  "scopedRegistries": [
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.cammin.ldtkunity"
+      ]
+    }
+  ]
 }
