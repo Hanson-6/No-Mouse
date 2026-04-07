@@ -121,6 +121,8 @@ namespace GestureRecognition.Service
         /// <summary>硬件（摄像头+MediaPipe）是否已初始化就绪</summary>
         private bool _hardwareReady;
 
+        // （已移除 _processingCoroutine：不再用协程驱动每帧处理，改用 Update()）
+
         /// <summary>自动创建的显示面板（如果有）</summary>
         private GestureDisplayPanel _displayPanel;
 
@@ -180,7 +182,7 @@ namespace GestureRecognition.Service
             }
 
             _isRunning = false;
-            StopAllCoroutines();
+            StopAllCoroutines(); // 停掉可能仍在运行的初始化协程
 
             // 不关闭摄像头和 MediaPipe — 它们继续在后台运行
             _currentResult = GestureResult.Empty;
@@ -263,17 +265,14 @@ namespace GestureRecognition.Service
 
         /// <summary>
         /// 场景加载后回调。
-        /// SceneManager.LoadScene() 会中断 DontDestroyOnLoad 对象上的协程，
-        /// 导致 ProcessOneFrame 的 while 循环停止，但 _isRunning 仍为 true。
-        /// 这里检测到这种状态后重新启动协程。
+        /// 改用 Update() 驱动处理循环后，场景重载不会影响逐帧处理，
+        /// 因此这里只需记录日志即可。
         /// </summary>
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (_isRunning && _hardwareReady)
             {
-                // 协程被场景加载中断了，重新启动处理循环
-                Debug.Log($"[GestureService] Scene '{scene.name}' loaded — restarting processing loop.");
-                StartCoroutine(ProcessingLoopCoroutine());
+                Debug.Log($"[GestureService] Scene '{scene.name}' loaded — Update() loop continues automatically.");
             }
         }
 
@@ -434,20 +433,26 @@ namespace GestureRecognition.Service
                 EnsureDisplayPanel();
             }
 
-            // Main loop
-            yield return ProcessingLoopCoroutine();
+            // Update() 会自动开始逐帧调用 ProcessOneFrame()（检查 _isRunning && _hardwareReady）
         }
 
         /// <summary>
-        /// 独立的处理循环协程。
-        /// 可由 StartRecognitionCoroutine 调用，也可由 OnSceneLoaded 重新启动。
+        /// Unity Update() — 每帧调用。
+        /// 替代之前的 ProcessingLoopCoroutine 协程方案。
+        /// Update() 不会被 SceneManager.LoadScene() 中断（对 DontDestroyOnLoad 对象），
+        /// 从根本上解决了场景重载后摄像头画面卡住的问题。
         /// </summary>
-        private IEnumerator ProcessingLoopCoroutine()
+        private void Update()
         {
-            while (_isRunning)
+            if (!_isRunning || !_hardwareReady) return;
+
+            try
             {
                 ProcessOneFrame();
-                yield return null;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[GestureService] ProcessOneFrame exception (ignored): {ex.Message}");
             }
         }
 
@@ -457,6 +462,20 @@ namespace GestureRecognition.Service
             Texture2D frame = _cameraManager.GetCurrentFrame();
             if (frame == null)
             {
+                // 即使拿不到帧（摄像头尚未就绪或偶尔返回 null），
+                // 仍然发送 Empty 结果，确保 UI 永远不会卡住。
+                _currentResult = GestureResult.Empty;
+                GestureEvents.InvokeGestureUpdated(_currentResult);
+                if (_previousGestureType != GestureType.None)
+                {
+                    GestureEvents.InvokeGestureChanged(_currentResult);
+                    _previousGestureType = GestureType.None;
+                }
+                if (_previousHandDetected)
+                {
+                    GestureEvents.InvokeHandDetectionChanged(false);
+                    _previousHandDetected = false;
+                }
                 return;
             }
 
