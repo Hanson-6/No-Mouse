@@ -18,6 +18,9 @@ public class Enemy : MonoBehaviour
     [Header("Stomp")]
     public float stompThreshold = 0.2f; // 玩家速度 y 低于此值才算踩踏
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip deathSound;
+
     private Rigidbody2D rb;
     private SpriteRenderer sr;
     private Animator animator;
@@ -89,6 +92,7 @@ public class Enemy : MonoBehaviour
         rb.simulated = false;
         GetComponent<Collider2D>().enabled = false;
         if (animator != null) animator.SetTrigger("Die");
+        if (deathSound != null) AudioSource.PlayClipAtPoint(deathSound, transform.position);
         Destroy(gameObject, 0.5f);
     }
 
