@@ -165,6 +165,19 @@ namespace GestureRecognition.Detection
                 return null;
             }
 
+            // Scene reload (SceneManager.LoadScene) can cause WebCamTexture
+            // to stop playing even though the GameObject survives via
+            // DontDestroyOnLoad.  If that happens, restart it immediately
+            // so the camera feed doesn't freeze on the last frame.
+            if (!_webCamTexture.isPlaying)
+            {
+                Debug.LogWarning("[CameraManager] WebCamTexture stopped unexpectedly — restarting.");
+                _webCamTexture.Play();
+                // The first frame after restart may still be stale;
+                // return null this once so callers skip the stale data.
+                return null;
+            }
+
             _cpuTexture.SetPixels32(_webCamTexture.GetPixels32(_pixelBuffer));
             return _cpuTexture;
         }

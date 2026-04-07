@@ -1,6 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+/// <summary>
+/// 连接模式：None = 未连接, Push = 推, Pull = 拉。
+/// GestureInputBridge 调用 Link(mode) 时传入。
+/// </summary>
+public enum BoxLinkMode { None, Push, Pull }
+
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(BoxCollider2D))]
 public class PushableBox : MonoBehaviour
@@ -42,6 +48,15 @@ public class PushableBox : MonoBehaviour
     // isLinked: 碰撞触发后由 GestureInputBridge 设为 true，手势消失时设为 false
     // 不依赖 OnCollisionExit2D 断开——因为 Push/Pull 时 Player 和 Box 始终紧贴
     private bool isLinked;
+
+    // linkMode: 当前连接模式（Push 或 Pull）
+    // Push 模式：Box 只在 Player 往推方向移动时跟随，反方向移动时 Box 不动
+    // Pull 模式：Box 完全跟随 Player 水平速度
+    private BoxLinkMode linkMode = BoxLinkMode.None;
+
+    // pushDirection: Push 模式下 Box 被推的方向（+1 = 往右推, -1 = 往左推）
+    // 由 Link() 时根据 Player 面朝方向确定：面朝右 → pushDirection = +1（Box 在右边，往右推）
+    private float pushDirection;
 
     // horizontalTouch: 水平方向碰撞标记，区分"从侧面碰"和"从上面跳上去"
     private bool horizontalTouch;
@@ -95,27 +110,42 @@ public class PushableBox : MonoBehaviour
     {
         if (!col.gameObject.CompareTag("Player")) return;
 
-        // 如果已经 Link（Push/Pull 进行中），不清空 playerRb
-        // 因为 Push/Pull 时 Player 和 Box 紧贴，共享速度
-        // 断开只在手势消失时由 GestureInputBridge 调用 Unlink()
+        // 无论是否 isLinked，都清空 horizontalTouch。
+        // 这表示 Player 和 Box 在物理上已经分离了。
+        //
+        // 如果是 Push/Pull 进行中 Box 掉进洞里等情况，
+        // horizontalTouch = false 会让 IsTouchingPlayer = false，
+        // GestureInputBridge 在距离检查中会自动断开连接。
+        //
+        // 如果是手势切换（Push→Pull），Player 和 Box 仍然紧贴，
+        // Unity 不会触发 OnCollisionExit2D，所以 horizontalTouch 保持 true，
+        // 无缝切换不受影响。
+        horizontalTouch = false;
         if (!isLinked)
         {
             playerRb = null;
-            horizontalTouch = false;
         }
     }
     // 总结：
-    // - 玩家离开箱子时，如果没有 Link，清空引用
-    // - 如果已 Link（正在 Push/Pull），保持引用不清空
+    // - 玩家物理离开箱子时，horizontalTouch 一定清空
+    // - 如果没有 Link，同时清空 playerRb
+    // - 如果已 Link（正在 Push/Pull），保留 playerRb（让 FixedUpdate 继续同步速度直到 GestureInputBridge 断开）
 
 
     /// <summary>
     /// GestureInputBridge 调用：建立 Push/Pull 连接。
-    /// 连接后 Box 跟随 Player 水平速度，不受碰撞 Exit 影响。
+    /// 连接后 Box 跟随 Player 水平速度（Push 模式会过滤方向）。
+    ///
+    /// mode: Push 或 Pull
+    /// playerFacingRight: 建立连接时 Player 的面朝方向
+    ///   Push 时 pushDirection = 面朝方向（Box 在 Player 面朝那一侧）
     /// </summary>
-    public void Link()
+    public void Link(BoxLinkMode mode, bool playerFacingRight)
     {
         isLinked = true;
+        linkMode = mode;
+        // Push 时记录推的方向：Player 面朝右 → Box 在右边 → 推方向 = +1
+        pushDirection = playerFacingRight ? 1f : -1f;
     }
 
     /// <summary>
@@ -125,8 +155,12 @@ public class PushableBox : MonoBehaviour
     public void Unlink()
     {
         isLinked = false;
-        playerRb = null;
-        horizontalTouch = false;
+        linkMode = BoxLinkMode.None;
+        // 不清 playerRb 和 horizontalTouch！
+        // 如果 Player 仍然贴着 Box，这两个值应该保持 true，
+        // 让下一次 TryLink()（手势切换时）能立即重新连接。
+        // Player 真正离开时 OnCollisionExit2D 会清空 horizontalTouch，
+        // GestureInputBridge 距离检查超限后断开连接。
         rb.velocity = new Vector2(0f, rb.velocity.y); // 断开时停止水平移动
     }
 
@@ -134,23 +168,42 @@ public class PushableBox : MonoBehaviour
     // - FixedUpdate 每个物理帧调用一次（默认每秒 50 次，时间间隔 0.02 秒）
     // - 因为物理引擎要求稳定的时间步长，所以 Unity 把物理逻辑放在 FixedUpdate。
     //
-    // 设计思路（Push 和 Pull 对称）：
+    // 设计思路（Push 和 Pull 不同）：
     // - 触发条件（3个）：手势激活 + 水平碰撞 + 玩家面朝 Box（由 GestureInputBridge 判断）
-    // - 连接建立后：Box 跟随 Player 水平速度
-    // - Push（张开手掌）：Player 只能往面朝方向移动
-    // - Pull（握拳）    ：Player 只能往面朝反方向移动，且面朝方向锁定
-    // - 断开条件：手势消失（由 GestureInputBridge 调用 Unlink）
+    // - 连接建立后：
+    //   Push 模式：只有当 Player 往推方向移动时，Box 才跟随移动
+    //             Player 反方向移动时，Box 水平速度 = 0（不动）
+    //   Pull 模式：Box 完全跟随 Player 水平速度
+    // - 断开条件：手势消失 / 距离超限（由 GestureInputBridge 调用 Unlink）
     void FixedUpdate()
     {
         if (isLinked && playerRb != null)
         {
             // rb.constraints 控制刚体的运动约束——冻结哪些轴的运动或旋转。
             rb.constraints = RigidbodyConstraints2D.FreezeRotation; // 只冻结旋转
-            rb.velocity = new Vector2(playerRb.velocity.x, rb.velocity.y); // 水平速度跟随玩家，垂直速度保持不变
+
+            float playerVx = playerRb.velocity.x;
+
+            if (linkMode == BoxLinkMode.Push)
+            {
+                // Push 模式：只在 Player 往推方向移动时传递速度
+                // pushDirection > 0 表示往右推 → 只传递 playerVx > 0 的速度
+                // pushDirection < 0 表示往左推 → 只传递 playerVx < 0 的速度
+                // Player 反方向走时，Box 水平速度 = 0
+                bool movingInPushDir = (pushDirection > 0f && playerVx > 0f)
+                                    || (pushDirection < 0f && playerVx < 0f);
+                float boxVx = movingInPushDir ? playerVx : 0f;
+                rb.velocity = new Vector2(boxVx, rb.velocity.y);
+            }
+            else // Pull 模式
+            {
+                // Pull 模式：Box 完全跟随 Player 水平速度
+                rb.velocity = new Vector2(playerVx, rb.velocity.y);
+            }
         }
         else
         {
-            rb.constraints = RigidbodyConstraints2D.FreezePosition | RigidbodyConstraints2D.FreezeRotation; // 冻结 XY 移动 AND 冻结旋转
+            rb.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation; // 只冻结水平移动+旋转，允许重力下落
         }
     }
 
@@ -161,4 +214,7 @@ public class PushableBox : MonoBehaviour
 
     /// <summary>是否已建立 Push/Pull 连接</summary>
     public bool IsLinked => isLinked;
+
+    /// <summary>当前连接模式</summary>
+    public BoxLinkMode LinkMode => linkMode;
 }
