@@ -22,6 +22,11 @@ public class PlayerController : MonoBehaviour
     // Fraction of upward velocity kept when jump button is released early (0=instant cut, 1=no cut)
     [SerializeField] private float jumpCutMultiplier = 0.45f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip jumpSound;
+    [SerializeField] private AudioClip doubleJumpSound;
+
+    private AudioSource audioSource;
     private Rigidbody2D rb;
     private Animator animator;
     private SpriteRenderer spriteRenderer;
@@ -51,6 +56,7 @@ public class PlayerController : MonoBehaviour
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         ownCollider = GetComponent<Collider2D>();
+        audioSource = GetComponent<AudioSource>();
         defaultGravityScale = rb.gravityScale;
     }
 
@@ -71,6 +77,11 @@ public class PlayerController : MonoBehaviour
         if (Input.GetButtonDown("Jump") && jumpCount < maxJumpCount)
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            if (audioSource != null)
+            {
+                AudioClip clip = (jumpCount == 0) ? jumpSound : (doubleJumpSound != null ? doubleJumpSound : jumpSound);
+                if (clip != null) audioSource.PlayOneShot(clip);
+            }
             jumpCount++;
         }
 
