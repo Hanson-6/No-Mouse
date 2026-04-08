@@ -10,13 +10,20 @@ public class SwitchDoor : MonoBehaviour
     [SerializeField] private float openOffset = 1f;
     [SerializeField] private float slideSpeed = 4f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip openSound;
+    [SerializeField] private AudioClip closeSound;
+    [SerializeField] private float openSoundVolume = 1f;
+
     private Vector3 closedPos;
     private Vector3 openPos;
     private Collider2D col;
+    private AudioSource audioSource;
 
     void Awake()
     {
         col = GetComponent<Collider2D>();
+        audioSource = GetComponent<AudioSource>();
         closedPos = transform.position;
         openPos   = closedPos + Vector3.up * openOffset;
     }
@@ -24,6 +31,7 @@ public class SwitchDoor : MonoBehaviour
     public void Open()
     {
         StopAllCoroutines();
+        if (audioSource != null && openSound != null) audioSource.PlayOneShot(openSound, openSoundVolume);
         StartCoroutine(SlideTo(openPos, disableColliderWhenDone: true));
     }
 
@@ -31,6 +39,7 @@ public class SwitchDoor : MonoBehaviour
     {
         StopAllCoroutines();
         col.enabled = true; // re-enable before sliding back so player can't pass through
+        if (audioSource != null && closeSound != null) audioSource.PlayOneShot(closeSound);
         StartCoroutine(SlideTo(closedPos, disableColliderWhenDone: false));
     }
 

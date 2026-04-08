@@ -22,6 +22,12 @@ public class PlayerController : MonoBehaviour
     // Fraction of upward velocity kept when jump button is released early (0=instant cut, 1=no cut)
     [SerializeField] private float jumpCutMultiplier = 0.45f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip jumpSound;
+    [SerializeField] private AudioClip doubleJumpSound;
+    [SerializeField] private AudioClip deathSound;
+
+    private AudioSource audioSource;
     private Rigidbody2D rb;
     private Animator animator;
     private SpriteRenderer spriteRenderer;
@@ -29,6 +35,7 @@ public class PlayerController : MonoBehaviour
 
     private float defaultGravityScale;
     private float moveInput;
+    private float autoWalkDirection = 0f;
     private bool isGrounded;
     /// <summary>玩家是否在地面上。GestureInputBridge 用于判断跳跃释放抓取。</summary>
     public bool IsGrounded => isGrounded;
@@ -51,6 +58,7 @@ public class PlayerController : MonoBehaviour
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         ownCollider = GetComponent<Collider2D>();
+        audioSource = GetComponent<AudioSource>();
         defaultGravityScale = rb.gravityScale;
     }
 
@@ -71,6 +79,11 @@ public class PlayerController : MonoBehaviour
         if (Input.GetButtonDown("Jump") && jumpCount < maxJumpCount)
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            if (audioSource != null)
+            {
+                AudioClip clip = (jumpCount == 0) ? jumpSound : (doubleJumpSound != null ? doubleJumpSound : jumpSound);
+                if (clip != null) audioSource.PlayOneShot(clip);
+            }
             jumpCount++;
         }
 
@@ -94,7 +107,12 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (isDead) return;
+        if (isDead)
+        {
+            if (autoWalkDirection != 0f)
+                rb.velocity = new Vector2(autoWalkDirection * moveSpeed, rb.velocity.y);
+            return;
+        }
 
         // Ground check — thin box so walls don't falsely trigger grounded state
         isGrounded = Physics2D.OverlapBox(groundCheck.position, new Vector2(0.15f, 0.05f), 0f, groundLayer);
@@ -121,6 +139,15 @@ public class PlayerController : MonoBehaviour
             rb.gravityScale = defaultGravityScale;
     }
 
+    public void AutoWalk(float direction)
+    {
+        isDead = true;
+        autoWalkDirection = direction;
+        rb.gravityScale = defaultGravityScale;
+        spriteRenderer.flipX = direction < 0f;
+        animator.SetFloat("Speed", 1f);
+    }
+
     public void LockInput()
     {
         isDead = true;
@@ -136,6 +163,7 @@ public class PlayerController : MonoBehaviour
 
         rb.velocity = Vector2.zero; // Unity 内置 --> 停止玩家移动
         animator.SetTrigger("Die"); // Unity 内置 --> 播放死亡动画
+        if (audioSource != null && deathSound != null) audioSource.PlayOneShot(deathSound);
         Invoke(nameof(Respawn), 1.5f); // Unity 内置 --> 1.5 秒后调用 Respawn()，重置关卡
     }
 
