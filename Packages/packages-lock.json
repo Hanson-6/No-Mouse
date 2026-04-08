@@ -31,13 +31,14 @@
       "hash": "d01ac7cf8d2f3ec1c478ddc815f9768c86769b66"
     },
     "com.github.homuler.mediapipe": {
-      "version": "file:D:/HKU/OneDrive - The University of Hong Kong - Connect/Year 4/sem_2/COMP3329/Project/Code/com.github.homuler.mediapipe-0.16.3.tgz",
+      "version": "https://github.com/homuler/MediaPipeUnityPlugin.git?path=/Packages/com.github.homuler.mediapipe#v0.16.3",
       "depth": 0,
-      "source": "local-tarball",
+      "source": "git",
       "dependencies": {
         "com.unity.ugui": "1.0.0",
         "com.unity.test-framework": "1.0.0"
-      }
+      },
+      "hash": "cf4c11d8eef724fe24111b7cd795d55ba490aeec"
     },
     "com.unity.2d.animation": {
       "version": "9.2.0",
