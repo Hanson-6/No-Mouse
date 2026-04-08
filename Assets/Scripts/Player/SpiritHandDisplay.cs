@@ -4,7 +4,7 @@ using GestureRecognition.Core;
 // 精灵手显示系统
 //
 // 功能：
-//   当 GestureService 检测到 Push（张开手掌）或 Fist（握拳）手势时，
+//   当 GestureService 检测到 Push（张开手掌）、Fist（握拳）或 Shoot（手枪）手势时，
 //   在 Player 头顶显示对应的精灵手图标，并以脉动效果（Scale + Alpha 循环）
 //   提醒玩家当前手势已被系统识别。
 //
@@ -25,6 +25,7 @@ public class SpiritHandDisplay : MonoBehaviour
     [Header("精灵图")]
     [SerializeField] private Sprite pushSprite;   // Push 手势对应的图（张开手掌）
     [SerializeField] private Sprite fistSprite;   // Fist 手势对应的图（握拳 / Pull）
+    [SerializeField] private Sprite shootSprite;  // Shoot 手势对应的图（手枪手势）
 
     [Header("跟随目标")]
     [SerializeField] private PlayerController player;
@@ -108,6 +109,15 @@ public class SpiritHandDisplay : MonoBehaviour
                 Show();
                 break;
 
+            case GestureType.Shoot:
+                // shootSprite 未在 Inspector 中赋值时，不显示精灵手，
+                // 也不调用 RecalculateBaseScale(null) 以免污染 _baseScale。
+                if (shootSprite == null) { Hide(); break; }
+                _sr.sprite = shootSprite;
+                RecalculateBaseScale(shootSprite);
+                Show();
+                break;
+
             default:
                 Hide();
                 break;
@@ -149,7 +159,11 @@ public class SpiritHandDisplay : MonoBehaviour
     /// </summary>
     void RecalculateBaseScale(Sprite sprite)
     {
-        if (sprite == null) { _baseScale = 1f; return; }
+        // ★ BUG FIX: 旧代码在 sprite==null 时将 _baseScale 设为 1.0，
+        // 这会导致下次切换到有效精灵图时，localScale 仍是 ~1.0，
+        // 精灵图以原始尺寸（3.5+ units）渲染一帧 → "闪大"。
+        // 修复：sprite 为 null 时不修改 _baseScale，保留上一个有效值。
+        if (sprite == null) return;
         // Sprite 在 localScale=1 时的世界高度 = pixelHeight / pixelsPerUnit
         float nativeHeight = sprite.rect.height / sprite.pixelsPerUnit;
         _baseScale = targetWorldHeight / nativeHeight;
@@ -160,6 +174,13 @@ public class SpiritHandDisplay : MonoBehaviour
         _visible = true;
         // 立即设为可见（脉动会在 Update 中接管 Alpha）
         _sr.color = new Color(1f, 1f, 1f, minAlpha);
+
+        // ★ BUG FIX: 旧代码没有在 Show() 中更新 localScale，
+        // 导致切换精灵图后、Update() 运行之前，有一帧使用旧的 localScale。
+        // 如果旧 _baseScale 远大于新值（如 null sprite 时 _baseScale=1.0），
+        // 精灵图会以原始巨大尺寸闪一帧。
+        // 修复：Show() 中立即同步 localScale。
+        transform.localScale = Vector3.one * _baseScale;
     }
 
     void Hide()
