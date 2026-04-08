@@ -1,3 +1,4 @@
+using LDtkUnity;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -20,30 +21,23 @@ public static class LDtkSceneSetup
         camGO.tag = "MainCamera";
         var cam = camGO.AddComponent<Camera>();
         cam.orthographic = true;
-        // LDtk level is 1456x456 px at PPU=16 => ~91 x 28.5 world units
-        // orthographicSize = half the vertical extent we want to see
-        cam.orthographicSize = 15f; // shows ~30 units vertically, good starting point
-        cam.backgroundColor = new Color(0.157f, 0.173f, 0.204f, 1f); // dark blue-grey, similar to LDtk bgColor #283046
+        cam.orthographicSize = 10f;
+        cam.backgroundColor = new Color(0.157f, 0.173f, 0.204f, 1f);
         cam.clearFlags = CameraClearFlags.SolidColor;
-        // Position camera at roughly the center of the level
-        // Level worldX=0, worldY=-136 in LDtk pixel coords
-        // In Unity: x = (1456/2)/16 = 45.5, y = -(-136 + 456/2)/16 = (136 - 228)/16... 
-        // LDtk Y is inverted in Unity. Let's just place at a reasonable starting point.
-        // The LDtkToUnity importer handles coordinate conversion. 
-        // Level_0 will be at some position - let's center roughly.
-        camGO.transform.position = new Vector3(45f, -10f, -10f);
+        camGO.transform.position = new Vector3(0f, 0f, -10f);
         
         // --- Load and instantiate the LDtk project ---
         string ldtkPath = "Assets/IDTK/Levels.ldtk";
         var ldtkAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ldtkPath);
+        GameObject ldtkInstance = null;
         if (ldtkAsset != null)
         {
-            var instance = (GameObject)PrefabUtility.InstantiatePrefab(ldtkAsset);
-            instance.name = "Levels";
-            Debug.Log($"[LDtkSceneSetup] Instantiated LDtk project. Root children: {instance.transform.childCount}");
+            ldtkInstance = (GameObject)PrefabUtility.InstantiatePrefab(ldtkAsset);
+            ldtkInstance.name = "Levels";
+            Debug.Log($"[LDtkSceneSetup] Instantiated LDtk project. Root children: {ldtkInstance.transform.childCount}");
             
             // Auto-center camera on all renderers in the LDtk instance
-            var renderers = instance.GetComponentsInChildren<Renderer>();
+            var renderers = ldtkInstance.GetComponentsInChildren<Renderer>();
             if (renderers.Length > 0)
             {
                 Bounds bounds = renderers[0].bounds;
@@ -51,7 +45,6 @@ public static class LDtkSceneSetup
                     bounds.Encapsulate(r.bounds);
                 
                 camGO.transform.position = new Vector3(bounds.center.x, bounds.center.y, -10f);
-                // Set ortho size to fit the level height with some margin
                 cam.orthographicSize = bounds.extents.y * 1.1f;
                 
                 Debug.Log($"[LDtkSceneSetup] Level bounds center: {bounds.center}, size: {bounds.size}");
@@ -61,18 +54,64 @@ public static class LDtkSceneSetup
             {
                 Debug.LogWarning("[LDtkSceneSetup] No renderers found. Camera may need manual adjustment.");
             }
-            
-            // Log hierarchy for debugging
-            foreach (Transform child in instance.transform)
-            {
-                Debug.Log($"[LDtkSceneSetup] Child: '{child.name}' at {child.position}");
-                foreach (Transform grandchild in child)
-                    Debug.Log($"[LDtkSceneSetup]   - '{grandchild.name}' at {grandchild.position}");
-            }
         }
         else
         {
             Debug.LogError($"[LDtkSceneSetup] Could not load LDtk asset at '{ldtkPath}'. Make sure the file exists and imports correctly.");
+        }
+
+        // --- Determine player spawn position from the PlayerStartPoint entity ---
+        // Default fallback if entity is not found
+        Vector3 spawnPos = new Vector3(16.75f, -4.75f, 0f); // known position + 1 unit above floor
+        if (ldtkInstance != null)
+        {
+            // LDtkComponentEntity is on every imported entity GameObject
+            var entities = ldtkInstance.GetComponentsInChildren<LDtkComponentEntity>(true);
+            foreach (var entity in entities)
+            {
+                if (entity.Identifier == "PlayerStartPoint")
+                {
+                    // Spawn 1 unit above the entity so the player doesn't clip into the floor
+                    spawnPos = entity.transform.position + new Vector3(0f, 1f, 0f);
+                    Debug.Log($"[LDtkSceneSetup] Found PlayerStartPoint entity at {entity.transform.position}. Spawn: {spawnPos}");
+                    break;
+                }
+            }
+        }
+
+        // --- GameManager (required by PlayerController.Respawn) ---
+        var gmGO = new GameObject("GameManager");
+        gmGO.AddComponent<GameManager>();
+        // Create a RespawnPoint child so GameManager has a valid respawn transform
+        var respawnGO = new GameObject("RespawnPoint");
+        respawnGO.transform.SetParent(gmGO.transform);
+        respawnGO.transform.position = spawnPos;
+        // Wire the respawn point reference via SerializedObject so it survives serialization
+        var gmSO = new SerializedObject(gmGO.GetComponent<GameManager>());
+        gmSO.FindProperty("respawnPoint").objectReferenceValue = respawnGO.transform;
+        gmSO.ApplyModifiedPropertiesWithoutUndo();
+        Debug.Log($"[LDtkSceneSetup] GameManager created. RespawnPoint at {spawnPos}");
+
+        // --- Player ---
+        string playerPrefabPath = "Assets/Prefabs/Player/Player.prefab";
+        var playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(playerPrefabPath);
+        if (playerPrefab != null)
+        {
+            var playerInstance = (GameObject)PrefabUtility.InstantiatePrefab(playerPrefab);
+            playerInstance.transform.position = spawnPos;
+            Debug.Log($"[LDtkSceneSetup] Player instantiated at {spawnPos}");
+
+            // Wire CameraFollow if it exists on the camera
+            var camFollow = camGO.GetComponent<CameraFollow>();
+            if (camFollow == null)
+                camFollow = camGO.AddComponent<CameraFollow>();
+            var camFollowSO = new SerializedObject(camFollow);
+            camFollowSO.FindProperty("target").objectReferenceValue = playerInstance.transform;
+            camFollowSO.ApplyModifiedPropertiesWithoutUndo();
+        }
+        else
+        {
+            Debug.LogError($"[LDtkSceneSetup] Could not load Player prefab at '{playerPrefabPath}'.");
         }
         
         // Save the scene
