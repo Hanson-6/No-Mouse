@@ -6,14 +6,25 @@ using UnityEngine.SceneManagement;
 
 public static class LDtkSceneSetup
 {
+    [MenuItem("Tools/Create LDtk Level 2 Scene")]
+    public static void CreateLevel2Scene()
+    {
+        CreateLDtkScene("Assets/Scenes/Level2.unity", "Level_1");
+    }
+
     [MenuItem("Tools/Create LDtk Test Scene")]
     public static void CreateLDtkTestScene()
     {
+        CreateLDtkScene("Assets/Scenes/LDtkLevel.unity", null);
+    }
+
+    // levelIdentifier: LDtk 里的关卡名（如 "Level_1"）。传 null 则显示所有关卡。
+    private static void CreateLDtkScene(string scenePath, string levelIdentifier)
+    {
         // Create a new empty scene
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-        
+
         // Save it first so it has a path
-        string scenePath = "Assets/Scenes/LDtkLevel.unity";
         EditorSceneManager.SaveScene(scene, scenePath);
         
         // --- Camera ---
@@ -35,6 +46,17 @@ public static class LDtkSceneSetup
             ldtkInstance = (GameObject)PrefabUtility.InstantiatePrefab(ldtkAsset);
             ldtkInstance.name = "Levels";
             Debug.Log($"[LDtkSceneSetup] Instantiated LDtk project. Root children: {ldtkInstance.transform.childCount}");
+
+            // 只显示指定关卡，隐藏其他关卡
+            if (!string.IsNullOrEmpty(levelIdentifier))
+            {
+                foreach (Transform child in ldtkInstance.transform)
+                {
+                    bool isTarget = child.name == levelIdentifier;
+                    child.gameObject.SetActive(isTarget);
+                }
+                Debug.Log($"[LDtkSceneSetup] Showing only level: {levelIdentifier}");
+            }
             
             // Auto-center camera on all renderers in the LDtk instance
             var renderers = ldtkInstance.GetComponentsInChildren<Renderer>();
