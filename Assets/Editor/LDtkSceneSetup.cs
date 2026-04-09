@@ -6,6 +6,12 @@ using UnityEngine.SceneManagement;
 
 public static class LDtkSceneSetup
 {
+    [MenuItem("Tools/Create LDtk Level 1 Scene")]
+    public static void CreateLevel1Scene()
+    {
+        CreateLDtkScene("Assets/Scenes/Level1.unity", "Level_0");
+    }
+
     [MenuItem("Tools/Create LDtk Level 2 Scene")]
     public static void CreateLevel2Scene()
     {
@@ -18,7 +24,7 @@ public static class LDtkSceneSetup
         CreateLDtkScene("Assets/Scenes/LDtkLevel.unity", null);
     }
 
-    // levelIdentifier: LDtk 里的关卡名（如 "Level_1"）。传 null 则显示所有关卡。
+    // levelIdentifier: LDtk level name (e.g. "Level_0", "Level_1"). Pass null to show all levels.
     private static void CreateLDtkScene(string scenePath, string levelIdentifier)
     {
         // Create a new empty scene
@@ -41,24 +47,51 @@ public static class LDtkSceneSetup
         string ldtkPath = "Assets/IDTK/Levels.ldtk";
         var ldtkAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ldtkPath);
         GameObject ldtkInstance = null;
+        Transform targetLevelTransform = null;
+
         if (ldtkAsset != null)
         {
             ldtkInstance = (GameObject)PrefabUtility.InstantiatePrefab(ldtkAsset);
             ldtkInstance.name = "Levels";
             Debug.Log($"[LDtkSceneSetup] Instantiated LDtk project. Root children: {ldtkInstance.transform.childCount}");
 
-            // 只显示指定关卡，隐藏其他关卡
+            // LDtk hierarchy: Levels > World > Level_0, Level_1, ...
+            // Find the World container (first child with LDtkComponentWorld)
+            Transform worldTransform = null;
+            foreach (Transform child in ldtkInstance.transform)
+            {
+                if (child.GetComponent<LDtkComponentWorld>() != null)
+                {
+                    worldTransform = child;
+                    break;
+                }
+            }
+
+            if (worldTransform == null)
+            {
+                // Fallback: maybe the levels are direct children of root
+                worldTransform = ldtkInstance.transform;
+                Debug.LogWarning("[LDtkSceneSetup] No LDtkComponentWorld found; assuming levels are direct children of root.");
+            }
+
+            // Show only the specified level, hide others
             if (!string.IsNullOrEmpty(levelIdentifier))
             {
-                foreach (Transform child in ldtkInstance.transform)
+                foreach (Transform child in worldTransform)
                 {
                     bool isTarget = child.name == levelIdentifier;
                     child.gameObject.SetActive(isTarget);
+                    if (isTarget)
+                        targetLevelTransform = child;
                 }
-                Debug.Log($"[LDtkSceneSetup] Showing only level: {levelIdentifier}");
+
+                if (targetLevelTransform != null)
+                    Debug.Log($"[LDtkSceneSetup] Showing only level: {levelIdentifier}");
+                else
+                    Debug.LogWarning($"[LDtkSceneSetup] Level '{levelIdentifier}' not found among {worldTransform.childCount} world children.");
             }
             
-            // Auto-center camera on all renderers in the LDtk instance
+            // Auto-center camera on all renderers in the active hierarchy
             var renderers = ldtkInstance.GetComponentsInChildren<Renderer>();
             if (renderers.Length > 0)
             {
@@ -84,11 +117,12 @@ public static class LDtkSceneSetup
 
         // --- Determine player spawn position from the PlayerStartPoint entity ---
         // Default fallback if entity is not found
-        Vector3 spawnPos = new Vector3(16.75f, -4.75f, 0f); // known position + 1 unit above floor
+        Vector3 spawnPos = new Vector3(16.75f, -4.75f, 0f);
         if (ldtkInstance != null)
         {
-            // LDtkComponentEntity is on every imported entity GameObject
-            var entities = ldtkInstance.GetComponentsInChildren<LDtkComponentEntity>(true);
+            // Search only within the target level if one is specified, otherwise search the whole prefab
+            Transform searchRoot = targetLevelTransform != null ? targetLevelTransform : ldtkInstance.transform;
+            var entities = searchRoot.GetComponentsInChildren<LDtkComponentEntity>(true);
             foreach (var entity in entities)
             {
                 if (entity.Identifier == "PlayerStartPoint")
