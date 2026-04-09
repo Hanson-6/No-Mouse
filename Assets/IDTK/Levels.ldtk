@@ -1717,45 +1717,7 @@
 			"limitBehavior": "MoveLastOne",
 			"pivotX": 0.5,
 			"pivotY": 0.5,
-			"fieldDefs": [
-				{
-					"identifier": "PointB",
-					"doc": null,
-					"__type": "Point",
-					"uid": 305,
-					"type": "F_Point",
-					"isArray": false,
-					"canBeNull": false,
-					"arrayMinLength": null,
-					"arrayMaxLength": null,
-					"editorDisplayMode": "PointPath",
-					"editorDisplayScale": 1,
-					"editorDisplayPos": "Above",
-					"editorLinkStyle": "StraightArrow",
-					"editorDisplayColor": null,
-					"editorAlwaysShow": false,
-					"editorShowInWorld": true,
-					"editorCutLongValues": true,
-					"editorTextSuffix": null,
-					"editorTextPrefix": null,
-					"useForSmartColor": false,
-					"exportToToc": false,
-					"searchable": false,
-					"min": null,
-					"max": null,
-					"regex": null,
-					"acceptFileTypes": null,
-					"defaultOverride": null,
-					"textLanguageMode": null,
-					"symmetricalRef": false,
-					"autoChainRef": true,
-					"allowOutOfLevelRef": true,
-					"allowedRefs": "OnlySame",
-					"allowedRefsEntityUid": null,
-					"allowedRefTags": [],
-					"tilesetUid": null
-				}
-			]
+			"fieldDefs": []
 		},
 		{
 			"identifier": "Enemy",
@@ -1825,45 +1787,7 @@
 			"limitBehavior": "MoveLastOne",
 			"pivotX": 0.5,
 			"pivotY": 0.5,
-			"fieldDefs": [
-				{
-					"identifier": "PointB",
-					"doc": null,
-					"__type": "Point",
-					"uid": 308,
-					"type": "F_Point",
-					"isArray": false,
-					"canBeNull": false,
-					"arrayMinLength": null,
-					"arrayMaxLength": null,
-					"editorDisplayMode": "PointPath",
-					"editorDisplayScale": 1,
-					"editorDisplayPos": "Above",
-					"editorLinkStyle": "StraightArrow",
-					"editorDisplayColor": null,
-					"editorAlwaysShow": false,
-					"editorShowInWorld": true,
-					"editorCutLongValues": true,
-					"editorTextSuffix": null,
-					"editorTextPrefix": null,
-					"useForSmartColor": false,
-					"exportToToc": false,
-					"searchable": false,
-					"min": null,
-					"max": null,
-					"regex": null,
-					"acceptFileTypes": null,
-					"defaultOverride": null,
-					"textLanguageMode": null,
-					"symmetricalRef": false,
-					"autoChainRef": true,
-					"allowOutOfLevelRef": true,
-					"allowedRefs": "OnlySame",
-					"allowedRefsEntityUid": null,
-					"allowedRefTags": [],
-					"tilesetUid": null
-				}
-			]
+			"fieldDefs": []
 		},
 		{
 			"identifier": "Door",
@@ -2209,10 +2133,7 @@
 							"height": 8,
 							"defUid": 303,
 							"px": [724,236],
-							"fieldInstances": [{ "__identifier": "PointB", "__type": "Point", "__value": { "cx": 115, "cy": 29 }, "__tile": null, "defUid": 305, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["115,29"]
-							}] }],
+							"fieldInstances": [],
 							"__worldX": 724,
 							"__worldY": 100
 						},
@@ -2228,10 +2149,7 @@
 							"height": 8,
 							"defUid": 303,
 							"px": [1140,212],
-							"fieldInstances": [{ "__identifier": "PointB", "__type": "Point", "__value": { "cx": 118, "cy": 26 }, "__tile": null, "defUid": 305, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["118,26"]
-							}] }],
+							"fieldInstances": [],
 							"__worldX": 1140,
 							"__worldY": 76
 						},
@@ -2279,10 +2197,7 @@
 							"height": 8,
 							"defUid": 303,
 							"px": [1612,228],
-							"fieldInstances": [{ "__identifier": "PointB", "__type": "Point", "__value": { "cx": 226, "cy": 28 }, "__tile": null, "defUid": 305, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["226,28"]
-							}] }],
+							"fieldInstances": [],
 							"__worldX": 1612,
 							"__worldY": 92
 						},
@@ -2317,6 +2232,22 @@
 							"fieldInstances": [],
 							"__worldX": 1912,
 							"__worldY": 88
+						},
+						{
+							"__identifier": "MovingSaw",
+							"__grid": [226,28],
+							"__pivot": [0.5,0.5],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#F77622",
+							"iid": "bc671b80-21a0-11f1-9799-875add953443",
+							"width": 8,
+							"height": 8,
+							"defUid": 307,
+							"px": [1812,228],
+							"fieldInstances": [],
+							"__worldX": 1812,
+							"__worldY": 92
 						}
 					]
 				},
