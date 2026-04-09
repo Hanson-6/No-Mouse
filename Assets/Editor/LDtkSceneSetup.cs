@@ -121,7 +121,8 @@ public static class LDtkSceneSetup
         {
             var playerInstance = (GameObject)PrefabUtility.InstantiatePrefab(playerPrefab);
             playerInstance.transform.position = spawnPos;
-            Debug.Log($"[LDtkSceneSetup] Player instantiated at {spawnPos}");
+            playerInstance.transform.localScale = new Vector3(5f, 5f, 1f);
+            Debug.Log($"[LDtkSceneSetup] Player instantiated at {spawnPos}, scale=(5,5,1)");
 
             // Wire CameraFollow if it exists on the camera
             var camFollow = camGO.GetComponent<CameraFollow>();

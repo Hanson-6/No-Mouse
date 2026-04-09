@@ -16,7 +16,7 @@ public class PlayerController : MonoBehaviour
     public int maxJumpCount = 2;
     [SerializeField] private float jumpForce = 14f;
     // Multiplies gravityScale while the player is falling — higher = snappier landing
-    [SerializeField] private float fallGravityMultiplier = 2.5f;
+    [SerializeField] private float fallGravityMultiplier = 3.5f;
     // Multiplies gravityScale while rising with jump button released — controls short-hop height
     [SerializeField] private float lowJumpMultiplier = 2f;
     // Fraction of upward velocity kept when jump button is released early (0=instant cut, 1=no cut)
@@ -115,11 +115,11 @@ public class PlayerController : MonoBehaviour
         }
 
         // Ground check — thin box so walls don't falsely trigger grounded state
-        isGrounded = Physics2D.OverlapBox(groundCheck.position, new Vector2(0.15f, 0.05f), 0f, groundLayer);
+        isGrounded = Physics2D.OverlapBox(groundCheck.position, new Vector2(0.75f, 0.25f), 0f, groundLayer);
         if (!isGrounded)
         {
             // 站在箱子上也算落地：RaycastAll 过滤掉自身碰撞体
-            var hits = Physics2D.RaycastAll(groundCheck.position, Vector2.down, 0.2f);
+            var hits = Physics2D.RaycastAll(groundCheck.position, Vector2.down, 1.0f);
             foreach (var h in hits)
             {
                 if (h.collider == ownCollider) continue;
@@ -178,7 +178,7 @@ public class PlayerController : MonoBehaviour
         if (groundCheck != null)
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawWireCube(groundCheck.position, new Vector3(0.15f, 0.05f, 0f));
+            Gizmos.DrawWireCube(groundCheck.position, new Vector3(0.75f, 0.25f, 0f));
         }
     }
 }
