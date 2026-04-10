@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// 基础巡逻敌人。
-/// - 左右来回巡逻（遇墙/边缘自动转向）
+/// - 先从初始位置移动到 pointA，然后在 pointA 和 pointB 之间来回巡逻
 /// - 玩家从上方踩踏 → 敌人死亡
 /// - 玩家侧面接触 → 玩家死亡
 /// </summary>
@@ -12,8 +12,10 @@ public class Enemy : MonoBehaviour
 {
     [Header("Patrol")]
     public float moveSpeed = 2f;
-    public float edgeCheckDistance = 0.5f;
-    public LayerMask groundLayer;
+    [Tooltip("Left boundary of patrol range")]
+    public Vector2 pointA;
+    [Tooltip("Right boundary of patrol range")]
+    public Vector2 pointB;
 
     [Header("Stomp")]
     public float stompThreshold = 0.2f; // 玩家速度 y 低于此值才算踩踏
@@ -24,8 +26,12 @@ public class Enemy : MonoBehaviour
     private Rigidbody2D rb;
     private SpriteRenderer sr;
     private Animator animator;
-    private bool movingRight = true;
     private bool isDead = false;
+
+    // State machine
+    private enum PatrolState { MovingToA, PatrolAB }
+    private PatrolState state;
+    private bool goingToB; // only used in PatrolAB state
 
     void Awake()
     {
@@ -36,22 +42,62 @@ public class Enemy : MonoBehaviour
         rb.freezeRotation = true;
     }
 
+    void Start()
+    {
+        // Default points to current position if not set
+        if (pointA == Vector2.zero && pointB == Vector2.zero)
+        {
+            pointA = (Vector2)transform.position;
+            pointB = pointA + Vector2.right * 5f;
+        }
+
+        // Decide initial state
+        float distToA = Vector2.Distance(transform.position, pointA);
+        if (distToA < 0.05f)
+        {
+            state = PatrolState.PatrolAB;
+            goingToB = true;
+        }
+        else
+        {
+            state = PatrolState.MovingToA;
+        }
+    }
+
     void Update()
     {
         if (isDead) return;
 
-        float dir = movingRight ? 1f : -1f;
-        rb.velocity = new Vector2(dir * moveSpeed, rb.velocity.y);
+        switch (state)
+        {
+            case PatrolState.MovingToA:
+                MoveTowards(pointA);
+                if (Vector2.Distance(new Vector2(transform.position.x, transform.position.y), pointA) < 0.05f)
+                {
+                    transform.position = new Vector3(pointA.x, transform.position.y, transform.position.z);
+                    state = PatrolState.PatrolAB;
+                    goingToB = true;
+                }
+                break;
 
-        if (sr != null) sr.flipX = !movingRight;
-
-        // 边缘检测
-        Vector2 edgeCheck = transform.position + new Vector3(dir * 0.4f, -0.1f, 0);
-        bool ground = Physics2D.Raycast(edgeCheck, Vector2.down, edgeCheckDistance, groundLayer);
-        if (!ground) Flip();
+            case PatrolState.PatrolAB:
+                Vector2 target = goingToB ? pointB : pointA;
+                MoveTowards(target);
+                if (Vector2.Distance(new Vector2(transform.position.x, transform.position.y), target) < 0.05f)
+                {
+                    transform.position = new Vector3(target.x, transform.position.y, transform.position.z);
+                    goingToB = !goingToB;
+                }
+                break;
+        }
     }
 
-    void Flip() => movingRight = !movingRight;
+    private void MoveTowards(Vector2 target)
+    {
+        float dir = target.x > transform.position.x ? 1f : -1f;
+        rb.velocity = new Vector2(dir * moveSpeed, rb.velocity.y);
+        if (sr != null) sr.flipX = dir < 0f;
+    }
 
     void OnCollisionEnter2D(Collision2D col)
     {
@@ -98,9 +144,13 @@ public class Enemy : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        float dir = movingRight ? 1f : -1f;
-        Vector2 edgeCheck = transform.position + new Vector3(dir * 0.4f, -0.6f, 0);
         Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(edgeCheck, edgeCheck + Vector2.down * edgeCheckDistance);
+        Gizmos.DrawSphere(pointA, 0.15f);
+        Gizmos.DrawSphere(pointB, 0.15f);
+        Gizmos.DrawLine(pointA, pointB);
+
+        // Show path from spawn to pointA
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(transform.position, pointA);
     }
 }

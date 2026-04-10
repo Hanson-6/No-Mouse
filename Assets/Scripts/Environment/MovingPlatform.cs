@@ -2,6 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// 在两个端点之间来回移动的平台。
+/// 初始位置可以不在 pointA/pointB：
+///   - startAtPointB = false → 先移动到 pointA，再开始 A↔B 循环
+///   - startAtPointB = true  → 先移动到 pointB，再开始 B↔A 循环
 /// 玩家站上去会随平台移动。
 /// </summary>
 public class MovingPlatform : MonoBehaviour
@@ -10,33 +13,79 @@ public class MovingPlatform : MonoBehaviour
     public Vector2 pointA;
     public Vector2 pointB;
     public float speed = 2f;
-    [Tooltip("If true, platform starts at Point B and moves toward Point A first")]
+    [Tooltip("If true, platform moves to Point B first, then patrols B↔A")]
     public bool startAtPointB = false;
 
-    private bool goingToB;
-    private Vector2 lastPos;
+    [Header("Pause")]
+    [Tooltip("How long the platform pauses at each endpoint (seconds)")]
+    public float waitTime = 1f;
+
+    private enum PatrolState { MovingToStart, Patrolling }
+    private PatrolState state;
+    private bool goingToB;   // only used during Patrolling
+    private float waitTimer;
 
     void Start()
     {
-        // Only default to transform position if points were not set in the Inspector
+        // Default points if not set in Inspector
         if (pointA == Vector2.zero && pointB == Vector2.zero)
         {
             pointA = (Vector2)transform.position;
             pointB = pointA + Vector2.right * 5f;
         }
-        goingToB = !startAtPointB;
-        if (startAtPointB)
-            transform.position = pointB;
-        lastPos = transform.position;
+
+        Vector2 startPoint = startAtPointB ? pointB : pointA;
+        float distToStart = Vector2.Distance(transform.position, startPoint);
+
+        if (distToStart < 0.05f)
+        {
+            // Already at the start point — go straight into patrol
+            transform.position = new Vector3(startPoint.x, startPoint.y, transform.position.z);
+            state = PatrolState.Patrolling;
+            goingToB = !startAtPointB; // from A→go to B, from B→go to A
+            waitTimer = waitTime;      // initial pause
+        }
+        else
+        {
+            // Need to travel to the start point first
+            state = PatrolState.MovingToStart;
+            waitTimer = 0f;
+        }
     }
 
     void Update()
     {
-        Vector2 target = goingToB ? pointB : pointA;
-        transform.position = Vector2.MoveTowards(transform.position, target, speed * Time.deltaTime);
+        if (waitTimer > 0f)
+        {
+            waitTimer -= Time.deltaTime;
+            return;
+        }
 
-        if (Vector2.Distance(transform.position, target) < 0.05f)
-            goingToB = !goingToB;
+        if (state == PatrolState.MovingToStart)
+        {
+            Vector2 startPoint = startAtPointB ? pointB : pointA;
+            transform.position = Vector2.MoveTowards(transform.position, startPoint, speed * Time.deltaTime);
+
+            if (Vector2.Distance(transform.position, startPoint) < 0.05f)
+            {
+                transform.position = new Vector3(startPoint.x, startPoint.y, transform.position.z);
+                state = PatrolState.Patrolling;
+                goingToB = !startAtPointB;
+                waitTimer = waitTime;
+            }
+        }
+        else // Patrolling
+        {
+            Vector2 target = goingToB ? pointB : pointA;
+            transform.position = Vector2.MoveTowards(transform.position, target, speed * Time.deltaTime);
+
+            if (Vector2.Distance(transform.position, target) < 0.05f)
+            {
+                transform.position = new Vector3(target.x, target.y, transform.position.z);
+                goingToB = !goingToB;
+                waitTimer = waitTime;
+            }
+        }
     }
 
     void OnCollisionEnter2D(Collision2D col)
@@ -53,11 +102,18 @@ public class MovingPlatform : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
+        Vector2 a = pointA == Vector2.zero ? (Vector2)transform.position : pointA;
+        Vector2 b = pointB == Vector2.zero ? (Vector2)transform.position + Vector2.right * 5f : pointB;
+
+        // Patrol range
         Gizmos.color = Color.cyan;
-        Gizmos.DrawSphere(pointA == Vector2.zero ? (Vector2)transform.position : pointA, 0.1f);
-        Gizmos.DrawSphere(pointB == Vector2.zero ? (Vector2)transform.position + Vector2.right * 5f : pointB, 0.1f);
-        Gizmos.DrawLine(
-            pointA == Vector2.zero ? (Vector2)transform.position : pointA,
-            pointB == Vector2.zero ? (Vector2)transform.position + Vector2.right * 5f : pointB);
+        Gizmos.DrawSphere(a, 0.1f);
+        Gizmos.DrawSphere(b, 0.1f);
+        Gizmos.DrawLine(a, b);
+
+        // Path from spawn to start point
+        Vector2 startPoint = startAtPointB ? b : a;
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(transform.position, startPoint);
     }
 }
