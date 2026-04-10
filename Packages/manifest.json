@@ -3,7 +3,7 @@
     "cn.unity.uos.launcher": "https://cnb.cool/unity/uos/UOSLauncher.git",
     "com.cammin.ldtkunity": "6.12.2",
     "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity",
-    "com.github.homuler.mediapipe": "https://github.com/homuler/MediaPipeUnityPlugin.git?path=/Packages/com.github.homuler.mediapipe#v0.16.3",
+    "com.github.homuler.mediapipe": "file:com.github.homuler.mediapipe-0.16.3.tgz",
     "com.unity.collab-proxy": "2.11.3",
     "com.unity.feature.2d": "2.0.1",
     "com.unity.ide.rider": "3.0.36",
