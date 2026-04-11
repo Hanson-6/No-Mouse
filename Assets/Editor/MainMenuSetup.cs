@@ -24,17 +24,17 @@ using UnityEngine.UI;
 public static class MainMenuSetup
 {
     // 旧版原始图片路径（用于 BFS 处理）
-    private const string SrcStart    = "Assets/Textures/StartButton.png";
-    private const string SrcQuit     = "Assets/Textures/QuitButton.png";
+    private const string SrcStart    = "Assets/Textures/Buttons/StartButton.png";
+    private const string SrcQuit     = "Assets/Textures/Buttons/QuitButton.png";
     private const string SrcLogo     = "Assets/Textures/GameTile.png";
     private const string OutStart    = "Assets/Textures/StartButton_processed.png";
     private const string OutQuit     = "Assets/Textures/QuitButton_processed.png";
     private const string OutLogo     = "Assets/Textures/GameTile_processed.png";
 
-    // 新版按钮图片路径（Gemini 生成的，已在 Textures 目录下）
-    private const string TexNewGame    = "Assets/Textures/NewGameButton.png";
-    private const string TexContinue   = "Assets/Textures/ContinueButton.png";
-    private const string TexQuitBtn    = "Assets/Textures/QuitButton.png";
+    // 新版按钮图片路径（Buttons 子目录）
+    private const string TexNewGame    = "Assets/Textures/Buttons/NewGameButton.png";
+    private const string TexContinue   = "Assets/Textures/Buttons/ContinueButton.png";
+    private const string TexQuitBtn    = "Assets/Textures/Buttons/QuitButton.png";
 
     private const string ScenePath   = "Assets/Scenes/MainMenu.unity";
 
@@ -155,12 +155,15 @@ public static class MainMenuSetup
         if (oldQuit != null) Object.DestroyImmediate(oldQuit.gameObject);
 
         // 三个按钮的垂直布局（屏幕中心偏下）
-        float btnWidth  = 450f;
         float btnHeight = 140f;
         float spacing   = 20f;
 
         // 如果有继续按钮图片，创建三个按钮；否则只创建两个
         bool hasContinue = (continueSprite != null);
+
+        Vector2 newGameSize  = GetButtonSize(newGameSprite, btnHeight, 280f, 760f);
+        Vector2 continueSize = hasContinue ? GetButtonSize(continueSprite, btnHeight, 280f, 760f) : Vector2.zero;
+        Vector2 quitSize     = GetButtonSize(quitSprite, btnHeight, 280f, 760f);
 
         // 按钮组整体垂直偏移（负数 = 往下移）
         float groupOffsetY = -100f;
@@ -182,18 +185,18 @@ public static class MainMenuSetup
         }
 
         // 新游戏按钮
-        CreateMenuButton(canvasGO, "NewGameButton", newGameSprite, btnWidth, btnHeight,
+        CreateMenuButton(canvasGO, "NewGameButton", newGameSprite, newGameSize,
                          new Vector2(0f, topY));
 
         // 继续游戏按钮
         if (hasContinue)
         {
-            CreateMenuButton(canvasGO, "ContinueButton", continueSprite, btnWidth, btnHeight,
+            CreateMenuButton(canvasGO, "ContinueButton", continueSprite, continueSize,
                              new Vector2(0f, midY));
         }
 
         // 退出按钮
-        CreateMenuButton(canvasGO, "QuitButton", quitSprite, btnWidth, btnHeight,
+        CreateMenuButton(canvasGO, "QuitButton", quitSprite, quitSize,
                          new Vector2(0f, botY));
 
         // ── 7. Attach MainMenuController ─────────────────────────────────────
@@ -234,7 +237,7 @@ public static class MainMenuSetup
     /// 在 Canvas 下创建一个带 Image + Button 的菜单按钮。
     /// </summary>
     static void CreateMenuButton(GameObject canvas, string name, Sprite sprite,
-                                  float width, float height, Vector2 anchoredPos)
+                                  Vector2 size, Vector2 anchoredPos)
     {
         GameObject btnGO = new GameObject(name);
         btnGO.transform.SetParent(canvas.transform, false);
@@ -244,7 +247,7 @@ public static class MainMenuSetup
         rt.anchorMax        = new Vector2(0.5f, 0.5f);
         rt.pivot            = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = anchoredPos;
-        rt.sizeDelta        = new Vector2(width, height);
+        rt.sizeDelta        = size;
 
         var img = btnGO.AddComponent<Image>();
         img.sprite         = sprite;
@@ -261,6 +264,16 @@ public static class MainMenuSetup
         colors.pressedColor     = new Color(0.7f, 0.7f, 0.7f, 1f);
         colors.selectedColor    = Color.white;
         btn.colors = colors;
+    }
+
+    static Vector2 GetButtonSize(Sprite sprite, float targetHeight, float minWidth, float maxWidth)
+    {
+        float aspect = 1f;
+        if (sprite != null && sprite.rect.height > 0f)
+            aspect = sprite.rect.width / sprite.rect.height;
+
+        float width = Mathf.Clamp(targetHeight * aspect, minWidth, maxWidth);
+        return new Vector2(width, targetHeight);
     }
 
     // ──────────────────────────────────────────────────────────────────────────

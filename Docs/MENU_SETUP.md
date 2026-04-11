@@ -1,0 +1,75 @@
+# Menu 配置指南（MainMenu + PauseMenu）
+
+本文档用于指导团队成员统一配置主菜单与暂停菜单。
+
+## 1) 相关脚本与入口
+
+- 主菜单构建脚本：`Assets/Editor/MainMenuSetup.cs`
+- 暂停菜单构建脚本：`Assets/Editor/PauseMenuSetup.cs`
+- 主菜单运行脚本：`Assets/Scripts/UI/MainMenuController.cs`
+- 暂停菜单运行脚本：`Assets/Scripts/UI/PauseMenu.cs`
+
+按钮素材目录（已统一）：
+
+- `Assets/Textures/Buttons/`
+
+## 2) MainMenu 如何设置
+
+目标场景：`Assets/Scenes/MainMenu.unity`
+
+步骤：
+
+1. 打开 `MainMenu.unity`。
+2. 在 Unity 菜单执行：`Tools/Setup Main Menu Scene`。
+3. 脚本会自动：
+   - 使用 `Assets/Textures/Buttons/NewGameButton.png`
+   - 使用 `Assets/Textures/Buttons/ContinueButton.png`
+   - 使用 `Assets/Textures/Buttons/QuitButton.png`
+   - 挂载/重连 `MainMenuController`
+   - 按图像比例自动设置按钮尺寸（避免拉伸）
+4. 保存场景。
+
+验证：
+
+- `NewGame` 可进入第一关。
+- 有存档时显示 `Continue`，无存档时隐藏。
+- `Quit` 在 Editor 中停止 Play，在 Build 中退出程序。
+
+## 3) PauseMenu 如何设置
+
+通常用于关卡场景（例如 `Tutorial`，或你希望支持暂停的关卡）。
+
+步骤：
+
+1. 打开目标关卡场景。
+2. 在 Unity 菜单执行：`Tools/Setup Pause Menu`。
+3. 脚本会自动：
+   - 创建 `PauseCanvas`（若已存在会重建）
+   - 创建 `PauseButton`、`PausePanel`、`ResumeButton`、`SaveQuitButton`、`QuitNoSaveButton`
+   - 绑定 `PauseMenu.cs`
+   - 使用 `Assets/Textures/Buttons/` 下对应按钮图
+   - 按图像比例自动设置按钮尺寸（避免拉伸）
+4. 保存场景。
+
+验证：
+
+- 按 `Esc` 可暂停/恢复。
+- 点击 `PauseButton` 可打开暂停面板。
+- `Resume` 恢复游戏。
+- `Save and Quit` 保存后返回主菜单。
+- `QuitNoSave` 不保存返回主菜单。
+
+## 4) Level2 说明
+
+- 当前 `Level2` 默认可能没有 `PauseCanvas`。
+- 若希望 `Level2` 有暂停功能，请在 `Level2` 场景执行一次 `Tools/Setup Pause Menu`。
+
+## 5) 常见问题
+
+- 按钮图改了但场景没变：
+  - 重新执行对应 Setup 工具（MainMenu 或 PauseMenu），再保存场景。
+- 按钮显示糊：
+  - Setup 工具会自动修正导入设置（Sprite、Point、无 Mipmap、Uncompressed）。
+  - 若仍异常，手动 Reimport 对应图片。
+- Continue 按钮不显示：
+  - 这是正常逻辑（无存档时隐藏），由 `SaveManager.HasSave()` 控制。

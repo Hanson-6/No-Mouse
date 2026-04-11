@@ -284,3 +284,11 @@ Library/LDtkTilesetExporter/     # LDtkToUnity 安装的 tileset 导出工具
 - **配置 IntGrid Tile**：为 Collision 层的 `Stone` 值创建 `LDtkIntGridTile` 资产，设置 Collider Type 为 Grid，使碰撞层生效
 - **配置 Entity Prefab**：在 `Levels.ldtk` Inspector 中为 `PlayerStartPoint` 指定玩家 Prefab，实现自动生成玩家
 - **将 LDtk 场景加入 Build Settings**：如需在正式游戏流程中使用 LDtk 关卡
+
+---
+
+## 相关操作文档
+
+- SpiritHand 配置：`Docs/SPIRITHAND_SETUP.md`
+- Menu（MainMenu + PauseMenu）配置：`Docs/MENU_SETUP.md`
+- GestureRecognition 服务 SOP：`Docs/GESTURE_SERVICE_SOP.md`

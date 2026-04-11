@@ -22,12 +22,12 @@ using UnityEngine.UI;
 /// </summary>
 public static class PauseMenuSetup
 {
-    // 图片资源路径（Assets/Textures/ 下的文件）
-    private const string TEX_PAUSE_BTN    = "Assets/Textures/PauseButton.png";
-    private const string TEX_RESUME_BTN   = "Assets/Textures/ResumeButton.png";
-    private const string TEX_SAVEQUIT_BTN = "Assets/Textures/SaveQuitButton.png";
-    private const string TEX_QUITNOSAVE   = "Assets/Textures/QuitNoSaveButton.png";
-    private const string TEX_PANEL_BG     = "Assets/Textures/PausePanel.png";
+    // 图片资源路径（Assets/Textures/Buttons/ 下的文件）
+    private const string TEX_PAUSE_BTN    = "Assets/Textures/Buttons/PauseButton.png";
+    private const string TEX_RESUME_BTN   = "Assets/Textures/Buttons/ResumeButton.png";
+    private const string TEX_SAVEQUIT_BTN = "Assets/Textures/Buttons/SaveQuitButton.png";
+    private const string TEX_QUITNOSAVE   = "Assets/Textures/Buttons/QuitNoSaveButton.png";
+    private const string TEX_PANEL_BG     = "Assets/Textures/Buttons/PausePanel.png";
 
     [MenuItem("Tools/Setup Pause Menu")]
     public static void Run()
@@ -49,7 +49,7 @@ public static class PauseMenuSetup
         if (pauseSprite == null || resumeSprite == null ||
             saveQuitSprite == null || quitNoSaveSprite == null)
         {
-            Debug.LogError("[PauseMenuSetup] 找不到一个或多个按钮图片，请确认 Assets/Textures/ 下有：" +
+            Debug.LogError("[PauseMenuSetup] 找不到一个或多个按钮图片，请确认 Assets/Textures/Buttons/ 下有：" +
                            "PauseButton.png, ResumeButton.png, SaveQuitButton.png, QuitNoSaveButton.png");
             return;
         }
@@ -84,7 +84,7 @@ public static class PauseMenuSetup
         pauseBtnRect.anchorMax        = new Vector2(1f, 1f);
         pauseBtnRect.pivot            = new Vector2(1f, 1f);
         pauseBtnRect.anchoredPosition = new Vector2(-30f, -30f); // 距离右上角 30px
-        pauseBtnRect.sizeDelta        = new Vector2(80f, 80f);
+        pauseBtnRect.sizeDelta        = GetButtonSize(pauseSprite, 80f, 64f, 180f);
 
         // ── 5. 创建暂停面板 ─────────────────────────────────────────────
         GameObject panelGO = new GameObject("PausePanel");
@@ -137,22 +137,25 @@ public static class PauseMenuSetup
         dimRect.anchoredPosition = Vector2.zero;
 
         // ── 7. 创建面板上的三个按钮 ────────────────────────────────────
-        float buttonWidth  = 400f;
         float buttonHeight = 100f;
         float spacing      = 20f;
         float startY       = (buttonHeight + spacing); // 第一个按钮在中心偏上
 
+        Vector2 resumeSize   = GetButtonSize(resumeSprite, buttonHeight, 280f, 620f);
+        Vector2 saveQuitSize = GetButtonSize(saveQuitSprite, buttonHeight, 280f, 620f);
+        Vector2 quitSize     = GetButtonSize(quitNoSaveSprite, buttonHeight, 280f, 620f);
+
         // 继续游戏按钮
         GameObject resumeBtnGO = CreateImageButton(panelGO.transform, "ResumeButton", resumeSprite);
-        SetupPanelButton(resumeBtnGO, buttonWidth, buttonHeight, new Vector2(0f, startY));
+        SetupPanelButton(resumeBtnGO, resumeSize, new Vector2(0f, startY));
 
         // 保存并退出按钮
         GameObject saveQuitBtnGO = CreateImageButton(panelGO.transform, "SaveQuitButton", saveQuitSprite);
-        SetupPanelButton(saveQuitBtnGO, buttonWidth, buttonHeight, new Vector2(0f, 0f));
+        SetupPanelButton(saveQuitBtnGO, saveQuitSize, new Vector2(0f, 0f));
 
         // 返回主菜单按钮
         GameObject quitNoSaveBtnGO = CreateImageButton(panelGO.transform, "QuitNoSaveButton", quitNoSaveSprite);
-        SetupPanelButton(quitNoSaveBtnGO, buttonWidth, buttonHeight, new Vector2(0f, -startY));
+        SetupPanelButton(quitNoSaveBtnGO, quitSize, new Vector2(0f, -startY));
 
         // ── 8. 面板默认隐藏 ─────────────────────────────────────────────
         panelGO.SetActive(false);
@@ -270,13 +273,23 @@ public static class PauseMenuSetup
     /// <summary>
     /// 设置面板内按钮的位置和大小。
     /// </summary>
-    static void SetupPanelButton(GameObject btnGO, float width, float height, Vector2 anchoredPos)
+    static void SetupPanelButton(GameObject btnGO, Vector2 size, Vector2 anchoredPos)
     {
         RectTransform rt = btnGO.GetComponent<RectTransform>();
         rt.anchorMin        = new Vector2(0.5f, 0.5f);
         rt.anchorMax        = new Vector2(0.5f, 0.5f);
         rt.pivot            = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = anchoredPos;
-        rt.sizeDelta        = new Vector2(width, height);
+        rt.sizeDelta        = size;
+    }
+
+    static Vector2 GetButtonSize(Sprite sprite, float targetHeight, float minWidth, float maxWidth)
+    {
+        float aspect = 1f;
+        if (sprite != null && sprite.rect.height > 0f)
+            aspect = sprite.rect.width / sprite.rect.height;
+
+        float width = Mathf.Clamp(targetHeight * aspect, minWidth, maxWidth);
+        return new Vector2(width, targetHeight);
     }
 }

@@ -161,7 +161,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 188d8ed64768ecd429223e98322aec9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletSprite: {fileID: 21300000, guid: 8afe2df0a4d144146ac9883727b413af, type: 3}
+  bulletSprite: {fileID: 21300000, guid: c86d5b14203463c4d88fe12e8cad6ab1, type: 3}
   bulletColor: {r: 1, g: 1, b: 1, a: 1}
   targetWorldHeight: 0.12
   speed: 12

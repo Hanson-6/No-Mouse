@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// 暂停菜单控制器。
@@ -108,6 +109,9 @@ public class PauseMenu : MonoBehaviour
         isPaused = true;
         Time.timeScale = 0f;
         if (pausePanel != null) pausePanel.SetActive(true);
+
+        if (resumeButton != null)
+            EventSystem.current?.SetSelectedGameObject(resumeButton.gameObject);
     }
 
     /// <summary>
