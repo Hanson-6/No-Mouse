@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 /// <summary>
 /// 基础巡逻敌人。
@@ -8,7 +9,7 @@ using UnityEngine;
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
-public class Enemy : MonoBehaviour
+public class Enemy : MonoBehaviour, ISnapshotSaveable
 {
     [Header("Patrol")]
     public float moveSpeed = 2f;
@@ -23,6 +24,9 @@ public class Enemy : MonoBehaviour
     [Header("Audio")]
     [SerializeField] private AudioClip deathSound;
 
+    [Header("Death")]
+    [SerializeField] private float hideAfterDeathDelay = 0.5f;
+
     private Rigidbody2D rb;
     private SpriteRenderer sr;
     private Animator animator;
@@ -32,6 +36,22 @@ public class Enemy : MonoBehaviour
     private enum PatrolState { MovingToA, PatrolAB }
     private PatrolState state;
     private bool goingToB; // only used in PatrolAB state
+    private Coroutine hideRoutine;
+
+    [System.Serializable]
+    private class SnapshotState
+    {
+        public bool activeSelf;
+        public float positionX;
+        public float positionY;
+        public float positionZ;
+        public float velocityX;
+        public float velocityY;
+        public bool flipX;
+        public bool isDead;
+        public int patrolState;
+        public bool goingToB;
+    }
 
     void Awake()
     {
@@ -139,7 +159,18 @@ public class Enemy : MonoBehaviour
         GetComponent<Collider2D>().enabled = false;
         if (animator != null) animator.SetTrigger("Die");
         if (deathSound != null) AudioSource.PlayClipAtPoint(deathSound, transform.position);
-        Destroy(gameObject, 0.5f);
+
+        if (hideRoutine != null)
+            StopCoroutine(hideRoutine);
+        hideRoutine = StartCoroutine(HideAfterDelay());
+    }
+
+    private IEnumerator HideAfterDelay()
+    {
+        if (hideAfterDeathDelay > 0f)
+            yield return new WaitForSeconds(hideAfterDeathDelay);
+
+        gameObject.SetActive(false);
     }
 
     void OnDrawGizmosSelected()
@@ -152,5 +183,61 @@ public class Enemy : MonoBehaviour
         // Show path from spawn to pointA
         Gizmos.color = Color.cyan;
         Gizmos.DrawLine(transform.position, pointA);
+    }
+
+    public string CaptureSnapshotState()
+    {
+        var snapshot = new SnapshotState
+        {
+            activeSelf = gameObject.activeSelf && !isDead,
+            positionX = transform.position.x,
+            positionY = transform.position.y,
+            positionZ = transform.position.z,
+            velocityX = rb != null ? rb.velocity.x : 0f,
+            velocityY = rb != null ? rb.velocity.y : 0f,
+            flipX = sr != null && sr.flipX,
+            isDead = isDead,
+            patrolState = (int)state,
+            goingToB = goingToB
+        };
+
+        return JsonUtility.ToJson(snapshot);
+    }
+
+    public void RestoreSnapshotState(string stateJson)
+    {
+        if (string.IsNullOrEmpty(stateJson)) return;
+
+        SnapshotState snapshot = JsonUtility.FromJson<SnapshotState>(stateJson);
+
+        if (hideRoutine != null)
+        {
+            StopCoroutine(hideRoutine);
+            hideRoutine = null;
+        }
+
+        transform.position = new Vector3(snapshot.positionX, snapshot.positionY, snapshot.positionZ);
+
+        if (rb != null)
+            rb.velocity = new Vector2(snapshot.velocityX, snapshot.velocityY);
+
+        if (sr != null)
+            sr.flipX = snapshot.flipX;
+
+        isDead = snapshot.isDead;
+        int maxEnum = (int)PatrolState.PatrolAB;
+        state = (PatrolState)Mathf.Clamp(snapshot.patrolState, 0, maxEnum);
+        goingToB = snapshot.goingToB;
+
+        bool shouldBeActive = snapshot.activeSelf && !isDead;
+
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null)
+            col.enabled = shouldBeActive;
+
+        if (rb != null)
+            rb.simulated = shouldBeActive;
+
+        gameObject.SetActive(shouldBeActive);
     }
 }

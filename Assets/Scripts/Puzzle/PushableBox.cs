@@ -9,7 +9,7 @@ public enum BoxLinkMode { None, Push, Pull }
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(BoxCollider2D))]
-public class PushableBox : MonoBehaviour
+public class PushableBox : MonoBehaviour, ISnapshotSaveable
 {
     // ── 手势激活帧 ──────────────────────────────────────────────────────────
     // GestureInputBridge 每帧刷新；超过1帧未刷新自动失效
@@ -60,6 +60,21 @@ public class PushableBox : MonoBehaviour
 
     // horizontalTouch: 水平方向碰撞标记，区分"从侧面碰"和"从上面跳上去"
     private bool horizontalTouch;
+
+    [System.Serializable]
+    private class SnapshotState
+    {
+        public bool activeSelf;
+        public float positionX;
+        public float positionY;
+        public float positionZ;
+        public float velocityX;
+        public float velocityY;
+        public bool isLinked;
+        public int linkMode;
+        public float pushDirection;
+        public bool horizontalTouch;
+    }
 
     /* Unity 内置函数 */
     // - Awake 在脚本实例创建时（最早）时调用
@@ -217,4 +232,44 @@ public class PushableBox : MonoBehaviour
 
     /// <summary>当前连接模式</summary>
     public BoxLinkMode LinkMode => linkMode;
+
+    public string CaptureSnapshotState()
+    {
+        var snapshot = new SnapshotState
+        {
+            activeSelf = gameObject.activeSelf,
+            positionX = transform.position.x,
+            positionY = transform.position.y,
+            positionZ = transform.position.z,
+            velocityX = rb != null ? rb.velocity.x : 0f,
+            velocityY = rb != null ? rb.velocity.y : 0f,
+            isLinked = isLinked,
+            linkMode = (int)linkMode,
+            pushDirection = pushDirection,
+            horizontalTouch = horizontalTouch
+        };
+
+        return JsonUtility.ToJson(snapshot);
+    }
+
+    public void RestoreSnapshotState(string stateJson)
+    {
+        if (string.IsNullOrEmpty(stateJson)) return;
+
+        SnapshotState snapshot = JsonUtility.FromJson<SnapshotState>(stateJson);
+        gameObject.SetActive(snapshot.activeSelf);
+        transform.position = new Vector3(snapshot.positionX, snapshot.positionY, snapshot.positionZ);
+
+        if (rb != null)
+            rb.velocity = new Vector2(snapshot.velocityX, snapshot.velocityY);
+
+        isLinked = snapshot.isLinked;
+        int maxMode = (int)BoxLinkMode.Pull;
+        linkMode = (BoxLinkMode)Mathf.Clamp(snapshot.linkMode, 0, maxMode);
+        pushDirection = snapshot.pushDirection;
+        horizontalTouch = snapshot.horizontalTouch;
+
+        if (!isLinked)
+            playerRb = null;
+    }
 }

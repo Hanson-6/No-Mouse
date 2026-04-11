@@ -7,7 +7,7 @@ using UnityEngine;
 ///   - startAtPointB = true  → 先移动到 pointB，再开始 B↔A 循环
 /// 玩家站上去会随平台移动。
 /// </summary>
-public class MovingPlatform : MonoBehaviour
+public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
 {
     [Header("Movement")]
     public Vector2 pointA;
@@ -27,6 +27,17 @@ public class MovingPlatform : MonoBehaviour
     private Vector3 lastPosition;
 
     public float CurrentVelocityX { get; private set; }
+
+    [System.Serializable]
+    private class SnapshotState
+    {
+        public float positionX;
+        public float positionY;
+        public float positionZ;
+        public int patrolState;
+        public bool patrolToB;
+        public float waitTimer;
+    }
 
     void Start()
     {
@@ -137,5 +148,37 @@ public class MovingPlatform : MonoBehaviour
         Vector2 startPoint = startAtPointB ? b : a;
         Gizmos.color = Color.yellow;
         Gizmos.DrawLine(transform.position, startPoint);
+    }
+
+    public string CaptureSnapshotState()
+    {
+        var snapshot = new SnapshotState
+        {
+            positionX = transform.position.x,
+            positionY = transform.position.y,
+            positionZ = transform.position.z,
+            patrolState = (int)state,
+            patrolToB = goingToB,
+            waitTimer = waitTimer
+        };
+
+        return JsonUtility.ToJson(snapshot);
+    }
+
+    public void RestoreSnapshotState(string stateJson)
+    {
+        if (string.IsNullOrEmpty(stateJson)) return;
+
+        SnapshotState data = JsonUtility.FromJson<SnapshotState>(stateJson);
+        transform.position = new Vector3(data.positionX, data.positionY, data.positionZ);
+
+        int maxEnumValue = (int)PatrolState.Patrolling;
+        int clampedState = Mathf.Clamp(data.patrolState, 0, maxEnumValue);
+        state = (PatrolState)clampedState;
+        goingToB = data.patrolToB;
+        waitTimer = Mathf.Max(0f, data.waitTimer);
+
+        lastPosition = transform.position;
+        CurrentVelocityX = 0f;
     }
 }

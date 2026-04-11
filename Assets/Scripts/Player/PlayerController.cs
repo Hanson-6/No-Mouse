@@ -2,7 +2,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Animator))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, ISnapshotSaveable
 {
     [Header("Movement")]
     public float moveSpeed = 8f;
@@ -56,6 +56,25 @@ public class PlayerController : MonoBehaviour
     //   Pull 时设为面朝反方向（只能拉着走）
     [HideInInspector] public bool facingLocked;
     [HideInInspector] public int moveDirection;
+
+    [System.Serializable]
+    private class SnapshotState
+    {
+        public bool activeSelf;
+        public float positionX;
+        public float positionY;
+        public float positionZ;
+        public float velocityX;
+        public float velocityY;
+        public bool flipX;
+        public bool facingLocked;
+        public int moveDirection;
+        public bool isDead;
+        public float autoWalkDirection;
+        public int jumpCount;
+        public float jumpBufferTimer;
+        public float coyoteTimer;
+    }
 
     /// <summary>玩家当前是否面朝右。GestureInputBridge 用来判断面朝 Box 条件。</summary>
     public bool FacingRight => !spriteRenderer.flipX;
@@ -291,5 +310,57 @@ public class PlayerController : MonoBehaviour
             Gizmos.DrawLine(center + Vector3.left * halfWidth, center + Vector3.left * halfWidth + Vector3.down * groundCheckRadius);
             Gizmos.DrawLine(center + Vector3.right * halfWidth, center + Vector3.right * halfWidth + Vector3.down * groundCheckRadius);
         }
+    }
+
+    public string CaptureSnapshotState()
+    {
+        var snapshot = new SnapshotState
+        {
+            activeSelf = gameObject.activeSelf,
+            positionX = transform.position.x,
+            positionY = transform.position.y,
+            positionZ = transform.position.z,
+            velocityX = rb != null ? rb.velocity.x : 0f,
+            velocityY = rb != null ? rb.velocity.y : 0f,
+            flipX = spriteRenderer != null && spriteRenderer.flipX,
+            facingLocked = facingLocked,
+            moveDirection = moveDirection,
+            isDead = isDead,
+            autoWalkDirection = autoWalkDirection,
+            jumpCount = jumpCount,
+            jumpBufferTimer = jumpBufferTimer,
+            coyoteTimer = coyoteTimer
+        };
+
+        return JsonUtility.ToJson(snapshot);
+    }
+
+    public void RestoreSnapshotState(string stateJson)
+    {
+        if (string.IsNullOrEmpty(stateJson)) return;
+
+        SnapshotState snapshot = JsonUtility.FromJson<SnapshotState>(stateJson);
+        gameObject.SetActive(snapshot.activeSelf);
+
+        transform.position = new Vector3(snapshot.positionX, snapshot.positionY, snapshot.positionZ);
+
+        if (rb != null)
+        {
+            rb.velocity = new Vector2(snapshot.velocityX, snapshot.velocityY);
+            rb.gravityScale = defaultGravityScale;
+        }
+
+        if (spriteRenderer != null)
+            spriteRenderer.flipX = snapshot.flipX;
+
+        facingLocked = snapshot.facingLocked;
+        moveDirection = snapshot.moveDirection;
+        isDead = snapshot.isDead;
+        autoWalkDirection = snapshot.autoWalkDirection;
+        jumpCount = snapshot.jumpCount;
+        jumpBufferTimer = snapshot.jumpBufferTimer;
+        coyoteTimer = snapshot.coyoteTimer;
+
+        currentPlatform = null;
     }
 }

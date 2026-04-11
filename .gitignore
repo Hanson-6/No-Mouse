@@ -26,3 +26,8 @@ Packages/com.github.homuler.mediapipe-0.16.3.tgz
 Assets/Editor/LDtkCollisionSetup.cs
 Assets/Editor/LDtkCollisionSetup.cs.meta
 .opencode_memory.json
+Assets/Snapshots/snapshot_*.json
+Assets/Snapshots/snapshot_*.json.meta
+Assets/Snapshots/manifest.json
+Assets/Snapshots/manifest.json.meta
+.plastic/

@@ -95,15 +95,17 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void ContinueGame()
     {
-        SaveManager.Load();
         Time.timeScale = 1f;
 
+        if (SaveManager.ContinueFromLatestSnapshot())
+            return;
+
+        Debug.LogWarning("[MainMenuController] 未命中快照恢复，降级到旧存档流程。");
+
+        SaveManager.Load();
         int levelIndex = GameData.CurrentLevel;
-        // 确保关卡索引有效
         if (levelIndex > 0 && levelIndex < SceneManager.sceneCountInBuildSettings)
-        {
             SceneManager.LoadScene(levelIndex);
-        }
         else
         {
             Debug.LogWarning($"[MainMenuController] 存档关卡索引无效: {levelIndex}，从第一关开始。");

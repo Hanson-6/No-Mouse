@@ -50,8 +50,14 @@ public class MainMenu : MonoBehaviour
 
     public void ContinueGame()
     {
-        SaveManager.Load();
         Time.timeScale = 1f;
+
+        if (SaveManager.ContinueFromLatestSnapshot())
+            return;
+
+        Debug.LogWarning("[MainMenu] 未命中快照恢复，降级到旧存档流程。");
+
+        SaveManager.Load();
         int levelIndex = GameData.CurrentLevel;
         if (levelIndex > 0 && levelIndex < SceneManager.sceneCountInBuildSettings)
             SceneManager.LoadScene(levelIndex);

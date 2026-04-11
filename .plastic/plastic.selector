@@ -1,4 +1,0 @@
-repository "3329@tj_hku_comp3329@cloud.cn"
-  path "/"
-    br "/main"
-    co "/main"
