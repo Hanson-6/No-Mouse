@@ -172,54 +172,96 @@ namespace GestureRecognition.Detection
             }
 
             Debug.Log("[MediaPipeBridge] Initializing MediaPipe HandLandmarker...");
+            bool nativeRuntimeUnavailable = false;
 
             // Step 1: Enable custom resource resolver
-            ResourceUtil.EnableCustomResolver();
-
-            // Step 2: Prepare model asset (async)
-            // In Editor: uses LocalResourceManager (reads from PackageResources)
-            // In Build: uses StreamingAssetsResourceManager (reads from StreamingAssets)
-            IResourceManager resourceManager;
-
-#if UNITY_EDITOR
-            resourceManager = new LocalResourceManager();
-#else
-            resourceManager = new StreamingAssetsResourceManager();
-#endif
-
-            Debug.Log($"[MediaPipeBridge] Loading model: {ModelFileName}");
-            yield return resourceManager.PrepareAssetAsync(ModelFileName);
-            Debug.Log("[MediaPipeBridge] Model loaded successfully.");
-
-            // Step 3: Create HandLandmarker with VIDEO running mode
-            // VIDEO mode is synchronous with timestamps — simpler than LIVE_STREAM
-            // and avoids cross-thread callback complexity.
             try
             {
-                var baseOptions = new BaseOptions(
-                    BaseOptions.Delegate.CPU,
-                    modelAssetPath: ModelFileName);
-
-                var options = new HandLandmarkerOptions(
-                    baseOptions,
-                    runningMode: RunningMode.VIDEO,
-                    numHands: _numHands,
-                    minHandDetectionConfidence: _minDetectionConfidence,
-                    minHandPresenceConfidence: _minPresenceConfidence,
-                    minTrackingConfidence: _minTrackingConfidence);
-
-                _handLandmarker = HandLandmarker.CreateFromOptions(options);
-
-                // Pre-allocate result buffer to avoid GC
-                _mpResult = HandLandmarkerResult.Alloc(_numHands);
-
-                Debug.Log("[MediaPipeBridge] HandLandmarker created successfully (VIDEO mode, CPU).");
+                ResourceUtil.EnableCustomResolver();
             }
-            catch (Exception e)
+            catch (DllNotFoundException e)
             {
-                Debug.LogError($"[MediaPipeBridge] Failed to create HandLandmarker: {e.Message}\n{e.StackTrace}");
-                Debug.LogWarning("[MediaPipeBridge] Falling back to stub mode.");
+                Debug.LogWarning($"[MediaPipeBridge] MediaPipe native runtime not available ({e.Message}). Falling back to stub mode.");
                 _handLandmarker = null;
+                nativeRuntimeUnavailable = true;
+            }
+
+            if (!nativeRuntimeUnavailable)
+            {
+                // Step 2: Prepare model asset (async)
+                // In Editor: uses LocalResourceManager (reads from PackageResources)
+                // In Build: uses StreamingAssetsResourceManager (reads from StreamingAssets)
+                IResourceManager resourceManager;
+
+#if UNITY_EDITOR
+                resourceManager = new LocalResourceManager();
+#else
+                resourceManager = new StreamingAssetsResourceManager();
+#endif
+
+                IEnumerator prepareRoutine;
+                try
+                {
+                    prepareRoutine = resourceManager.PrepareAssetAsync(ModelFileName);
+                }
+                catch (DllNotFoundException e)
+                {
+                    Debug.LogWarning($"[MediaPipeBridge] MediaPipe native runtime not available ({e.Message}). Falling back to stub mode.");
+                    _handLandmarker = null;
+                    nativeRuntimeUnavailable = true;
+                    prepareRoutine = null;
+                }
+
+                if (!nativeRuntimeUnavailable && prepareRoutine != null)
+                {
+                    Debug.Log($"[MediaPipeBridge] Loading model: {ModelFileName}");
+                    yield return prepareRoutine;
+                    Debug.Log("[MediaPipeBridge] Model loaded successfully.");
+                }
+            }
+
+            if (!nativeRuntimeUnavailable)
+            {
+                // Step 3: Create HandLandmarker with VIDEO running mode
+                // VIDEO mode is synchronous with timestamps — simpler than LIVE_STREAM
+                // and avoids cross-thread callback complexity.
+                try
+                {
+                    var baseOptions = new BaseOptions(
+                        BaseOptions.Delegate.CPU,
+                        modelAssetPath: ModelFileName);
+
+                    var options = new HandLandmarkerOptions(
+                        baseOptions,
+                        runningMode: RunningMode.VIDEO,
+                        numHands: _numHands,
+                        minHandDetectionConfidence: _minDetectionConfidence,
+                        minHandPresenceConfidence: _minPresenceConfidence,
+                        minTrackingConfidence: _minTrackingConfidence);
+
+                    _handLandmarker = HandLandmarker.CreateFromOptions(options);
+
+                    // Pre-allocate result buffer to avoid GC
+                    _mpResult = HandLandmarkerResult.Alloc(_numHands);
+
+                    Debug.Log("[MediaPipeBridge] HandLandmarker created successfully (VIDEO mode, CPU).");
+                }
+                catch (DllNotFoundException e)
+                {
+                    Debug.LogWarning($"[MediaPipeBridge] MediaPipe native runtime not available ({e.Message}). Falling back to stub mode.");
+                    _handLandmarker = null;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[MediaPipeBridge] Failed to create HandLandmarker: {e.Message}\n{e.StackTrace}");
+                    Debug.LogWarning("[MediaPipeBridge] Falling back to stub mode.");
+                    _handLandmarker = null;
+                }
+            }
+
+            if (_handLandmarker == null)
+            {
+                Debug.LogWarning("[MediaPipeBridge] Running in stub mode. Install MediaPipe via release .tgz (contains native binaries), not Git source URL package.");
             }
 #else
             Debug.Log("[MediaPipeBridge] Async init complete (stub mode — " +

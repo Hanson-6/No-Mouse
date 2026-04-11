@@ -6,6 +6,9 @@ using UnityEngine.SceneManagement;
 
 public static class LDtkSceneSetup
 {
+    private const string AutoReloadPrefKey = "LDtkSceneSetup_AutoReload";
+    private const string AutoReloadMenuPath = "Tools/Auto-Reload LDtk Terrain on Save";
+
     [MenuItem("Tools/Create LDtk Level 1 Scene")]
     public static void CreateLevel1Scene()
     {
@@ -23,6 +26,30 @@ public static class LDtkSceneSetup
     {
         CreateLDtkScene("Assets/Scenes/LDtkLevel.unity", null);
     }
+
+    [MenuItem("Tools/Reload LDtk Terrain (Keep Player & Prefabs)")]
+    public static void ReloadLDtkTerrain()
+    {
+        ReloadLDtkInCurrentScene(forceReimport: true);
+    }
+
+    // --- Auto-reload toggle ---
+    [MenuItem(AutoReloadMenuPath)]
+    public static void ToggleAutoReload()
+    {
+        bool current = EditorPrefs.GetBool(AutoReloadPrefKey, true);
+        EditorPrefs.SetBool(AutoReloadPrefKey, !current);
+        Debug.Log($"[LDtkSceneSetup] Auto-reload on LDtk save: {(!current ? "ON" : "OFF")}");
+    }
+
+    [MenuItem(AutoReloadMenuPath, true)]
+    public static bool ToggleAutoReloadValidate()
+    {
+        Menu.SetChecked(AutoReloadMenuPath, EditorPrefs.GetBool(AutoReloadPrefKey, true));
+        return true;
+    }
+
+    public static bool IsAutoReloadEnabled => EditorPrefs.GetBool(AutoReloadPrefKey, true);
 
     // levelIdentifier: LDtk level name (e.g. "Level_0", "Level_1"). Pass null to show all levels.
     private static void CreateLDtkScene(string scenePath, string levelIdentifier)
@@ -174,5 +201,189 @@ public static class LDtkSceneSetup
         // Save the scene
         EditorSceneManager.SaveScene(scene, scenePath);
         Debug.Log($"[LDtkSceneSetup] Scene saved to {scenePath}");
+    }
+
+    /// <summary>
+    /// Reloads only the LDtk terrain prefab instance in the current scene,
+    /// preserving the Player, Camera, GameManager, and all other manually-placed objects.
+    /// This forces collision data (CompositeCollider2D paths) to regenerate from the updated LDtk asset.
+    /// </summary>
+    /// <param name="forceReimport">If true, force-reimports the LDtk asset first. 
+    /// Set to false when called from AssetPostprocessor (asset was already just reimported).</param>
+    public static void ReloadLDtkInCurrentScene(bool forceReimport = true)
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            Debug.LogError("[LDtkSceneSetup] No valid scene is loaded.");
+            return;
+        }
+
+        // Find the existing LDtk instance in the scene (named "Levels")
+        GameObject oldLdtk = null;
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            if (root.name == "Levels")
+            {
+                oldLdtk = root;
+                break;
+            }
+        }
+
+        if (oldLdtk == null)
+        {
+            Debug.LogError("[LDtkSceneSetup] Could not find 'Levels' GameObject in the current scene. " +
+                           "Make sure the scene was created with 'Create LDtk Level X Scene'.");
+            return;
+        }
+
+        // --- Record which levels were active/inactive before we destroy the old instance ---
+        // LDtk hierarchy: Levels > World > Level_0, Level_1, ...
+        Transform oldWorldTransform = null;
+        foreach (Transform child in oldLdtk.transform)
+        {
+            if (child.GetComponent<LDtkComponentWorld>() != null)
+            {
+                oldWorldTransform = child;
+                break;
+            }
+        }
+        if (oldWorldTransform == null)
+            oldWorldTransform = oldLdtk.transform;
+
+        // Store active state per level name
+        var levelActiveStates = new System.Collections.Generic.Dictionary<string, bool>();
+        foreach (Transform child in oldWorldTransform)
+        {
+            levelActiveStates[child.name] = child.gameObject.activeSelf;
+        }
+
+        int siblingIndex = oldLdtk.transform.GetSiblingIndex();
+
+        // Record the prefab asset path from the existing instance
+        string ldtkPath = "Assets/IDTK/Levels.ldtk";
+        var prefabSource = PrefabUtility.GetCorrespondingObjectFromSource(oldLdtk);
+        if (prefabSource != null)
+        {
+            string sourcePath = AssetDatabase.GetAssetPath(prefabSource);
+            if (!string.IsNullOrEmpty(sourcePath))
+                ldtkPath = sourcePath;
+        }
+
+        // --- Force reimport the LDtk asset to ensure Unity picks up latest changes ---
+        if (forceReimport)
+        {
+            AssetDatabase.ImportAsset(ldtkPath, ImportAssetOptions.ForceUpdate);
+        }
+
+        // --- Destroy the old instance ---
+        Undo.RegisterCompleteObjectUndo(oldLdtk, "Reload LDtk Terrain");
+        Object.DestroyImmediate(oldLdtk);
+        Debug.Log("[LDtkSceneSetup] Destroyed old 'Levels' instance.");
+
+        // --- Instantiate a fresh copy from the (reimported) LDtk prefab ---
+        var ldtkAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ldtkPath);
+        if (ldtkAsset == null)
+        {
+            Debug.LogError($"[LDtkSceneSetup] Could not load LDtk asset at '{ldtkPath}'.");
+            return;
+        }
+
+        var newLdtk = (GameObject)PrefabUtility.InstantiatePrefab(ldtkAsset);
+        newLdtk.name = "Levels";
+        newLdtk.transform.SetSiblingIndex(siblingIndex);
+
+        // --- Restore level active/inactive states ---
+        Transform newWorldTransform = null;
+        foreach (Transform child in newLdtk.transform)
+        {
+            if (child.GetComponent<LDtkComponentWorld>() != null)
+            {
+                newWorldTransform = child;
+                break;
+            }
+        }
+        if (newWorldTransform == null)
+            newWorldTransform = newLdtk.transform;
+
+        foreach (Transform child in newWorldTransform)
+        {
+            if (levelActiveStates.TryGetValue(child.name, out bool wasActive))
+            {
+                child.gameObject.SetActive(wasActive);
+            }
+        }
+
+        // --- Force composite collider regeneration ---
+        // Touch all CompositeCollider2D components so Unity rebuilds their geometry
+        var composites = newLdtk.GetComponentsInChildren<UnityEngine.CompositeCollider2D>(true);
+        foreach (var composite in composites)
+        {
+            composite.GenerateGeometry();
+        }
+
+        Debug.Log($"[LDtkSceneSetup] Re-instantiated 'Levels' from '{ldtkPath}'. " +
+                  $"Restored {levelActiveStates.Count} level visibility states. " +
+                  $"Regenerated {composites.Length} composite collider(s).");
+
+        // Mark scene dirty so the user can save
+        EditorSceneManager.MarkSceneDirty(scene);
+
+        Debug.Log("[LDtkSceneSetup] Scene marked dirty. Use Ctrl+S to save. " +
+                  "Player, Camera, GameManager, and all other objects are untouched.");
+    }
+}
+
+/// <summary>
+/// Watches for LDtk asset reimports and automatically reloads terrain collisions
+/// in the current scene when "Auto-Reload LDtk Terrain on Save" is enabled.
+/// </summary>
+public class LDtkAutoReloadPostprocessor : AssetPostprocessor
+{
+    private static void OnPostprocessAllAssets(
+        string[] importedAssets, string[] deletedAssets,
+        string[] movedAssets, string[] movedFromAssetPaths)
+    {
+        if (!LDtkSceneSetup.IsAutoReloadEnabled)
+            return;
+
+        bool ldtkChanged = false;
+        foreach (var path in importedAssets)
+        {
+            // Match the LDtk project file (not sub-assets like .ldtkl)
+            if (path.EndsWith(".ldtk", System.StringComparison.OrdinalIgnoreCase))
+            {
+                ldtkChanged = true;
+                break;
+            }
+        }
+
+        if (!ldtkChanged)
+            return;
+
+        // Check if the current scene has a "Levels" root object before scheduling
+        var scene = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isLoaded)
+            return;
+
+        bool hasLevels = false;
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            if (root.name == "Levels")
+            {
+                hasLevels = true;
+                break;
+            }
+        }
+
+        if (!hasLevels)
+            return;
+
+        // Defer the reload to avoid issues with modifying the scene during asset postprocessing
+        EditorApplication.delayCall += () =>
+        {
+            Debug.Log("[LDtkSceneSetup] LDtk asset changed -- auto-reloading terrain collisions...");
+            LDtkSceneSetup.ReloadLDtkInCurrentScene(forceReimport: false);
+        };
     }
 }

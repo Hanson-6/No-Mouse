@@ -236,6 +236,25 @@ namespace GestureRecognition.UI
             UpdateDisplayMode();
         }
 
+        private void Update()
+        {
+            if (_cameraImage == null)
+                return;
+
+            if (_displayMode != DisplayMode.CameraFeed &&
+                _displayMode != DisplayMode.CameraWithOverlay)
+                return;
+
+            if (GestureService.Instance == null || GestureService.Instance.Camera == null)
+                return;
+
+            Texture cameraTexture = GestureService.Instance.Camera.CameraTexture;
+            if (cameraTexture != null && _cameraImage.texture != cameraTexture)
+            {
+                _cameraImage.texture = cameraTexture;
+            }
+        }
+
         // -----------------------------------------------------------------
         // Event handlers
         // -----------------------------------------------------------------

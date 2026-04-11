@@ -39,6 +39,7 @@ public class PinkManAnimationSetup : EditorWindow
         ctrl.AddParameter("Speed", AnimatorControllerParameterType.Float);
         ctrl.AddParameter("IsGrounded", AnimatorControllerParameterType.Bool);
         ctrl.AddParameter("VelocityY", AnimatorControllerParameterType.Float);
+        ctrl.AddParameter("DoubleJump", AnimatorControllerParameterType.Trigger);
         ctrl.AddParameter("Die", AnimatorControllerParameterType.Trigger);
 
         // Add states
@@ -64,9 +65,9 @@ public class PinkManAnimationSetup : EditorWindow
         // Jump -> Fall
         AddTransition(stJump, stFall, "VelocityY", AnimatorConditionMode.Less, 0f);
 
-        // Double jump
-        AddTransitionBool(stJump, stDblJmp, "IsGrounded", false, extraCond: ("VelocityY", AnimatorConditionMode.Greater, 0f));
-        AddTransitionBool(stFall, stDblJmp, "IsGrounded", false, extraCond: ("VelocityY", AnimatorConditionMode.Greater, 0f));
+        // Double jump (triggered only by gameplay code)
+        AddTransitionTrigger(stJump, stDblJmp, "DoubleJump");
+        AddTransitionTrigger(stFall, stDblJmp, "DoubleJump");
         AddTransition(stDblJmp, stFall, "VelocityY", AnimatorConditionMode.Less, 0f);
 
         // Air -> Ground
@@ -168,6 +169,14 @@ public class PinkManAnimationSetup : EditorWindow
         t.AddCondition(value ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, param);
         if (extraCond.HasValue)
             t.AddCondition(extraCond.Value.mode, extraCond.Value.threshold, extraCond.Value.name);
+        t.hasExitTime = false;
+        t.duration = 0.05f;
+    }
+
+    static void AddTransitionTrigger(AnimatorState from, AnimatorState to, string trigger)
+    {
+        var t = from.AddTransition(to);
+        t.AddCondition(AnimatorConditionMode.If, 0f, trigger);
         t.hasExitTime = false;
         t.duration = 0.05f;
     }

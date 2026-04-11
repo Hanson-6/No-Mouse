@@ -10,17 +10,17 @@ public class PlayerController : MonoBehaviour
     [Header("Ground Check")]
     public Transform groundCheck;
     public float groundCheckRadius = 0.2f;
+    [SerializeField] private float groundCheckWidth = 0.75f;
+    [SerializeField, Range(0f, 1f)] private float groundedNormalThreshold = 0.55f;
     public LayerMask groundLayer;
 
     [Header("Jump Settings")]
     public int maxJumpCount = 2;
     [SerializeField] private float jumpForce = 14f;
+    [SerializeField] private float jumpBufferTime = 0.12f;
+    [SerializeField] private float coyoteTime = 0.12f;
     // Multiplies gravityScale while the player is falling — higher = snappier landing
     [SerializeField] private float fallGravityMultiplier = 3.5f;
-    // Multiplies gravityScale while rising with jump button released — controls short-hop height
-    [SerializeField] private float lowJumpMultiplier = 2f;
-    // Fraction of upward velocity kept when jump button is released early (0=instant cut, 1=no cut)
-    [SerializeField] private float jumpCutMultiplier = 0.45f;
 
     [Header("Audio")]
     [SerializeField] private AudioClip jumpSound;
@@ -40,7 +40,14 @@ public class PlayerController : MonoBehaviour
     /// <summary>玩家是否在地面上。GestureInputBridge 用于判断跳跃释放抓取。</summary>
     public bool IsGrounded => isGrounded;
     private int jumpCount;
+    private float jumpBufferTimer;
+    private float coyoteTimer;
     private bool isDead;
+    private readonly int doubleJumpTriggerHash = Animator.StringToHash("DoubleJump");
+    private bool hasDoubleJumpTrigger;
+    private readonly RaycastHit2D[] groundRayHits = new RaycastHit2D[8];
+    private readonly Collider2D[] groundOverlapHits = new Collider2D[8];
+    private ContactFilter2D groundProbeFilter;
     // ── 手势系统控制字段 ──────────────────────────────────────────────────
     // facingLocked: Pull 时锁定面朝方向，防止 sprite 翻转
     // moveDirection: 0=不限制, 1=只能往右, -1=只能往左
@@ -60,6 +67,11 @@ public class PlayerController : MonoBehaviour
         ownCollider = GetComponent<Collider2D>();
         audioSource = GetComponent<AudioSource>();
         defaultGravityScale = rb.gravityScale;
+        hasDoubleJumpTrigger = HasAnimatorParameter(doubleJumpTriggerHash, AnimatorControllerParameterType.Trigger);
+
+        groundProbeFilter = new ContactFilter2D();
+        groundProbeFilter.SetLayerMask(Physics2D.AllLayers);
+        groundProbeFilter.useTriggers = false;
     }
 
     void Update()
@@ -76,21 +88,13 @@ public class PlayerController : MonoBehaviour
         }
 
         // Jump
-        if (Input.GetButtonDown("Jump") && jumpCount < maxJumpCount)
+        if (Input.GetButtonDown("Jump"))
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-            if (audioSource != null)
-            {
-                AudioClip clip = (jumpCount == 0) ? jumpSound : (doubleJumpSound != null ? doubleJumpSound : jumpSound);
-                if (clip != null) audioSource.PlayOneShot(clip);
-            }
-            jumpCount++;
+            jumpBufferTimer = jumpBufferTime;
         }
-
-        // Jump cut — bleed upward velocity when button is released early
-        if (Input.GetButtonUp("Jump") && rb.velocity.y > 0f)
+        else if (jumpBufferTimer > 0f)
         {
-            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * jumpCutMultiplier);
+            jumpBufferTimer -= Time.deltaTime;
         }
 
         // 面朝方向翻转（Pull 时锁定，不允许翻转）
@@ -114,29 +118,114 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // Ground check — thin box so walls don't falsely trigger grounded state
-        isGrounded = Physics2D.OverlapBox(groundCheck.position, new Vector2(0.75f, 0.25f), 0f, groundLayer);
-        if (!isGrounded)
+        isGrounded = CheckGrounded();
+        if (isGrounded)
         {
-            // 站在箱子上也算落地：RaycastAll 过滤掉自身碰撞体
-            var hits = Physics2D.RaycastAll(groundCheck.position, Vector2.down, 1.0f);
-            foreach (var h in hits)
-            {
-                if (h.collider == ownCollider) continue;
-                if (h.collider.CompareTag("Box")) { isGrounded = true; break; }
-            }
+            jumpCount = 0;
+            coyoteTimer = coyoteTime;
         }
-        if (isGrounded) jumpCount = 0;
+        else if (coyoteTimer > 0f)
+        {
+            coyoteTimer -= Time.fixedDeltaTime;
+        }
+
+        TryConsumeBufferedJump();
 
         rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
 
-        // Gravity modulation — heavier fall, snappier short-hop
+        // Gravity modulation — heavier fall only
         if (rb.velocity.y < 0f)
             rb.gravityScale = defaultGravityScale * fallGravityMultiplier;
-        else if (rb.velocity.y > 0f && !Input.GetButton("Jump"))
-            rb.gravityScale = defaultGravityScale * lowJumpMultiplier;
         else
             rb.gravityScale = defaultGravityScale;
+    }
+
+    void TryConsumeBufferedJump()
+    {
+        if (jumpBufferTimer <= 0f) return;
+
+        bool canGroundJump = (isGrounded || coyoteTimer > 0f) && jumpCount == 0;
+        bool canAirJump = !canGroundJump && jumpCount < maxJumpCount;
+        if (!canGroundJump && !canAirJump) return;
+
+        bool isAirJump = !canGroundJump;
+        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+
+        if (audioSource != null)
+        {
+            AudioClip clip = (jumpCount == 0) ? jumpSound : (doubleJumpSound != null ? doubleJumpSound : jumpSound);
+            if (clip != null) audioSource.PlayOneShot(clip);
+        }
+
+        if (isAirJump && hasDoubleJumpTrigger)
+            animator.SetTrigger(doubleJumpTriggerHash);
+
+        jumpCount++;
+        jumpBufferTimer = 0f;
+        coyoteTimer = 0f;
+    }
+
+    bool CheckGrounded()
+    {
+        if (ownCollider == null || groundCheck == null) return false;
+
+        Vector2 probeCenter = groundCheck.position;
+        Vector2 probeSize = new Vector2(Mathf.Max(groundCheckWidth, 0.2f), Mathf.Max(groundCheckRadius, 0.1f));
+
+        int hitCount = Physics2D.OverlapBox(probeCenter, probeSize, 0f, groundProbeFilter, groundOverlapHits);
+        bool touchingGroundCandidate = false;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider2D hit = groundOverlapHits[i];
+            if (hit == null || hit == ownCollider) continue;
+
+            bool onGroundLayer = ((1 << hit.gameObject.layer) & groundLayer.value) != 0;
+            if (onGroundLayer || hit.CompareTag("Box"))
+            {
+                touchingGroundCandidate = true;
+                break;
+            }
+        }
+
+        if (!touchingGroundCandidate) return false;
+
+        float halfWidth = probeSize.x * 0.45f;
+        Vector2 originBase = probeCenter + Vector2.up * 0.03f;
+        float rayDistance = Mathf.Max(groundCheckRadius + 0.12f, 0.18f);
+
+        return HasGroundSupport(originBase, rayDistance)
+            || HasGroundSupport(originBase + Vector2.left * halfWidth, rayDistance)
+            || HasGroundSupport(originBase + Vector2.right * halfWidth, rayDistance);
+    }
+
+    bool HasGroundSupport(Vector2 origin, float distance)
+    {
+        int hitCount = Physics2D.Raycast(origin, Vector2.down, groundProbeFilter, groundRayHits, distance);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit2D hit = groundRayHits[i];
+            if (hit.collider == null || hit.collider == ownCollider) continue;
+            if (hit.normal.y < groundedNormalThreshold) continue;
+
+            bool onGroundLayer = ((1 << hit.collider.gameObject.layer) & groundLayer.value) != 0;
+            if (onGroundLayer || hit.collider.CompareTag("Box"))
+                return true;
+        }
+
+        return false;
+    }
+
+    bool HasAnimatorParameter(int paramHash, AnimatorControllerParameterType expectedType)
+    {
+        foreach (var parameter in animator.parameters)
+        {
+            if (parameter.nameHash == paramHash && parameter.type == expectedType)
+                return true;
+        }
+
+        return false;
     }
 
     public void AutoWalk(float direction)
@@ -178,7 +267,13 @@ public class PlayerController : MonoBehaviour
         if (groundCheck != null)
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawWireCube(groundCheck.position, new Vector3(0.75f, 0.25f, 0f));
+
+            Vector3 center = groundCheck.position;
+            float halfWidth = groundCheckWidth * 0.5f;
+
+            Gizmos.DrawLine(center, center + Vector3.down * groundCheckRadius);
+            Gizmos.DrawLine(center + Vector3.left * halfWidth, center + Vector3.left * halfWidth + Vector3.down * groundCheckRadius);
+            Gizmos.DrawLine(center + Vector3.right * halfWidth, center + Vector3.right * halfWidth + Vector3.down * groundCheckRadius);
         }
     }
 }

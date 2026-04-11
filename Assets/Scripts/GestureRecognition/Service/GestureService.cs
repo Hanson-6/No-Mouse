@@ -80,7 +80,7 @@ namespace GestureRecognition.Service
 
         [Tooltip("Start recognition automatically when the scene loads.")]
         [SerializeField]
-        private bool _autoStart;
+        private bool _autoStart = true;
 
         [Tooltip("Automatically create and show the gesture display panel on start.")]
         [SerializeField]
@@ -242,6 +242,13 @@ namespace GestureRecognition.Service
 
             _instance = this;
 
+            if (_gestureConfig == null)
+            {
+                _gestureConfig = Resources.Load<GestureConfig>("GestureConfig");
+                if (_gestureConfig == null)
+                    Debug.LogWarning("[GestureService] GestureConfig not assigned and Resources/GestureConfig.asset not found.");
+            }
+
             // 跨场景保留：摄像头和 MediaPipe 只初始化一次
             DontDestroyOnLoad(gameObject);
 
@@ -278,6 +285,13 @@ namespace GestureRecognition.Service
 
         private void Start()
         {
+            Debug.Log($"[GestureService] Start (autoStart={_autoStart}, autoShowPanel={_autoShowPanel})");
+
+            if (_autoShowPanel)
+            {
+                EnsureDisplayPanel();
+            }
+
             if (_autoStart)
             {
                 StartRecognition();

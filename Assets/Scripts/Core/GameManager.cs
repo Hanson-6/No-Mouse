@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using GestureRecognition.Service;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,6 +17,12 @@ public class GameManager : MonoBehaviour
             return;
         }
         Instance = this;
+
+        if (FindObjectOfType<GestureService>() == null)
+        {
+            var gestureServiceGo = new GameObject("GestureService");
+            gestureServiceGo.AddComponent<GestureService>();
+        }
     }
 
     public Vector3 GetRespawnPoint()
