@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using GestureRecognition.Service;
+using GestureRecognition.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -23,6 +24,61 @@ public class GameManager : MonoBehaviour
             var gestureServiceGo = new GameObject("GestureService");
             gestureServiceGo.AddComponent<GestureService>();
         }
+
+        EnsureGestureGameplayBindings();
+    }
+
+    void Start()
+    {
+        EnsureGestureGameplayBindings();
+    }
+
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        EnsureGestureGameplayBindings();
+    }
+
+    private void EnsureGestureGameplayBindings()
+    {
+        var player = FindObjectOfType<PlayerController>();
+        if (player == null) return;
+
+        var gestureBridge = FindObjectOfType<GestureInputBridge>();
+        if (gestureBridge == null)
+        {
+            var go = new GameObject("GestureInputBridge");
+            gestureBridge = go.AddComponent<GestureInputBridge>();
+        }
+        gestureBridge.SetPlayer(player);
+
+        var spiritHand = FindObjectOfType<SpiritHandDisplay>();
+        if (spiritHand == null)
+        {
+            var go = new GameObject("SpiritHand");
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sortingOrder = 10;
+
+            spiritHand = go.AddComponent<SpiritHandDisplay>();
+            spiritHand.SetPlayer(player);
+        }
+        else
+        {
+            spiritHand.SetPlayer(player);
+        }
+
+        var panel = FindObjectOfType<GestureDisplayPanel>(true);
+        if (panel != null && !panel.gameObject.activeSelf)
+            panel.Show();
     }
 
     public Vector3 GetRespawnPoint()

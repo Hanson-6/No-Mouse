@@ -30,6 +30,17 @@ public class GestureInputBridge : MonoBehaviour
     // 当前已连接的箱子（Push 或 Pull 进行中）
     private PushableBox linkedBox;
 
+    void Awake()
+    {
+        if (player == null)
+            player = FindObjectOfType<PlayerController>();
+    }
+
+    public void SetPlayer(PlayerController target)
+    {
+        player = target;
+    }
+
     void OnEnable()
     {
         GestureEvents.OnGestureUpdated += OnGesture;

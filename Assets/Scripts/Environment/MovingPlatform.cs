@@ -24,6 +24,9 @@ public class MovingPlatform : MonoBehaviour
     private PatrolState state;
     private bool goingToB;   // only used during Patrolling
     private float waitTimer;
+    private Vector3 lastPosition;
+
+    public float CurrentVelocityX { get; private set; }
 
     void Start()
     {
@@ -51,6 +54,9 @@ public class MovingPlatform : MonoBehaviour
             state = PatrolState.MovingToStart;
             waitTimer = 0f;
         }
+
+        lastPosition = transform.position;
+        CurrentVelocityX = 0f;
     }
 
     void Update()
@@ -58,6 +64,8 @@ public class MovingPlatform : MonoBehaviour
         if (waitTimer > 0f)
         {
             waitTimer -= Time.deltaTime;
+            CurrentVelocityX = 0f;
+            lastPosition = transform.position;
             return;
         }
 
@@ -86,18 +94,32 @@ public class MovingPlatform : MonoBehaviour
                 waitTimer = waitTime;
             }
         }
+
+        float dt = Time.deltaTime;
+        if (dt > 0f)
+            CurrentVelocityX = (transform.position.x - lastPosition.x) / dt;
+        else
+            CurrentVelocityX = 0f;
+
+        lastPosition = transform.position;
     }
 
     void OnCollisionEnter2D(Collision2D col)
     {
         if (col.gameObject.CompareTag("Player"))
+        {
             col.transform.SetParent(transform);
+            col.gameObject.GetComponent<PlayerController>()?.SetCurrentPlatform(this);
+        }
     }
 
     void OnCollisionExit2D(Collision2D col)
     {
         if (col.gameObject.CompareTag("Player"))
+        {
             col.transform.SetParent(null);
+            col.gameObject.GetComponent<PlayerController>()?.ClearCurrentPlatform(this);
+        }
     }
 
     void OnDrawGizmosSelected()

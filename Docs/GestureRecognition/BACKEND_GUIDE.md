@@ -8,20 +8,21 @@
 
 **在使用手势识别模块之前，必须安装 MediaPipe 插件。**
 
+本项目采用团队统一方式：`manifest.json` 使用相对路径
+`file:com.github.homuler.mediapipe-0.16.3.tgz`，因此每位成员都应把同名文件放到
+`Packages/` 目录下。
+
 ### 第一步：下载插件
 
 1. 打开浏览器，访问：https://github.com/homuler/MediaPipeUnityPlugin/releases/tag/v0.16.3
-2. 在页面底部的 **Assets** 区域，找到并下载 `.tgz` 文件（文件名类似 `com.github.homuler.mediapipe-0.16.3.tgz`）
-3. 将下载的 `.tgz` 文件保存到一个你记得住的位置（例如桌面），**不要解压**
+2. 在页面底部的 **Assets** 区域，找到并下载 `.tgz` 文件（文件名应为 `com.github.homuler.mediapipe-0.16.3.tgz`）
+3. **不要解压**
 
-### 第二步：在 Unity 中导入
+### 第二步：放到项目固定位置
 
-1. 打开 Unity Editor，确保已加载本项目（COMP3329_TEST）
-2. 菜单栏点击 **Window → Package Manager**（包管理器）
-3. 在 Package Manager 窗口左上角，点击 **+** 按钮（加号）
-4. 选择 **Add package from tarball...**（从 tarball 添加包）
-5. 在文件选择对话框中，找到你刚下载的 `.tgz` 文件，选中，点击 **Open**（打开）
-6. 等待 Unity 导入完成（左下角进度条跑完，Console 无报错）
+1. 打开项目根目录
+2. 将 `.tgz` 文件复制到 `Packages/com.github.homuler.mediapipe-0.16.3.tgz`
+3. 打开 Unity，等待 Package Manager 自动解析
 
 ### 第三步：验证安装
 
@@ -30,7 +31,7 @@
 3. 打开 Console 窗口（**Window → General → Console**），确认没有红色报错
 4. 确认代码可以编译：如果 Console 没有报错，说明 `MEDIAPIPE_INSTALLED` 宏已自动生效
 
-> **注意**：`.tgz` 文件不需要放在项目文件夹内。Unity 会将其内容缓存到 `Library/PackageCache/` 中。团队每个人都需要各自安装。
+> **注意**：`Packages/com.github.homuler.mediapipe-0.16.3.tgz` 已加入 `.gitignore`，不会被提交到 GitHub。每位成员需要在本机放置一次。
 
 ---
 

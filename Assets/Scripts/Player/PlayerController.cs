@@ -48,6 +48,7 @@ public class PlayerController : MonoBehaviour
     private readonly RaycastHit2D[] groundRayHits = new RaycastHit2D[8];
     private readonly Collider2D[] groundOverlapHits = new Collider2D[8];
     private ContactFilter2D groundProbeFilter;
+    private MovingPlatform currentPlatform;
     // ── 手势系统控制字段 ──────────────────────────────────────────────────
     // facingLocked: Pull 时锁定面朝方向，防止 sprite 翻转
     // moveDirection: 0=不限制, 1=只能往右, -1=只能往左
@@ -131,7 +132,11 @@ public class PlayerController : MonoBehaviour
 
         TryConsumeBufferedJump();
 
-        rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
+        float horizontalVelocity = moveInput * moveSpeed;
+        if (isGrounded && currentPlatform != null && Mathf.Abs(moveInput) > 0.01f)
+            horizontalVelocity -= currentPlatform.CurrentVelocityX;
+
+        rb.velocity = new Vector2(horizontalVelocity, rb.velocity.y);
 
         // Gravity modulation — heavier fall only
         if (rb.velocity.y < 0f)
@@ -226,6 +231,17 @@ public class PlayerController : MonoBehaviour
         }
 
         return false;
+    }
+
+    public void SetCurrentPlatform(MovingPlatform platform)
+    {
+        currentPlatform = platform;
+    }
+
+    public void ClearCurrentPlatform(MovingPlatform platform)
+    {
+        if (currentPlatform == platform)
+            currentPlatform = null;
     }
 
     public void AutoWalk(float direction)

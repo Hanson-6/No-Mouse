@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using GestureRecognition.Core;
 
@@ -22,10 +23,27 @@ using GestureRecognition.Core;
 //   在 Inspector 中拖入 player 引用。
 public class SpiritHandDisplay : MonoBehaviour
 {
+    private static readonly GestureType[] SupportedGestures =
+    {
+        GestureType.Push,
+        GestureType.Fist,
+        GestureType.Shoot
+    };
+
+    [System.Serializable]
+    private class GestureSizeEntry
+    {
+        public GestureType gesture = GestureType.None;
+        public float sizeMultiplier = 1f;
+    }
+
     [Header("精灵图")]
     [SerializeField] private Sprite pushSprite;   // Push 手势对应的图（张开手掌）
     [SerializeField] private Sprite fistSprite;   // Fist 手势对应的图（握拳 / Pull）
     [SerializeField] private Sprite shootSprite;  // Shoot 手势对应的图（手枪手势）
+
+    [Header("手势大小倍率（输入值，默认 1.0）")]
+    [SerializeField] private List<GestureSizeEntry> gestureSizeEntries = new List<GestureSizeEntry>();
 
     [Header("跟随目标")]
     [SerializeField] private PlayerController player;
@@ -58,6 +76,14 @@ public class SpiritHandDisplay : MonoBehaviour
     private bool _visible;          // 当前是否应该显示精灵手
     private GestureType _currentGestureType = GestureType.None;
     private float _baseScale = 1f;  // 根据图片分辨率计算出的基准缩放
+    private float _gestureScaleMultiplier = 1f;
+    private GestureConfig _fallbackConfig;
+    private readonly Dictionary<GestureType, float> _gestureScaleLookup = new Dictionary<GestureType, float>();
+
+    void OnValidate()
+    {
+        EnsureGestureSizeEntries();
+    }
 
     // ── 生命周期 ─────────────────────────────────────────────────────────────
 
@@ -71,6 +97,8 @@ public class SpiritHandDisplay : MonoBehaviour
 
         // 计算基准缩放：让精灵手在世界空间中的高度 = targetWorldHeight
         RecalculateBaseScale(pushSprite);
+        _fallbackConfig = Resources.Load<GestureConfig>("GestureConfig");
+        EnsureGestureSizeEntries();
 
         // 初始状态：隐藏
         _visible = false;
@@ -80,7 +108,14 @@ public class SpiritHandDisplay : MonoBehaviour
 
     void OnEnable()
     {
+        if (player == null)
+            player = FindObjectOfType<PlayerController>();
         GestureEvents.OnGestureUpdated += OnGestureUpdated;
+    }
+
+    public void SetPlayer(PlayerController target)
+    {
+        player = target;
     }
 
     void OnDisable()
@@ -95,33 +130,51 @@ public class SpiritHandDisplay : MonoBehaviour
     {
         _currentGestureType = result.Type;
 
-        switch (result.Type)
+        if (!IsSupportedGesture(result.Type))
+        {
+            Hide();
+            return;
+        }
+
+        Sprite resolvedSprite = ResolveSprite(result.Type);
+        if (resolvedSprite == null)
+        {
+            Hide();
+            return;
+        }
+
+        _gestureScaleMultiplier = GetGestureScaleMultiplier(result.Type);
+        _sr.sprite = resolvedSprite;
+        RecalculateBaseScale(resolvedSprite);
+        Show();
+    }
+
+    Sprite ResolveSprite(GestureType type)
+    {
+        switch (type)
         {
             case GestureType.Push:
-                _sr.sprite = pushSprite;
-                RecalculateBaseScale(pushSprite);
-                Show();
-                break;
+                if (pushSprite != null) return pushSprite;
+                if (_fallbackConfig != null)
+                {
+                    Sprite push = _fallbackConfig.GetSprite(GestureType.Push);
+                    if (push != null) return push;
+                }
+                return null;
 
             case GestureType.Fist:
-                _sr.sprite = fistSprite;
-                RecalculateBaseScale(fistSprite);
-                Show();
+                if (fistSprite != null) return fistSprite;
                 break;
 
             case GestureType.Shoot:
-                // shootSprite 未在 Inspector 中赋值时，不显示精灵手，
-                // 也不调用 RecalculateBaseScale(null) 以免污染 _baseScale。
-                if (shootSprite == null) { Hide(); break; }
-                _sr.sprite = shootSprite;
-                RecalculateBaseScale(shootSprite);
-                Show();
+                if (shootSprite != null) return shootSprite;
                 break;
 
             default:
-                Hide();
                 break;
         }
+
+        return _fallbackConfig != null ? _fallbackConfig.GetSprite(type) : null;
     }
 
     // ── 每帧更新 ─────────────────────────────────────────────────────────────
@@ -144,7 +197,7 @@ public class SpiritHandDisplay : MonoBehaviour
         _pulseTimer += Time.deltaTime * pulseSpeed;
         float t = Mathf.Sin(_pulseTimer) * 0.5f + 0.5f; // 将 Sin(-1~1) 映射到 (0~1)
 
-        float scale = _baseScale * Mathf.Lerp(minPulseScale, maxPulseScale, t);
+        float scale = _baseScale * _gestureScaleMultiplier * Mathf.Lerp(minPulseScale, maxPulseScale, t);
         transform.localScale = Vector3.one * scale;
 
         float alpha = Mathf.Lerp(minAlpha, maxAlpha, t);
@@ -180,13 +233,85 @@ public class SpiritHandDisplay : MonoBehaviour
         // 如果旧 _baseScale 远大于新值（如 null sprite 时 _baseScale=1.0），
         // 精灵图会以原始巨大尺寸闪一帧。
         // 修复：Show() 中立即同步 localScale。
-        transform.localScale = Vector3.one * _baseScale;
+        transform.localScale = Vector3.one * (_baseScale * _gestureScaleMultiplier);
     }
 
     void Hide()
     {
         _visible = false;
         _sr.color = new Color(1f, 1f, 1f, 0f);
-        transform.localScale = Vector3.one * _baseScale;
+        transform.localScale = Vector3.one * (_baseScale * _gestureScaleMultiplier);
+    }
+
+    void EnsureGestureSizeEntries()
+    {
+        if (gestureSizeEntries == null)
+            gestureSizeEntries = new List<GestureSizeEntry>();
+
+        for (int i = gestureSizeEntries.Count - 1; i >= 0; i--)
+        {
+            GestureSizeEntry entry = gestureSizeEntries[i];
+            if (entry == null || entry.gesture == GestureType.None || entry.gesture == GestureType.Count || !IsSupportedGesture(entry.gesture))
+                gestureSizeEntries.RemoveAt(i);
+        }
+
+        for (int i = 0; i < SupportedGestures.Length; i++)
+        {
+            GestureType gesture = SupportedGestures[i];
+            bool exists = false;
+            for (int j = 0; j < gestureSizeEntries.Count; j++)
+            {
+                if (gestureSizeEntries[j].gesture == gesture)
+                {
+                    exists = true;
+                    if (gestureSizeEntries[j].sizeMultiplier <= 0f)
+                        gestureSizeEntries[j].sizeMultiplier = 1f;
+                    break;
+                }
+            }
+
+            if (!exists)
+            {
+                gestureSizeEntries.Add(new GestureSizeEntry
+                {
+                    gesture = gesture,
+                    sizeMultiplier = 1f
+                });
+            }
+        }
+
+        gestureSizeEntries.Sort((a, b) => a.gesture.CompareTo(b.gesture));
+        RebuildGestureScaleLookup();
+    }
+
+    void RebuildGestureScaleLookup()
+    {
+        _gestureScaleLookup.Clear();
+
+        for (int i = 0; i < gestureSizeEntries.Count; i++)
+        {
+            GestureSizeEntry entry = gestureSizeEntries[i];
+            if (entry == null) continue;
+            float multiplier = entry.sizeMultiplier <= 0f ? 1f : entry.sizeMultiplier;
+            _gestureScaleLookup[entry.gesture] = multiplier;
+        }
+    }
+
+    float GetGestureScaleMultiplier(GestureType type)
+    {
+        if (_gestureScaleLookup.TryGetValue(type, out float multiplier) && multiplier > 0f)
+            return multiplier;
+        return 1f;
+    }
+
+    bool IsSupportedGesture(GestureType type)
+    {
+        for (int i = 0; i < SupportedGestures.Length; i++)
+        {
+            if (SupportedGestures[i] == type)
+                return true;
+        }
+
+        return false;
     }
 }
