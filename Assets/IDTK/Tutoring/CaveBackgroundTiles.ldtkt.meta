@@ -1,0 +1,2382 @@
+fileFormatVersion: 2
+guid: 0a77418f172c445293d0afee0df817ef
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: f3268c876daf4890b6af6cd462063137, type: 3}
+  _reimportOnDependencyChange: 1
+  _pixelsPerUnit: 16
+  _overrideTexture: {instanceID: 0}
+  _sprites:
+  - name: CaveBackgroundTiles_0
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 96
+      width: 8
+      height: 8
+    spriteID: 5962a0f7262d716498a10a6f49d479f9
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_1
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 96
+      width: 8
+      height: 8
+    spriteID: 90bbb0147b9da0846ac2d0239ef1ea67
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_2
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 96
+      width: 8
+      height: 8
+    spriteID: 218ce259c2d250b409fe0f51302cb601
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_3
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 96
+      width: 8
+      height: 8
+    spriteID: f6d826a5985f23e46a5a422ea6674f9e
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_4
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 96
+      width: 8
+      height: 8
+    spriteID: 530f14038b786d94aa63e3395c4c10d5
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_5
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 96
+      width: 8
+      height: 8
+    spriteID: 8370bf84e79a54a4ab55770dbcf05ebe
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_6
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 96
+      width: 8
+      height: 8
+    spriteID: 884354f4596b9544d92f14e8f733fe81
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_7
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 96
+      width: 8
+      height: 8
+    spriteID: c436c64613b9b0d4282bdde34023665d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_8
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 96
+      width: 8
+      height: 8
+    spriteID: d7b59fd86b1480847a4cfb5531bf28b4
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_9
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 96
+      width: 8
+      height: 8
+    spriteID: 6070df5c91c706041949ce742d3ca996
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_10
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 96
+      width: 8
+      height: 8
+    spriteID: 3bb9314354ebdb34cbb74c26ed2ac852
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_11
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 96
+      width: 8
+      height: 8
+    spriteID: 0594b98db5cc6b049b90d94852ad6b55
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_12
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 96
+      width: 8
+      height: 8
+    spriteID: e6df7634c7cf84e42930661ed01f15fe
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_13
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 88
+      width: 8
+      height: 8
+    spriteID: 8879817d04536204e9e238bca554356b
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_14
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 88
+      width: 8
+      height: 8
+    spriteID: bbdf7299c2d1b7247bce14f1eb482cab
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_15
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 88
+      width: 8
+      height: 8
+    spriteID: d55d428007bae3b429833794d8c74b24
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_16
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 88
+      width: 8
+      height: 8
+    spriteID: 08a791326cfe6f042bf8a0dfbe34c446
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_17
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 88
+      width: 8
+      height: 8
+    spriteID: 5429e5b265e8c8c4fa8fd25a004bb574
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_18
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 88
+      width: 8
+      height: 8
+    spriteID: 617df7c0e1de29a45bb7bc13c83d52ac
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_19
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 88
+      width: 8
+      height: 8
+    spriteID: 01dae53c9fe18c04c8c803f1532a3a0f
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_20
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 88
+      width: 8
+      height: 8
+    spriteID: 07a7b9df9e05be546bd83ac7ad55c45d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_21
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 88
+      width: 8
+      height: 8
+    spriteID: d808b11ff7a7708418ffbd3d30086f19
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_22
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 88
+      width: 8
+      height: 8
+    spriteID: bcc0cbe55ef38dd4a845c4452371327e
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_23
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 88
+      width: 8
+      height: 8
+    spriteID: f43c37921d0b71e459b04cc594c7b1ba
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_24
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 88
+      width: 8
+      height: 8
+    spriteID: 80cad65c2374bc4439b337f8c7b80819
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_25
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 88
+      width: 8
+      height: 8
+    spriteID: b14f1f6bdff20ac44842821965c1aad8
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_26
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 80
+      width: 8
+      height: 8
+    spriteID: ba69ff887a3c84f47ae7b56e17739a4e
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_27
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 80
+      width: 8
+      height: 8
+    spriteID: bbfbd6bc70d1ced4fbcaadd531f3d062
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_28
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 80
+      width: 8
+      height: 8
+    spriteID: 7f4bb9f9ae5c09446ae35eb7c1e32ee4
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_29
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 80
+      width: 8
+      height: 8
+    spriteID: b9337c7f2800abb43b3fc1d34ad338b9
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_30
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 80
+      width: 8
+      height: 8
+    spriteID: 144ab76923945fc428b5fe7d46ac036b
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_31
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 80
+      width: 8
+      height: 8
+    spriteID: edae5c3d88f25cf4f8ff1828f9735d11
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_32
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 80
+      width: 8
+      height: 8
+    spriteID: 0d43266ff9029124ca2ad48c5dd9f1f4
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_33
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 80
+      width: 8
+      height: 8
+    spriteID: 0f2c91d833da8ed46998ff1dea40d3a2
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_34
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 80
+      width: 8
+      height: 8
+    spriteID: 2b6f86d0c74abad4da4804f1c0205a5a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_35
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 80
+      width: 8
+      height: 8
+    spriteID: 1e84f7bfad56f984983c0e284d821d24
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_36
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 80
+      width: 8
+      height: 8
+    spriteID: 05813b7f895007a4fbeb324e53484392
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_37
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 80
+      width: 8
+      height: 8
+    spriteID: 8d880200bd5734e44887333920fafa89
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_38
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 80
+      width: 8
+      height: 8
+    spriteID: 88ee6b616a12c9d4e81e0668ec1e79fd
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_39
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 72
+      width: 8
+      height: 8
+    spriteID: 0e1bdecc450ca5c44ada0ea0d868bd85
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_40
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 72
+      width: 8
+      height: 8
+    spriteID: ff1eeceb39f8b8940bc3e1bb039fb986
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_41
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 72
+      width: 8
+      height: 8
+    spriteID: eb8965b2542c9374a9d21c58a7c54534
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_42
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 72
+      width: 8
+      height: 8
+    spriteID: df48456b809c547438a79554ac48cd20
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_43
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 72
+      width: 8
+      height: 8
+    spriteID: 484ba6f18aa87d3448ef0628d873d635
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_44
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 72
+      width: 8
+      height: 8
+    spriteID: d771600cf1f62a7409f19aa14810f528
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_45
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 72
+      width: 8
+      height: 8
+    spriteID: a17046c946014224b9e4a96fd943b8fd
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_46
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 72
+      width: 8
+      height: 8
+    spriteID: 2bd82a68c3b0d27458c4340a1b96805e
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_47
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 72
+      width: 8
+      height: 8
+    spriteID: 1b95a3c3f8882be4383298bff4c22e85
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_48
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 72
+      width: 8
+      height: 8
+    spriteID: c937429cdaa8d5a4e9d8e46135227545
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_49
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 72
+      width: 8
+      height: 8
+    spriteID: 84389f7583a907b4694c772ec069577c
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_50
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 72
+      width: 8
+      height: 8
+    spriteID: 161310ee80a044848ad043f1dd672887
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_51
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 72
+      width: 8
+      height: 8
+    spriteID: db8971abcee541d4eb571fd45eac7264
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_52
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 64
+      width: 8
+      height: 8
+    spriteID: 0f45ff945c28b7c429ab3d0764eee3b7
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_53
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 64
+      width: 8
+      height: 8
+    spriteID: 17349e45888c92049949a091c456f164
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_54
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 64
+      width: 8
+      height: 8
+    spriteID: e2f641c8bdf793148972459ceadfabba
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_55
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 64
+      width: 8
+      height: 8
+    spriteID: 172094f3d50a63343ad15a45ca2eb6e6
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_56
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 64
+      width: 8
+      height: 8
+    spriteID: 09e35236c7a0f2c4592c9eed8743a9a3
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_57
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 64
+      width: 8
+      height: 8
+    spriteID: 511155d68006e014f905c283993a5501
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_58
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 64
+      width: 8
+      height: 8
+    spriteID: 301e550b18a0b224d8adc3555ff4d254
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_59
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 64
+      width: 8
+      height: 8
+    spriteID: 7e265e77cfc42564c87740ae06d202d9
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_60
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 64
+      width: 8
+      height: 8
+    spriteID: beb5a6442784b714db9c09b5b7c392f2
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_61
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 64
+      width: 8
+      height: 8
+    spriteID: 942c3717e6ebb1b41982c2a1cfb911a9
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_62
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 64
+      width: 8
+      height: 8
+    spriteID: f43750e5dd0717040ad3c1c72d325d98
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_63
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 64
+      width: 8
+      height: 8
+    spriteID: c4bfecd4ddebf004f88b66da87b4158d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_64
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 64
+      width: 8
+      height: 8
+    spriteID: f65636b1efd45e849bf19e3ce398add9
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_65
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 1d078a04bf386e740b4abc2ee3b2611f
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_66
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 4a308cfc8127b8e41ab942a1b145a094
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_67
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 56
+      width: 8
+      height: 8
+    spriteID: e5bc9f03cc8728e40a73b68f203aa432
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_68
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 3c154f5755b47b24c9a5837bfca5ed1c
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_69
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 003cc434aa4dd2f4fa53a60c411a230c
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_70
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 878f2b8be00000c4e80cbd290eb339ab
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_71
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 612893162947ec541bc50409f8027aa4
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_72
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 3eac2977bfc7907428506e716237362d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_73
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 9ca122c040409504b95c3e5885e3d635
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_74
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 56
+      width: 8
+      height: 8
+    spriteID: fdf0e7473fbdf034f9e61880b6645ea0
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_75
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 3a7e0a983e18c8343a546e46f5db0f8a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_76
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 24eb8f819eb57b145bdde1aa6fb0034e
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_77
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 56
+      width: 8
+      height: 8
+    spriteID: 87b70924435e1cf47b02636f281104fd
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_78
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 5a400aa2816aaef4b85ed882b44c707f
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_79
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 3032cebfbc5ee6d4591525d11658bfc5
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_80
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 48
+      width: 8
+      height: 8
+    spriteID: a4535316a6a73af46b447ad6b8d458ad
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_81
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 48
+      width: 8
+      height: 8
+    spriteID: f28eb23a2231ca5459bea51d5c9b09e6
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_82
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 66e8f2cb2c32c6345a9a22158f84490b
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_83
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 48
+      width: 8
+      height: 8
+    spriteID: d2f34c8cfc4548147b6ee024e5c9b55d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_84
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 6ecbb877e777fc344b24adac3f216d09
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_85
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 48
+      width: 8
+      height: 8
+    spriteID: bd2bdfff1efa9a8479d74aa71be9cce5
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_86
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 613ae5be910151c4baae79fb2767c35a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_87
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 48
+      width: 8
+      height: 8
+    spriteID: e983d87e3c4ba1640bc4510ef45bd850
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_88
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 48
+      width: 8
+      height: 8
+    spriteID: ba23a95348345b046b542e3247ee0350
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_89
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 48
+      width: 8
+      height: 8
+    spriteID: cd1cd6ba48ff6fc4b89326739adfd68f
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_90
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 5dbdf9346885531478046ab87d8c3565
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_91
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 40
+      width: 8
+      height: 8
+    spriteID: ab58362c134a3174c9b38ad178da82e1
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_92
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 0488ecc96f3ff644997576db4a31fc46
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_93
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 14a822ed7401c264cbb6eadb685a7b8a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_94
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 40
+      width: 8
+      height: 8
+    spriteID: c9bb7461fdddaad4aaf38a2064d2c749
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_95
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 40
+      width: 8
+      height: 8
+    spriteID: d853c3507e97fb94ebd4bed9319916cf
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_96
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 40
+      width: 8
+      height: 8
+    spriteID: e3ea3809242069349869fc0d00b96688
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_97
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 18652413c4461c441b9b2182118c9e40
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_98
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 76ee76f58e2be9b4eae6fcb2df3115f4
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_99
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 40
+      width: 8
+      height: 8
+    spriteID: e8fa22a8addb58047b86d2819babdb5f
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_100
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 0341b2d87efcb4f4485e650b05c8783a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_101
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 4ed55c356ef66d54395a8e9c183be404
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_102
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 51345d66fd9957648ba0f2a556d95916
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_103
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 40
+      width: 8
+      height: 8
+    spriteID: f8472a0589f630d4aafedcd9808a7a19
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_104
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 32
+      width: 8
+      height: 8
+    spriteID: a20e5b679e9ef6f43adca5037c92e4c6
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_105
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 32
+      width: 8
+      height: 8
+    spriteID: a76aff074eb4b034995909aa75138bce
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_106
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 32
+      width: 8
+      height: 8
+    spriteID: e4332f708ff1d5140b115081ee324bd2
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_107
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 32
+      width: 8
+      height: 8
+    spriteID: f4cb7159b1939c142b7c5f0fda2f55ed
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_108
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 32
+      width: 8
+      height: 8
+    spriteID: c02692120c0865d40a4a17052c4b5eae
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_109
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 9306dee6de0393b4d930ca8916e54cd2
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_110
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 32
+      width: 8
+      height: 8
+    spriteID: b6a008219d9ff3d42ac5b7e0acefd9fb
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_111
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 9c13333f3f833cb428fa9eeced800a6b
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_112
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 32
+      width: 8
+      height: 8
+    spriteID: e179df2b72d0b7343859b642f1aab93d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_113
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 32
+      width: 8
+      height: 8
+    spriteID: a9eafa0f3a4ab854c9113339ff91a115
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_114
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 002e974d3d05ace438e89a87e3a060fe
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_115
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 32
+      width: 8
+      height: 8
+    spriteID: fd68b167cc4aefb41bf2579346f5600a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_116
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 15aba86d9de30ee4aa42057cd2ac72ed
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_117
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 3de0490a71bfce94285f49d1abcf11d9
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_118
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 1fe1514d824ae1b449e9f0999702f35c
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_119
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 4aecea8b3068f6f44ab6ed78432c0c36
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_120
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 2086b5473b0bcd246b9f58ca02c88e64
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_121
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 71941ec5339c4fa47aff31e8b4d07e97
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_122
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 24
+      width: 8
+      height: 8
+    spriteID: e082b95671b059741964980edf73ccb1
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_123
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 9dd8626dc5845c24389f496af2e2e504
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_124
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 69a8824f46217a047a7a8087a123593d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_125
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 24
+      width: 8
+      height: 8
+    spriteID: b5273f563682f5544bf35d0abcdb08f5
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_126
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 24
+      width: 8
+      height: 8
+    spriteID: d6f5400f8c5ec8643899724c1de42125
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_127
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 0a5bb0e2eaa2f89488b4021191f2879d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_128
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 20c215e05fe0a764d99fc989fced73ff
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_129
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 61621cb2cc762b24fbad292d1e632346
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_130
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 16
+      width: 8
+      height: 8
+    spriteID: c559d0c449536894dae6602904afb8c2
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_131
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 854bdf2ff1e24644eb775526d4b1cc50
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_132
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 00b4e07e16f400c4790b57967f63702c
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_133
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 91c4f39b087edc745b23ae22738cd60d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_134
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 9e745b4fb0b6db7488eae39099494883
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_135
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 16
+      width: 8
+      height: 8
+    spriteID: effbbcdf207f05b4082a8589583af08c
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_136
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 1c3ce4d43a81eb345a83bfa9bb0313fc
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_137
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 16
+      width: 8
+      height: 8
+    spriteID: e3f9d036e984287488926592b5fecb2f
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_138
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 06a005a3441107342a4bf33f9f5e4d00
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_139
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 16
+      width: 8
+      height: 8
+    spriteID: f9444f36e573ed14d990396f062d2d4c
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_140
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 32c6cc198f99b3e459cefb97e6821bdd
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_141
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 38d8688ff1a9d3e48b5cd27ee85de609
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_142
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 5e8021ecc3ff1b447a278f1fd4085598
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_143
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 71f6d7a4e6d03b84eaf4085f98c87b48
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_144
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 8
+      width: 8
+      height: 8
+    spriteID: be91bc57e49904e40a1136b35c25f27d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_145
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 649ec95318e0f3c478efae753ec59c3f
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_146
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 76aa03183feaed8458f60b4a705bff89
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_147
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 8
+      width: 8
+      height: 8
+    spriteID: c783ebca3c7a3814f93cf0e0a4e10166
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_148
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 8
+      width: 8
+      height: 8
+    spriteID: c09d0cc6610fab645ace95c2cd6bb266
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_149
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 68d43d5ce2799b543a0e0d55292ea046
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_150
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 8
+      width: 8
+      height: 8
+    spriteID: a56c73a0e7ba29e4aad27b533295cded
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_151
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 817c4e567cddac04aa0f35e8778ddd86
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_152
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 0e3a9be559d003c4a8367e60b3561415
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_153
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 3124c3ae3b5b5ec46ae5d6e8fcefb20a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_154
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 61256c5d9eddf2d499d422141166ecc4
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_155
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 8
+      width: 8
+      height: 8
+    spriteID: cef972c34b1079c45b01d1ccc5d8a398
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_156
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 0
+      width: 8
+      height: 8
+    spriteID: ee225adcd07ba27468054087483fe4a6
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_157
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 0
+      width: 8
+      height: 8
+    spriteID: a982074ced35b4c488eefd007120ad62
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_158
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 0
+      width: 8
+      height: 8
+    spriteID: b2b7037e24a71694f951d36fc363be8d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_159
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 0
+      width: 8
+      height: 8
+    spriteID: fd01047104bf04148a6203fecd79770b
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_160
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 0
+      width: 8
+      height: 8
+    spriteID: d890a9852f385fb4eac708ad400e4bb1
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_161
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 53c1c6b66807b6b48947a0b6dbc27e61
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_162
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 0
+      width: 8
+      height: 8
+    spriteID: e88db4fa27a4b7f42a8c514b6bbe47bf
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_163
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 486266e0fc2b2bd479f093b703b362f9
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_164
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 842ce0ba91434b24f8185983f94f4042
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_165
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 72
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 5ccbeae21a78c3641bfbb561d8b87e84
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_166
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 232741fdc42385b4082b67de1480b445
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_167
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 88
+      y: 0
+      width: 8
+      height: 8
+    spriteID: ca052df60eea84d4099f124a9fc3841a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveBackgroundTiles_168
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 96
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 7a7f891f4e95ac446b60d01e46de6974
+    spriteOutline: []
+    tessellationDetail: 0
+  _secondaryTextures: []
+  _artifacts: {instanceID: 0}

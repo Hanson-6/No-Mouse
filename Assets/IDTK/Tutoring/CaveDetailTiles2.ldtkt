@@ -1,0 +1,33 @@
+{
+  "Rects": null,
+  "Def": {
+    "__cHei": 7,
+    "__cWid": 9,
+    "cachedPixelData": {
+      "opaqueTiles": "000000000001000000001000000001000000001000000001000000000000000",
+      "averageColors": "00000000000000000000000000000000000000007322f32273227322000000003334000000000000f32200000000c655c666c656000000000000f32200000000000000000000000000000000f32200000000c565c566c545000000000000f322000000000000000000000000000000000000000000000000000000000000"
+    },
+    "customData": [
+
+    ],
+    "embedAtlas": null,
+    "enumTags": [
+
+    ],
+    "identifier": "CaveDetailTiles2",
+    "padding": 0,
+    "pxHei": 56,
+    "pxWid": 72,
+    "relPath": "../CaveAssets/Tiles/CaveDetailTiles2.png",
+    "savedSelections": [
+
+    ],
+    "spacing": 0,
+    "tags": [
+
+    ],
+    "tagsSourceEnumUid": null,
+    "tileGridSize": 8,
+    "uid": 4
+  }
+}

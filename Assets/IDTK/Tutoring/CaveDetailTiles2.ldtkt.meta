@@ -1,0 +1,898 @@
+fileFormatVersion: 2
+guid: 280835feaa4842af84e7e4080c8e8f99
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: f3268c876daf4890b6af6cd462063137, type: 3}
+  _reimportOnDependencyChange: 1
+  _pixelsPerUnit: 16
+  _overrideTexture: {instanceID: 0}
+  _sprites:
+  - name: CaveDetailTiles2_0
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 7dc0691ce30040c438692d23b626bc94
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_1
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 902e8808d2d1a174fa1d371497c559bf
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_2
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 5f854829d71b88b428869e83bdf61b4f
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_3
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 6dff3eb6d89923c41b789609c9e2006e
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_4
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 89d82921920603a419964b27fd3a6861
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_5
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 1cce5676232d4af4b90eb7870a10f14d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_6
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 808e11ca8d4943c4084a44577a295344
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_7
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 36f74f4a043571e4cbb82885a6a6731b
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_8
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 48
+      width: 8
+      height: 8
+    spriteID: 3a267fcf30c223245981fd13369b6f56
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_9
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 509c2fc38eeccfe4594efcef351cdb2a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_10
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 40
+      width: 8
+      height: 8
+    spriteID: ebb4b052851d617499c64613295fe0a2
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_11
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 40
+      width: 8
+      height: 8
+    spriteID: ca425e76361312047aaa06f264dffa6f
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_12
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 24944894249c0644b8d1d69d9410224b
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_13
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 40
+      width: 8
+      height: 8
+    spriteID: d846d240160b83a4cacfeaa9c1753db1
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_14
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 40
+      width: 8
+      height: 8
+    spriteID: d5aab07e94faa144a8711fac73f0ef5e
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_15
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 7bd74e387ca9a094bafb1ae79a20f92e
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_16
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 40
+      width: 8
+      height: 8
+    spriteID: 573f8924b68eec94ea4aa7709da640d4
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_17
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 40
+      width: 8
+      height: 8
+    spriteID: dc05330b5eeca364994ed076a62c2dc1
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_18
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 052568bc9337a9348a1cd2eb9e6060c3
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_19
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 8c6306a7495d10b44bf6e1321dfdc93a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_20
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 32
+      width: 8
+      height: 8
+    spriteID: bf20a4fe1350f5748bbc909c88779446
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_21
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 62a1e10481de6dc4d891d09ce661ccf8
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_22
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 04c1c684dba58824da37c12871b533b7
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_23
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 35d0457f5210250448f924a96fbe2386
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_24
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 0977720a4bc9a2047875c91337bca8a8
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_25
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 039c9b099a500274b9773fe4934346a8
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_26
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 32
+      width: 8
+      height: 8
+    spriteID: 13fe08f9e1f01f343bab506c90dab1f9
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_27
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 34ee960b29ffdc64a84a454c1e03e1ac
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_28
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 3f480de3c9e114b41ae6283e4fbd6792
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_29
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 4ceb5c470efd80c499e686575215d4bd
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_30
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 17016014b5a9d814884c28fa41a0fc3e
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_31
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 6b4fd6f51040b4f418c7fd2e9c85e56a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_32
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 8df3e862c89e83c468c9ac5f5f3f9a28
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_33
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 24
+      width: 8
+      height: 8
+    spriteID: e5cfb69a8b7e99a49a7cdded24e05d96
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_34
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 24
+      width: 8
+      height: 8
+    spriteID: e50a9bb14c231704aabf56db140b25c5
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_35
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 24
+      width: 8
+      height: 8
+    spriteID: 18d768eed878f124aa96c0094e78a3a6
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_36
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 9178753b3030f614d86874c57adfff4b
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_37
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 012455e8e23058142af75cbb4b05074a
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_38
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 9cf160305cbfd6b40a65acb0a575fded
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_39
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 16
+      width: 8
+      height: 8
+    spriteID: e2b7c4c4121ef4a4284d1e7c75154589
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_40
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 0032fc2aae3480c4c9e49aa468f426cf
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_41
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 1b9b2b5b4e626f645926c36665e7c7ed
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_42
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 16
+      width: 8
+      height: 8
+    spriteID: 7e6a6ce9fe7e2144ca9aa15019d4c135
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_43
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 16
+      width: 8
+      height: 8
+    spriteID: ce0b17e443c18ac468c7b0b90856570c
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_44
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 16
+      width: 8
+      height: 8
+    spriteID: a8a14ce312b71314b9e9e48bb4d74df8
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_45
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 18d9cee2047c17a4a97df8fa2f637532
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_46
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 8
+      width: 8
+      height: 8
+    spriteID: a8a68152d5559764e9494027c3bba261
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_47
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 8
+      width: 8
+      height: 8
+    spriteID: a10de94e040c08e43a3b4e4b57af5ac9
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_48
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 47678fe26a774474fb17a99c271cd427
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_49
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 8
+      width: 8
+      height: 8
+    spriteID: aa890bd23a8fbce498183baeacf1c2db
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_50
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 1b8327fac38c7ce4fb40ee52cecb627d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_51
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 8
+      width: 8
+      height: 8
+    spriteID: f80647526b0efe845883de9c34dede8d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_52
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 5ebbf0fd79210ea4989dc2b47416eb65
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_53
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 8
+      width: 8
+      height: 8
+    spriteID: 2df2d59db766fe7448a298fb4b5c5656
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_54
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 0
+      width: 8
+      height: 8
+    spriteID: dcf15e5cdb54c4045845af93157453e6
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_55
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 8
+      y: 0
+      width: 8
+      height: 8
+    spriteID: a7c164173f397cb418a78df52e761a30
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_56
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 16
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 00be49373902f32419dde77daadb91c2
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_57
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 24
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 07401edadfb1b3e4f81d8ced0deccff4
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_58
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 32
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 83bd08b643d7dea46bf0a87cdaf7596d
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_59
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 40
+      y: 0
+      width: 8
+      height: 8
+    spriteID: f532c59909749be45a59787461b77cec
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_60
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 48
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 5f97fb339ea5fa04086db0145889f876
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_61
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 56
+      y: 0
+      width: 8
+      height: 8
+    spriteID: 8729c57bc50691b47b3b5f90a8d25cfe
+    spriteOutline: []
+    tessellationDetail: 0
+  - name: CaveDetailTiles2_62
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 64
+      y: 0
+      width: 8
+      height: 8
+    spriteID: d4e8bb32f5dd0fc419a57e4b7d2577cb
+    spriteOutline: []
+    tessellationDetail: 0
+  _secondaryTextures: []
+  _artifacts: {instanceID: 0}

@@ -21,6 +21,81 @@ public static class LDtkSceneSetup
         CreateLDtkScene("Assets/Scenes/Level2.unity", "Level_1");
     }
 
+    [MenuItem("Tools/Create Tutoring Scene")]
+    public static void CreateTutoringScene()
+    {
+        const string scenePath = "Assets/Scenes/Tutoring.unity";
+        const string ldtkPath  = "Assets/IDTK/Tutoring.ldtk";
+
+        // 场景已存在 → 只刷新地形，保留所有已放置物体
+        if (System.IO.File.Exists(scenePath))
+        {
+            var existingScene = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
+            if (existingScene.path != scenePath)
+            {
+                UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenePath);
+            }
+            ReloadLDtkInCurrentScene(forceReimport: true, ldtkPathOverride: ldtkPath);
+            Debug.Log("[LDtkSceneSetup] Tutoring 场景已存在，只刷新了地形。已放置物体保留不变。");
+            return;
+        }
+
+        // 场景不存在 → 全新创建
+        CreateLDtkScene(scenePath, "Tutoring", ldtkPath);
+    }
+
+    [MenuItem("Tools/Force Switch Tutoring to Tutoring.ldtk")]
+    public static void ForceSwitchTutoringLdtk()
+    {
+        const string ldtkPath = "Assets/IDTK/Tutoring.ldtk";
+
+        // Force reimport first
+        AssetDatabase.ImportAsset(ldtkPath, ImportAssetOptions.ForceUpdate);
+        AssetDatabase.Refresh();
+
+        var ldtkAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ldtkPath);
+        if (ldtkAsset == null)
+        {
+            Debug.LogError($"[LDtkSceneSetup] 无法加载 Tutoring.ldtk，请检查 Console 里的导入错误。");
+            return;
+        }
+
+        var scene = EditorSceneManager.GetActiveScene();
+
+        // Find and destroy any existing "Levels" object
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            if (root.name == "Levels")
+            {
+                Object.DestroyImmediate(root);
+                Debug.Log("[LDtkSceneSetup] 删除了旧的 Levels 对象。");
+                break;
+            }
+        }
+
+        // Instantiate Tutoring.ldtk
+        var newLdtk = (GameObject)PrefabUtility.InstantiatePrefab(ldtkAsset);
+        newLdtk.name = "Levels";
+
+        // Show only Tutoring level, hide others
+        Transform worldTransform = newLdtk.transform;
+        foreach (Transform child in newLdtk.transform)
+        {
+            if (child.GetComponent<LDtkUnity.LDtkComponentWorld>() != null)
+            {
+                worldTransform = child;
+                break;
+            }
+        }
+        foreach (Transform child in worldTransform)
+        {
+            child.gameObject.SetActive(child.name == "Tutoring");
+        }
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        Debug.Log("[LDtkSceneSetup] 成功切换到 Tutoring.ldtk！请 Ctrl+S 保存场景。");
+    }
+
     [MenuItem("Tools/Create LDtk Test Scene")]
     public static void CreateLDtkTestScene()
     {
@@ -52,7 +127,8 @@ public static class LDtkSceneSetup
     public static bool IsAutoReloadEnabled => EditorPrefs.GetBool(AutoReloadPrefKey, true);
 
     // levelIdentifier: LDtk level name (e.g. "Level_0", "Level_1"). Pass null to show all levels.
-    private static void CreateLDtkScene(string scenePath, string levelIdentifier)
+    // ldtkPath: optional override for the LDtk project file (defaults to Assets/IDTK/Levels.ldtk)
+    private static void CreateLDtkScene(string scenePath, string levelIdentifier, string ldtkPath = "Assets/IDTK/Levels.ldtk")
     {
         // Create a new empty scene
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -71,7 +147,6 @@ public static class LDtkSceneSetup
         camGO.transform.position = new Vector3(0f, 0f, -10f);
         
         // --- Load and instantiate the LDtk project ---
-        string ldtkPath = "Assets/IDTK/Levels.ldtk";
         var ldtkAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ldtkPath);
         GameObject ldtkInstance = null;
         Transform targetLevelTransform = null;
@@ -210,7 +285,7 @@ public static class LDtkSceneSetup
     /// </summary>
     /// <param name="forceReimport">If true, force-reimports the LDtk asset first. 
     /// Set to false when called from AssetPostprocessor (asset was already just reimported).</param>
-    public static void ReloadLDtkInCurrentScene(bool forceReimport = true)
+    public static void ReloadLDtkInCurrentScene(bool forceReimport = true, string ldtkPathOverride = null)
     {
         var scene = EditorSceneManager.GetActiveScene();
         if (!scene.IsValid() || !scene.isLoaded)
@@ -261,13 +336,16 @@ public static class LDtkSceneSetup
         int siblingIndex = oldLdtk.transform.GetSiblingIndex();
 
         // Record the prefab asset path from the existing instance
-        string ldtkPath = "Assets/IDTK/Levels.ldtk";
-        var prefabSource = PrefabUtility.GetCorrespondingObjectFromSource(oldLdtk);
-        if (prefabSource != null)
+        string ldtkPath = ldtkPathOverride ?? "Assets/IDTK/Levels.ldtk";
+        if (ldtkPathOverride == null)
         {
-            string sourcePath = AssetDatabase.GetAssetPath(prefabSource);
-            if (!string.IsNullOrEmpty(sourcePath))
-                ldtkPath = sourcePath;
+            var prefabSource = PrefabUtility.GetCorrespondingObjectFromSource(oldLdtk);
+            if (prefabSource != null)
+            {
+                string sourcePath = AssetDatabase.GetAssetPath(prefabSource);
+                if (!string.IsNullOrEmpty(sourcePath))
+                    ldtkPath = sourcePath;
+            }
         }
 
         // --- Force reimport the LDtk asset to ensure Unity picks up latest changes ---

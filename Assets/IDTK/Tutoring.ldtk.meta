@@ -1,0 +1,62 @@
+fileFormatVersion: 2
+guid: 3468351636fd2754fa683290dad36f88
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: aaa16bfc62c086f4fb45da87b6acf9b1, type: 3}
+  _reimportOnDependencyChange: 1
+  _jsonFile: {fileID: -164016180542632921, guid: 3468351636fd2754fa683290dad36f88, type: 3}
+  _pixelsPerUnit: 16
+  _customLevelPrefab: {instanceID: 0}
+  _intGridValueColorsVisible: 0
+  _useCompositeCollider: 1
+  _geometryType: 0
+  _createBackgroundColor: 1
+  _createLevelBoundsTrigger: 0
+  _useParallax: 1
+  _scaleEntities: 1
+  _intGridValues:
+  - _key: Collision_2
+    _asset: {fileID: 11400000, guid: 14f2ca5ec430d184cbfe20ed4b9baeac, type: 2}
+  _entities:
+  - _key: PlayerStartPoint
+    _asset: {instanceID: 0}
+  - _key: Spikes
+    _asset: {instanceID: 0}
+  - _key: Moving_platform
+    _asset: {instanceID: 0}
+  - _key: Enemy
+    _asset: {instanceID: 0}
+  - _key: MovingSaw
+    _asset: {instanceID: 0}
+  - _key: Door
+    _asset: {instanceID: 0}
+  - _key: Button
+    _asset: {instanceID: 0}
+  - _key: Box
+    _asset: {instanceID: 0}
+  - _key: Endpoint
+    _asset: {instanceID: 0}
+  - _key: Mirror
+    _asset: {instanceID: 0}
+  - _key: Checkpoint
+    _asset: {instanceID: 0}
+  _enumGenerate: 0
+  _enumPath: 
+  _enumNamespace: 
+  _useLayerCustomSortingOrders: 1
+  _layerCustomSortingOrders:
+  - _ldtkLayerName: Entities
+    _ldtkLayerOrder: 0
+  - _ldtkLayerName: Ore
+    _ldtkLayerOrder: -1
+  - _ldtkLayerName: Collision
+    _ldtkLayerOrder: -2
+  - _ldtkLayerName: Column
+    _ldtkLayerOrder: -3
+  - _ldtkLayerName: Cairn
+    _ldtkLayerOrder: -4
