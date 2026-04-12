@@ -22,6 +22,14 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
     // Multiplies gravityScale while the player is falling — higher = snappier landing
     [SerializeField] private float fallGravityMultiplier = 3.5f;
 
+    [Header("Step Climb")]
+    [Tooltip("Max height the player can automatically step up (e.g. small ledge between platform and terrain)")]
+    [SerializeField] private float maxStepHeight = 0.465f;
+    [Tooltip("Horizontal distance to probe ahead for steps")]
+    [SerializeField] private float stepCheckDistance = 0.15f;
+    [Tooltip("Edge radius on the BoxCollider2D — rounds corners to slide over tiny height differences")]
+    [SerializeField] private float colliderEdgeRadius = 0.02f;
+
     [Header("Audio")]
     [SerializeField] private AudioClip jumpSound;
     [SerializeField] private AudioClip doubleJumpSound;
@@ -92,6 +100,14 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         groundProbeFilter = new ContactFilter2D();
         groundProbeFilter.SetLayerMask(Physics2D.AllLayers);
         groundProbeFilter.useTriggers = false;
+
+        // Round the bottom corners of the BoxCollider2D so the player
+        // can slide over tiny height differences (< edgeRadius) naturally.
+        var box = ownCollider as BoxCollider2D;
+        if (box != null && colliderEdgeRadius > 0f)
+        {
+            box.edgeRadius = colliderEdgeRadius;
+        }
     }
 
     void Update()
@@ -157,6 +173,10 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
 
         rb.velocity = new Vector2(horizontalVelocity, rb.velocity.y);
 
+        // Step-up: auto-climb small ledges when grounded and moving
+        if (isGrounded && Mathf.Abs(moveInput) > 0.01f)
+            TryStepUp(moveInput > 0f ? Vector2.right : Vector2.left);
+
         // Gravity modulation — heavier fall only
         if (rb.velocity.y < 0f)
             rb.gravityScale = defaultGravityScale * fallGravityMultiplier;
@@ -187,6 +207,53 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         jumpCount++;
         jumpBufferTimer = 0f;
         coyoteTimer = 0f;
+    }
+
+    void TryStepUp(Vector2 direction)
+    {
+        if (ownCollider == null || maxStepHeight <= 0f) return;
+
+        Bounds bounds = ownCollider.bounds;
+
+        float halfWidth = bounds.extents.x;
+        float rayOriginX = bounds.center.x;
+        float totalRayDist = halfWidth + stepCheckDistance;
+
+        Vector2 footOrigin = new Vector2(rayOriginX, bounds.min.y + 0.02f);
+
+        // 1. Foot-level ray — is there a ledge ahead?
+        RaycastHit2D lowHit = Physics2D.Raycast(footOrigin, direction, totalRayDist, groundLayer);
+        if (lowHit.collider == null) return;
+
+        float wallX = lowHit.point.x;
+        float leadingX = direction.x > 0f ? bounds.max.x : bounds.min.x;
+
+        // 2. High ray — if clear, it's a step, not a wall
+        Vector2 highOrigin = new Vector2(rayOriginX, bounds.min.y + maxStepHeight);
+        RaycastHit2D highHit = Physics2D.Raycast(highOrigin, direction, totalRayDist, groundLayer);
+        if (highHit.collider != null) return;
+
+        // 3. Downward ray to find step surface
+        float distToWall = Mathf.Abs(wallX - leadingX);
+        float probePastWall = distToWall + 0.08f;
+        Vector2 overStepOrigin = new Vector2(
+            leadingX + direction.x * probePastWall,
+            bounds.min.y + maxStepHeight + 0.02f);
+        RaycastHit2D downHit = Physics2D.Raycast(overStepOrigin, Vector2.down, maxStepHeight + 0.04f, groundLayer);
+        if (downHit.collider == null) return;
+
+        float heightDiff = downHit.point.y - bounds.min.y;
+        if (heightDiff <= 0.005f || heightDiff > maxStepHeight) return;
+
+        // 4. Teleport UP + FORWARD
+        float forwardNudge = probePastWall + 0.02f;
+        Vector2 newPos = rb.position;
+        newPos.y += heightDiff + 0.02f;
+        newPos.x += direction.x * forwardNudge;
+        rb.position = newPos;
+
+        if (rb.velocity.y < 0f)
+            rb.velocity = new Vector2(rb.velocity.x, 0f);
     }
 
     bool CheckGrounded()
