@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// 主菜单控制器。
@@ -25,6 +26,10 @@ public class MainMenuController : MonoBehaviour
     // 保留旧字段名以兼容 Inspector 中可能已有的序列化引用
     [HideInInspector]
     public Button startButton;
+
+    /// <summary>用于键盘导航的菜单按钮列表</summary>
+    private Button[] _menuButtons;
+    private int _selectedIndex = 0;
 
     void Awake()
     {
@@ -75,6 +80,70 @@ public class MainMenuController : MonoBehaviour
     {
         var go = GameObject.Find(buttonName);
         return go != null ? go.GetComponent<Button>() : null;
+    }
+
+    void Start()
+    {
+        // 初始化可以被键盘选择的有效按钮数组
+        var btnList = new System.Collections.Generic.List<Button>();
+        
+        // 只有处于激活状态的按钮才加入键盘导航（例如无存档时不会加入继续游戏）
+        // 大厅排版：需与游戏画面内按钮上下排列的顺序严格一致
+        if (newGameButton != null && newGameButton.gameObject.activeInHierarchy) btnList.Add(newGameButton);
+        if (continueButton != null && continueButton.gameObject.activeInHierarchy) btnList.Add(continueButton);
+        if (quitButton != null && quitButton.gameObject.activeInHierarchy) btnList.Add(quitButton);
+
+        _menuButtons = btnList.ToArray();
+
+        // 默认选中第一个
+        _selectedIndex = 0;
+        if (_menuButtons.Length > 0)
+        {
+            EventSystem.current?.SetSelectedGameObject(_menuButtons[_selectedIndex].gameObject);
+            UpdateSelectionVisuals();
+        }
+    }
+
+    void Update()
+    {
+        if (_menuButtons == null || _menuButtons.Length == 0)
+            return;
+
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            _selectedIndex--;
+            if (_selectedIndex < 0) _selectedIndex = _menuButtons.Length - 1;
+            EventSystem.current?.SetSelectedGameObject(_menuButtons[_selectedIndex].gameObject);
+            UpdateSelectionVisuals();
+        }
+        else if (Input.GetKeyDown(KeyCode.S))
+        {
+            _selectedIndex = (_selectedIndex + 1) % _menuButtons.Length;
+            EventSystem.current?.SetSelectedGameObject(_menuButtons[_selectedIndex].gameObject);
+            UpdateSelectionVisuals();
+        }
+        else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+        {
+            _menuButtons[_selectedIndex].onClick.Invoke();
+        }
+    }
+
+    private void UpdateSelectionVisuals()
+    {
+        for (int i = 0; i < _menuButtons.Length; i++)
+        {
+            if (_menuButtons[i] != null)
+            {
+                if (i == _selectedIndex)
+                {
+                    _menuButtons[i].transform.localScale = new Vector3(1.1f, 1.1f, 1.1f);
+                }
+                else
+                {
+                    _menuButtons[i].transform.localScale = Vector3.one;
+                }
+            }
+        }
     }
 
     // ── Public methods ─────────────────────────────────────────────────────

@@ -35,6 +35,10 @@ public class PauseMenu : MonoBehaviour
     /// <summary>当前是否处于暂停状态</summary>
     private bool isPaused;
 
+    /// <summary>用于键盘导航的菜单按钮列表</summary>
+    private Button[] _menuButtons;
+    private int _selectedIndex = 0;
+
     void Start()
     {
         // 自动按名字查找 UI 元素（如果没有在 Inspector 中手动指定）
@@ -78,6 +82,13 @@ public class PauseMenu : MonoBehaviour
         if (pausePanel != null)
             pausePanel.SetActive(false);
 
+        // 初始化可以被键盘选择的按钮数组（按照下移顺序）
+        var btnList = new System.Collections.Generic.List<Button>();
+        if (resumeButton != null) btnList.Add(resumeButton);
+        if (saveQuitButton != null) btnList.Add(saveQuitButton);
+        if (quitNoSaveButton != null) btnList.Add(quitNoSaveButton);
+        _menuButtons = btnList.ToArray();
+
         isPaused = false;
     }
 
@@ -87,6 +98,49 @@ public class PauseMenu : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             TogglePause();
+        }
+
+        // 如果在暂停状态下且按钮已正确初始化，则允许使用键盘导航
+        if (isPaused && _menuButtons.Length > 0)
+        {
+            if (Input.GetKeyDown(KeyCode.W))
+            {
+                _selectedIndex--;
+                if (_selectedIndex < 0) _selectedIndex = _menuButtons.Length - 1;
+                EventSystem.current?.SetSelectedGameObject(_menuButtons[_selectedIndex].gameObject);
+                UpdateSelectionVisuals();
+            }
+            else if (Input.GetKeyDown(KeyCode.S))
+            {
+                _selectedIndex = (_selectedIndex + 1) % _menuButtons.Length;
+                EventSystem.current?.SetSelectedGameObject(_menuButtons[_selectedIndex].gameObject);
+                UpdateSelectionVisuals();
+            }
+            else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            {
+                // 回车触发当前选中按钮的点击事件
+                _menuButtons[_selectedIndex].onClick.Invoke();
+            }
+        }
+    }
+
+    private void UpdateSelectionVisuals()
+    {
+        for (int i = 0; i < _menuButtons.Length; i++)
+        {
+            if (_menuButtons[i] != null)
+            {
+                // 如果是当前选中的按钮，放大一点作为提示，否则恢复原状
+                if (i == _selectedIndex)
+                {
+                    _menuButtons[i].transform.localScale = new Vector3(1.1f, 1.1f, 1.1f);
+                    // 改变颜色也可以在这里加，但放大通常已经足够明显
+                }
+                else
+                {
+                    _menuButtons[i].transform.localScale = Vector3.one;
+                }
+            }
         }
     }
 
@@ -110,8 +164,12 @@ public class PauseMenu : MonoBehaviour
         Time.timeScale = 0f;
         if (pausePanel != null) pausePanel.SetActive(true);
 
-        if (resumeButton != null)
-            EventSystem.current?.SetSelectedGameObject(resumeButton.gameObject);
+        _selectedIndex = 0;
+        if (_menuButtons.Length > 0)
+        {
+            EventSystem.current?.SetSelectedGameObject(_menuButtons[_selectedIndex].gameObject);
+            UpdateSelectionVisuals();
+        }
     }
 
     /// <summary>
@@ -122,6 +180,13 @@ public class PauseMenu : MonoBehaviour
         isPaused = false;
         Time.timeScale = 1f;
         if (pausePanel != null) pausePanel.SetActive(false);
+
+        // 恢复所有按钮大小
+        for (int i = 0; i < _menuButtons.Length; i++)
+        {
+            if (_menuButtons[i] != null)
+                _menuButtons[i].transform.localScale = Vector3.one;
+        }
     }
 
     /// <summary>

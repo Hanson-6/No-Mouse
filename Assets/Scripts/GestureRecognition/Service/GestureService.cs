@@ -89,7 +89,7 @@ namespace GestureRecognition.Service
         [Tooltip("Default display mode for the auto-created panel.")]
         [SerializeField]
         private GestureDisplayPanel.DisplayMode _defaultDisplayMode =
-            GestureDisplayPanel.DisplayMode.CameraFeed;
+            GestureDisplayPanel.DisplayMode.CameraWithOverlay;
 
         [Tooltip("Default panel size in pixels.")]
         [SerializeField]

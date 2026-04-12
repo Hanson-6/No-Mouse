@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: GestureConfig
   m_EditorClassIdentifier: 
   _gestureEntries:
+  - Type: 1
+    Sprite: {fileID: 21300000, guid: e284f74748c32cf4090e58d574332cc7, type: 3}
+    DisplayName: Push
   - Type: 4
-    Sprite: {fileID: 21300000, guid: 1a596155ecff58e4b9a73ff66f5f1dbb, type: 3}
+    Sprite: {fileID: 21300000, guid: c4bb9d42bae06c946b01c70ac10b6a1f, type: 3}
     DisplayName: Fist
   - Type: 3
-    Sprite: {fileID: 21300000, guid: be1a51144242b904f845e77064ff8b57, type: 3}
+    Sprite: {fileID: 21300000, guid: 2bbd9d89ad0905143b82093682fab43c, type: 3}
     DisplayName: Shoot
   - Type: 5
     Sprite: {fileID: 21300000, guid: 3aafeef89ffdd5741bfd98ba2d071125, type: 3}
