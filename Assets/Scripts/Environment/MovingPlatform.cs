@@ -6,8 +6,12 @@ using UnityEngine;
 ///   - startAtPointB = false → 先移动到 pointA，再开始 A↔B 循环
 ///   - startAtPointB = true  → 先移动到 pointB，再开始 B↔A 循环
 /// 玩家站上去会随平台移动。
+///
+/// 当 buttonControlled = true 时，平台不会自动巡逻，而是停在 pointA，
+/// 等待 ButtonController 调用 Activate() 移动到 pointB，
+/// Deactivate() 返回 pointA。
 /// </summary>
-public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
+public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatable
 {
     [Header("Movement")]
     public Vector2 pointA;
@@ -15,6 +19,10 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
     public float speed = 2f;
     [Tooltip("If true, platform moves to Point B first, then patrols B↔A")]
     public bool startAtPointB = false;
+
+    [Header("Button Control")]
+    [Tooltip("If true, platform stays at pointA and only moves to pointB when activated by a ButtonController")]
+    public bool buttonControlled = false;
 
     [Header("Pause")]
     [Tooltip("How long the platform pauses at each endpoint (seconds)")]
@@ -25,6 +33,7 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
     private bool goingToB;   // only used during Patrolling
     private float waitTimer;
     private Vector3 lastPosition;
+    private bool activated;  // used only in buttonControlled mode
 
     public float CurrentVelocityX { get; private set; }
 
@@ -37,6 +46,7 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
         public int patrolState;
         public bool patrolToB;
         public float waitTimer;
+        public bool activated;
     }
 
     void Start()
@@ -48,22 +58,34 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
             pointB = pointA + Vector2.right * 5f;
         }
 
-        Vector2 startPoint = startAtPointB ? pointB : pointA;
-        float distToStart = Vector2.Distance(transform.position, startPoint);
-
-        if (distToStart < 0.05f)
+        if (buttonControlled)
         {
-            // Already at the start point — go straight into patrol
-            transform.position = new Vector3(startPoint.x, startPoint.y, transform.position.z);
+            // Button-controlled mode: start at pointA, wait for Activate()
+            transform.position = new Vector3(pointA.x, pointA.y, transform.position.z);
             state = PatrolState.Patrolling;
-            goingToB = !startAtPointB; // from A→go to B, from B→go to A
-            waitTimer = waitTime;      // initial pause
+            goingToB = false;
+            activated = false;
+            waitTimer = 0f;
         }
         else
         {
-            // Need to travel to the start point first
-            state = PatrolState.MovingToStart;
-            waitTimer = 0f;
+            Vector2 startPoint = startAtPointB ? pointB : pointA;
+            float distToStart = Vector2.Distance(transform.position, startPoint);
+
+            if (distToStart < 0.05f)
+            {
+                // Already at the start point — go straight into patrol
+                transform.position = new Vector3(startPoint.x, startPoint.y, transform.position.z);
+                state = PatrolState.Patrolling;
+                goingToB = !startAtPointB; // from A→go to B, from B→go to A
+                waitTimer = waitTime;      // initial pause
+            }
+            else
+            {
+                // Need to travel to the start point first
+                state = PatrolState.MovingToStart;
+                waitTimer = 0f;
+            }
         }
 
         lastPosition = transform.position;
@@ -72,11 +94,54 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
 
     void Update()
     {
+        if (buttonControlled)
+        {
+            UpdateButtonControlled();
+        }
+        else
+        {
+            UpdatePatrol();
+        }
+
+        float dt = Time.deltaTime;
+        if (dt > 0f)
+            CurrentVelocityX = (transform.position.x - lastPosition.x) / dt;
+        else
+            CurrentVelocityX = 0f;
+
+        lastPosition = transform.position;
+    }
+
+    // --- IButtonActivatable ---
+
+    /// <summary>Move toward pointB (button pressed).</summary>
+    public void Activate()
+    {
+        activated = true;
+    }
+
+    /// <summary>Return to pointA (button released).</summary>
+    public void Deactivate()
+    {
+        activated = false;
+    }
+
+    private void UpdateButtonControlled()
+    {
+        Vector2 target = activated ? pointB : pointA;
+        if (Vector2.Distance(transform.position, target) < 0.01f)
+        {
+            transform.position = new Vector3(target.x, target.y, transform.position.z);
+            return;
+        }
+        transform.position = Vector2.MoveTowards(transform.position, target, speed * Time.deltaTime);
+    }
+
+    private void UpdatePatrol()
+    {
         if (waitTimer > 0f)
         {
             waitTimer -= Time.deltaTime;
-            CurrentVelocityX = 0f;
-            lastPosition = transform.position;
             return;
         }
 
@@ -105,14 +170,6 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
                 waitTimer = waitTime;
             }
         }
-
-        float dt = Time.deltaTime;
-        if (dt > 0f)
-            CurrentVelocityX = (transform.position.x - lastPosition.x) / dt;
-        else
-            CurrentVelocityX = 0f;
-
-        lastPosition = transform.position;
     }
 
     void OnCollisionEnter2D(Collision2D col)
@@ -157,7 +214,8 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
             positionZ = transform.position.z,
             patrolState = (int)state,
             patrolToB = goingToB,
-            waitTimer = waitTimer
+            waitTimer = waitTimer,
+            activated = activated
         };
 
         return JsonUtility.ToJson(snapshot);
@@ -175,6 +233,7 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
         state = (PatrolState)clampedState;
         goingToB = data.patrolToB;
         waitTimer = Mathf.Max(0f, data.waitTimer);
+        activated = data.activated;
 
         lastPosition = transform.position;
         CurrentVelocityX = 0f;

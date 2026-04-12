@@ -4,7 +4,7 @@ using System.Collections;
 // A door that slides upward when opened and drops back down when closed.
 // Driven by ButtonController. The collider is disabled while the door is fully open.
 [RequireComponent(typeof(Collider2D))]
-public class SwitchDoor : MonoBehaviour, ISnapshotSaveable
+public class SwitchDoor : MonoBehaviour, ISnapshotSaveable, IButtonActivatable
 {
     [Tooltip("World-space units to slide upward when opening.")]
     [SerializeField] private float openOffset = 1f;
@@ -38,6 +38,10 @@ public class SwitchDoor : MonoBehaviour, ISnapshotSaveable
         closedPos = transform.position;
         openPos   = closedPos + Vector3.up * openOffset;
     }
+
+    // --- IButtonActivatable ---
+    public void Activate()   => Open();
+    public void Deactivate() => Close();
 
     public void Open()
     {
