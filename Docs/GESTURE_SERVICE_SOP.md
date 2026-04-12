@@ -44,7 +44,26 @@
   - `SpiritHandDisplay`
   - 并把它们绑定到当前 `Player`
 
-### 3.3 GestureService 自动创建机制
+### 3.3 手动挂载 GestureInputBridge（无 GameManager 或自动补齐失败时）
+
+如果你没有在场景里放 `GameManager`，或者想显式绑定，按下面步骤手动配置：
+
+1. 在 Hierarchy 里选中 `Player`（必须带 `PlayerController`）。
+2. 在 Inspector 点击 **Add Component**，搜索并添加 `GestureInputBridge`。
+3. 在 `GestureInputBridge` 组件里：
+   - 将 `Player` 字段拖拽为当前 `Player` 上的 `PlayerController`
+   - 根据关卡尺寸设置 `Unlink Distance`（建议略大于“Player 与 Box 贴住时的中心距离”）
+4. 保存场景后进入 Play，验证：
+   - 靠近箱子做 `Push` / `Fist` 可正常推拉
+   - 玩家起跳后应自动断开箱子连接（避免隔空推拉）
+
+备注：
+
+- 当前 `Level2` 建议值为 `Unlink Distance = 2`（对象缩放较大）。
+- 如果出现“刚贴住就断开”，适当增大 `Unlink Distance`；
+  如果出现“隔空仍可推拉”，适当减小并复测跳跃断开行为。
+
+### 3.4 GestureService 自动创建机制
 
 - `GestureServiceBootstrap` 会在场景加载前确保存在 `GestureService`。
 - `GestureService` 默认会跨场景保留（`DontDestroyOnLoad`）。
@@ -52,6 +71,7 @@
 结论：
 
 - 标准做法是：**新场景至少有 Player + GameManager**，其他由系统自动补齐。
+- 若不放 `GameManager`，则必须按 **3.3** 手动把 `GestureInputBridge` 挂到 `Player` 并完成字段绑定。
 
 ## 4) 可选 UI（摄像头面板）
 
@@ -103,7 +123,9 @@
 
 1. 新场景是否放了 `GameManager`
 2. `Player` 上是否有 `PlayerController`
-3. 需要射击时是否有 `ShootingController`
+3. 若无 `GameManager`，`Player` 上是否手动挂了 `GestureInputBridge`，且 `Player` 引用已绑定
+4. `GestureInputBridge` 的 `Unlink Distance` 是否与当前关卡缩放匹配
+5. 需要射击时是否有 `ShootingController`
 
 ## 7) 团队协作约定（必须遵守）
 
