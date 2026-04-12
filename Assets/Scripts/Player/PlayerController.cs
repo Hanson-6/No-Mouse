@@ -168,8 +168,8 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         TryConsumeBufferedJump();
 
         float horizontalVelocity = moveInput * moveSpeed;
-        if (isGrounded && currentPlatform != null && Mathf.Abs(moveInput) > 0.01f)
-            horizontalVelocity -= currentPlatform.CurrentVelocityX;
+        if (isGrounded && currentPlatform != null)
+            horizontalVelocity += currentPlatform.CurrentVelocityX;
 
         rb.velocity = new Vector2(horizontalVelocity, rb.velocity.y);
 

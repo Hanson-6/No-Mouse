@@ -119,7 +119,6 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
     {
         if (col.gameObject.CompareTag("Player"))
         {
-            col.transform.SetParent(transform);
             col.gameObject.GetComponent<PlayerController>()?.SetCurrentPlatform(this);
         }
     }
@@ -128,7 +127,6 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable
     {
         if (col.gameObject.CompareTag("Player"))
         {
-            col.transform.SetParent(null);
             col.gameObject.GetComponent<PlayerController>()?.ClearCurrentPlatform(this);
         }
     }
