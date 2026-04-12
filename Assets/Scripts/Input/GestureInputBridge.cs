@@ -129,6 +129,17 @@ public class GestureInputBridge : MonoBehaviour
     {
         if (player == null) return;
 
+        // 玩家离地（例如起跳）时，立即断开箱子连接，避免出现“隔空推/拉”。
+        if (!player.IsGrounded)
+        {
+            if (linkedBox != null)
+                UnlinkAndClear();
+
+            PushableBox.PushEnabledFrame = -1;
+            PushableBox.PullEnabledFrame = -1;
+            return;
+        }
+
         // ── Push 模式（张开手掌）────────────────────────────────────────────
         if (currentGesture == GestureType.Push)
         {
