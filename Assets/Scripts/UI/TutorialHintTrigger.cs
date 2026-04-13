@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -27,7 +28,7 @@ public class TutorialHintTrigger : MonoBehaviour
     private SpriteRenderer sr;
     private Vector3 unpressedPos;
     private Vector3 pressedPos;
-    private int overlapCount;
+    private readonly HashSet<int> activePressers = new HashSet<int>();
     private bool isPanelOpen;
 
     private GameObject hintPanel;
@@ -93,22 +94,38 @@ public class TutorialHintTrigger : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (!other.CompareTag("Player")) return;
-        var pc = other.GetComponent<PlayerController>();
-        if (pc != null && !pc.IsGrounded) return;
-        overlapCount++;
-        if (overlapCount == 1)
-        {
-            playerRb = other.GetComponent<Rigidbody2D>();
-            Press();
-        }
+        TryRegisterPresser(other);
+    }
+
+    void OnTriggerStay2D(Collider2D other)
+    {
+        // Handles the case where player enters trigger while airborne,
+        // then lands inside without triggering a new OnTriggerEnter2D.
+        TryRegisterPresser(other);
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
         if (!other.CompareTag("Player")) return;
-        overlapCount = Mathf.Max(0, overlapCount - 1);
-        if (overlapCount == 0) Release();
+        if (!activePressers.Remove(other.GetInstanceID())) return;
+        if (activePressers.Count == 0) Release();
+    }
+
+    void TryRegisterPresser(Collider2D other)
+    {
+        if (!other.CompareTag("Player")) return;
+
+        int id = other.GetInstanceID();
+        if (activePressers.Contains(id)) return;
+
+        var pc = other.GetComponent<PlayerController>();
+        if (pc != null && !pc.IsGrounded) return;
+
+        activePressers.Add(id);
+        if (activePressers.Count != 1) return;
+
+        playerRb = other.attachedRigidbody != null ? other.attachedRigidbody : other.GetComponent<Rigidbody2D>();
+        Press();
     }
 
     void Press()

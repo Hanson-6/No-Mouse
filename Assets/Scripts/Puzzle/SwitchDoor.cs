@@ -47,7 +47,11 @@ public class SwitchDoor : MonoBehaviour, ISnapshotSaveable, IButtonActivatable
     {
         StopAllCoroutines();
         isOpen = true;
-        if (audioSource != null && openSound != null) audioSource.PlayOneShot(openSound, openSoundVolume);
+        if (audioSource != null)
+        {
+            audioSource.Stop();
+            if (openSound != null) audioSource.PlayOneShot(openSound, openSoundVolume);
+        }
         StartCoroutine(SlideTo(openPos, disableColliderWhenDone: false));
     }
 
@@ -56,7 +60,12 @@ public class SwitchDoor : MonoBehaviour, ISnapshotSaveable, IButtonActivatable
         StopAllCoroutines();
         isOpen = false;
         col.enabled = true; // re-enable before sliding back so player can't pass through
-        if (audioSource != null && closeSound != null) audioSource.PlayOneShot(closeSound);
+        if (audioSource != null)
+        {
+            // Ensure opening sound is cut immediately when pressure is released.
+            audioSource.Stop();
+            if (closeSound != null) audioSource.PlayOneShot(closeSound);
+        }
         StartCoroutine(SlideTo(closedPos, disableColliderWhenDone: false));
     }
 
