@@ -11,6 +11,16 @@ public enum BoxLinkMode { None, Push, Pull }
 [RequireComponent(typeof(BoxCollider2D))]
 public class PushableBox : MonoBehaviour, ISnapshotSaveable
 {
+    // ── Step Climb ──────────────────────────────────────────────────────────
+    [Header("Step Climb")]
+    [Tooltip("Max height the box can automatically step up (match or slightly exceed the platform-to-terrain height difference)")]
+    [SerializeField] private float maxStepHeight = 0.465f;
+    [Tooltip("Horizontal distance to probe ahead for steps")]
+    [SerializeField] private float stepCheckDistance = 0.15f;
+    [Tooltip("Edge radius on the BoxCollider2D — rounds corners to slide over tiny height differences")]
+    [SerializeField] private float colliderEdgeRadius = 0.02f;
+    [Tooltip("Layer mask for ground/terrain (must match PlayerController's groundLayer)")]
+    [SerializeField] private LayerMask groundLayer;
     // ── 手势激活帧 ──────────────────────────────────────────────────────────
     // GestureInputBridge 每帧刷新；超过1帧未刷新自动失效
     public static int PushEnabledFrame = -1; // 判断"推箱子手势"是否有效，存储的是一个帧编号
@@ -42,6 +52,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     // 不用每次都 FindObjectsOfType<PushableBox>() -> 低效：每帧搜索场景中所有对象
 
     private Rigidbody2D rb; // 箱子自己的 Rigidbody2D（通过 GetComponent 获取）
+    private BoxCollider2D boxCollider; // 用于 step climb 检测
     private Rigidbody2D playerRb;   // 当前接触箱子的玩家的 Rigidbody2D（碰撞检测时获取）
 
     // ── 连接状态 ────────────────────────────────────────────────────────────
@@ -60,6 +71,10 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
 
     // horizontalTouch: 水平方向碰撞标记，区分"从侧面碰"和"从上面跳上去"
     private bool horizontalTouch;
+
+    // ── MovingPlatform 跟随 ─────────────────────────────────────────────────
+    // 当 Box 站在 MovingPlatform 上但未被 Link 时，需要跟随平台水平移动
+    private MovingPlatform currentPlatform;
 
     [System.Serializable]
     private class SnapshotState
@@ -87,6 +102,22 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        boxCollider = GetComponent<BoxCollider2D>();
+
+        // Round the bottom corners of the BoxCollider2D so the box
+        // can slide over tiny height differences naturally.
+        if (boxCollider != null && colliderEdgeRadius > 0f)
+        {
+            boxCollider.edgeRadius = colliderEdgeRadius;
+        }
+
+        // Auto-detect groundLayer from PlayerController if not assigned
+        if (groundLayer == 0)
+        {
+            var player = FindObjectOfType<PlayerController>();
+            if (player != null)
+                groundLayer = player.groundLayer;
+        }
     }
 
     void OnEnable()  => _allBoxes.Add(this);
@@ -179,6 +210,23 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
         rb.velocity = new Vector2(0f, rb.velocity.y); // 断开时停止水平移动
     }
 
+    /// <summary>
+    /// MovingPlatform 碰撞时调用：记录当前所在平台，使 Box 跟随平台水平移动。
+    /// </summary>
+    public void SetCurrentPlatform(MovingPlatform platform)
+    {
+        currentPlatform = platform;
+    }
+
+    /// <summary>
+    /// 离开 MovingPlatform 时调用：清除平台引用。
+    /// </summary>
+    public void ClearCurrentPlatform(MovingPlatform platform)
+    {
+        if (currentPlatform == platform)
+            currentPlatform = null;
+    }
+
     /* Unity 内置函数 */
     // - FixedUpdate 每个物理帧调用一次（默认每秒 50 次，时间间隔 0.02 秒）
     // - 因为物理引擎要求稳定的时间步长，所以 Unity 把物理逻辑放在 FixedUpdate。
@@ -194,32 +242,137 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     {
         if (isLinked && playerRb != null)
         {
-            // rb.constraints 控制刚体的运动约束——冻结哪些轴的运动或旋转。
-            rb.constraints = RigidbodyConstraints2D.FreezeRotation; // 只冻结旋转
+            // ── 已连接：Dynamic 模式，响应 Player 的推/拉 ──────────────────
+            // 确保是 Dynamic（从 Kinematic 切换回来时需要）
+            if (rb.bodyType != RigidbodyType2D.Dynamic)
+            {
+                rb.bodyType = RigidbodyType2D.Dynamic;
+                rb.useFullKinematicContacts = false;
+            }
+
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
             float playerVx = playerRb.velocity.x;
 
             if (linkMode == BoxLinkMode.Push)
             {
-                // Push 模式：只在 Player 往推方向移动时传递速度
-                // pushDirection > 0 表示往右推 → 只传递 playerVx > 0 的速度
-                // pushDirection < 0 表示往左推 → 只传递 playerVx < 0 的速度
-                // Player 反方向走时，Box 水平速度 = 0
                 bool movingInPushDir = (pushDirection > 0f && playerVx > 0f)
                                     || (pushDirection < 0f && playerVx < 0f);
                 float boxVx = movingInPushDir ? playerVx : 0f;
+
+                // 在平台上时叠加平台速度，保证推动过程中 Box 不会"掉队"
+                if (currentPlatform != null)
+                    boxVx += currentPlatform.CurrentVelocityX;
+
                 rb.velocity = new Vector2(boxVx, rb.velocity.y);
             }
             else // Pull 模式
             {
-                // Pull 模式：Box 完全跟随 Player 水平速度
-                rb.velocity = new Vector2(playerVx, rb.velocity.y);
+                float boxVx = playerVx;
+                if (currentPlatform != null)
+                    boxVx += currentPlatform.CurrentVelocityX;
+                rb.velocity = new Vector2(boxVx, rb.velocity.y);
+            }
+
+            // Step-up: auto-climb small ledges when the box is moving horizontally
+            if (Mathf.Abs(rb.velocity.x) > 0.01f)
+            {
+                Vector2 dir = rb.velocity.x > 0f ? Vector2.right : Vector2.left;
+                TryStepUp(dir);
             }
         }
         else
         {
-            rb.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation; // 只冻结水平移动+旋转，允许重力下落
+            // ── 未连接状态 ────────────────────────────────────────────────
+            if (currentPlatform != null)
+            {
+                // 在 MovingPlatform 上：切换为 Kinematic
+                // Kinematic 刚体不会被 Player 的碰撞力推动，
+                // 但仍然会阻挡 Player（Player 是 Dynamic，撞上来会被挡住）。
+                // 用 MovePosition 跟随平台移动。
+                if (rb.bodyType != RigidbodyType2D.Kinematic)
+                {
+                    rb.velocity = Vector2.zero;
+                    rb.bodyType = RigidbodyType2D.Kinematic;
+                    // Must enable full kinematic contacts so that
+                    // OnCollisionExit2D still fires between this
+                    // Kinematic box and the Static platform collider
+                    // (MovingPlatform has no Rigidbody2D).
+                    rb.useFullKinematicContacts = true;
+                }
+
+                float platformDeltaX = currentPlatform.CurrentVelocityX * Time.fixedDeltaTime;
+                rb.MovePosition(rb.position + new Vector2(platformDeltaX, 0f));
+            }
+            else
+            {
+                // 不在平台上：切换回 Dynamic，冻结 X（只靠重力下落）
+                if (rb.bodyType != RigidbodyType2D.Kinematic)
+                {
+                    // 已经是 Dynamic，正常设约束
+                    rb.constraints = RigidbodyConstraints2D.FreezePositionX
+                                   | RigidbodyConstraints2D.FreezeRotation;
+                }
+                else
+                {
+                    // 从 Kinematic 切回 Dynamic（刚离开平台）
+                    rb.bodyType = RigidbodyType2D.Dynamic;
+                    rb.useFullKinematicContacts = false;
+                    rb.constraints = RigidbodyConstraints2D.FreezePositionX
+                                   | RigidbodyConstraints2D.FreezeRotation;
+                }
+            }
         }
+    }
+
+    /// <summary>
+    /// 检测箱子前方是否有可以自动爬上的小台阶，逻辑与 PlayerController.TryStepUp 一致。
+    /// 当箱子在 MovingPlatform 上被推向地形边缘时，能自动翻越微小的高度差。
+    /// </summary>
+    void TryStepUp(Vector2 direction)
+    {
+        if (boxCollider == null || maxStepHeight <= 0f) return;
+
+        Bounds bounds = boxCollider.bounds;
+
+        float halfWidth = bounds.extents.x;
+        float rayOriginX = bounds.center.x;
+        float totalRayDist = halfWidth + stepCheckDistance;
+
+        // 1. Foot-level ray — is there a ledge ahead?
+        Vector2 footOrigin = new Vector2(rayOriginX, bounds.min.y + 0.02f);
+        RaycastHit2D lowHit = Physics2D.Raycast(footOrigin, direction, totalRayDist, groundLayer);
+        if (lowHit.collider == null) return;
+
+        float wallX = lowHit.point.x;
+        float leadingX = direction.x > 0f ? bounds.max.x : bounds.min.x;
+
+        // 2. High ray — if clear, it's a step, not a wall
+        Vector2 highOrigin = new Vector2(rayOriginX, bounds.min.y + maxStepHeight);
+        RaycastHit2D highHit = Physics2D.Raycast(highOrigin, direction, totalRayDist, groundLayer);
+        if (highHit.collider != null) return; // 前方是一面完整的墙，不是台阶
+
+        // 3. Downward ray to find step surface
+        float distToWall = Mathf.Abs(wallX - leadingX);
+        float probePastWall = distToWall + 0.08f;
+        Vector2 overStepOrigin = new Vector2(
+            leadingX + direction.x * probePastWall,
+            bounds.min.y + maxStepHeight + 0.02f);
+        RaycastHit2D downHit = Physics2D.Raycast(overStepOrigin, Vector2.down, maxStepHeight + 0.04f, groundLayer);
+        if (downHit.collider == null) return;
+
+        float heightDiff = downHit.point.y - bounds.min.y;
+        if (heightDiff <= 0.005f || heightDiff > maxStepHeight) return;
+
+        // 4. Teleport UP + FORWARD
+        float forwardNudge = probePastWall + 0.02f;
+        Vector2 newPos = rb.position;
+        newPos.y += heightDiff + 0.02f;
+        newPos.x += direction.x * forwardNudge;
+        rb.position = newPos;
+
+        if (rb.velocity.y < 0f)
+            rb.velocity = new Vector2(rb.velocity.x, 0f);
     }
 
     public Rigidbody2D Rb => rb;
@@ -261,7 +414,18 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
         transform.position = new Vector3(snapshot.positionX, snapshot.positionY, snapshot.positionZ);
 
         if (rb != null)
+        {
+            // Reset to Dynamic so FixedUpdate state machine starts clean.
+            // If the box was Kinematic (on a platform) before snapshot,
+            // it will re-enter Kinematic naturally once OnCollisionEnter2D
+            // re-fires from the platform.
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            rb.useFullKinematicContacts = false;
             rb.velocity = new Vector2(snapshot.velocityX, snapshot.velocityY);
+        }
+
+        // Clear platform reference — will be re-established by collision events
+        currentPlatform = null;
 
         isLinked = snapshot.isLinked;
         int maxMode = (int)BoxLinkMode.Pull;

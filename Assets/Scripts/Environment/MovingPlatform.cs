@@ -178,6 +178,10 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         {
             col.gameObject.GetComponent<PlayerController>()?.SetCurrentPlatform(this);
         }
+        else if (col.gameObject.CompareTag("Box"))
+        {
+            col.gameObject.GetComponent<PushableBox>()?.SetCurrentPlatform(this);
+        }
     }
 
     void OnCollisionExit2D(Collision2D col)
@@ -185,6 +189,10 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         if (col.gameObject.CompareTag("Player"))
         {
             col.gameObject.GetComponent<PlayerController>()?.ClearCurrentPlatform(this);
+        }
+        else if (col.gameObject.CompareTag("Box"))
+        {
+            col.gameObject.GetComponent<PushableBox>()?.ClearCurrentPlatform(this);
         }
     }
 
