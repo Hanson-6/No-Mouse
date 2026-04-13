@@ -31,3 +31,5 @@ Assets/Snapshots/snapshot_*.json.meta
 Assets/Snapshots/manifest.json
 Assets/Snapshots/manifest.json.meta
 .plastic/
+
+AGENTS.md

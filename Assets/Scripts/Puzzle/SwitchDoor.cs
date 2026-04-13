@@ -48,7 +48,7 @@ public class SwitchDoor : MonoBehaviour, ISnapshotSaveable, IButtonActivatable
         StopAllCoroutines();
         isOpen = true;
         if (audioSource != null && openSound != null) audioSource.PlayOneShot(openSound, openSoundVolume);
-        StartCoroutine(SlideTo(openPos, disableColliderWhenDone: true));
+        StartCoroutine(SlideTo(openPos, disableColliderWhenDone: false));
     }
 
     public void Close()

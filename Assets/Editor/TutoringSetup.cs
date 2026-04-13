@@ -2,6 +2,7 @@ using LDtkUnity;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
@@ -10,9 +11,51 @@ using UnityEngine.UI;
 /// </summary>
 public static class TutoringSetup
 {
+    private const string TUTORING_SCENE_PATH = "Assets/Scenes/Tutoring.unity";
+    private const string TUTORING_LDTK_PATH = "Assets/IDTK/Tutoring.ldtk";
     private const string TEX_MOVING_RULE   = "Assets/moving_rule.png";
     private const string TEX_CAVE_SPRITES2 = "Assets/CaveAssets/Spritesheets/Decorations/CaveDetailSprites2.png";
     private const string TRIGGER_PREFAB_PATH = "Assets/Prefabs/HintTrigger.prefab";
+
+    // ── 重新加载 Tutoring.ldtk 地形 ──────────────────────────────────────────
+    [MenuItem("Tools/Tutoring/0. Reload Tutoring LDtk Terrain")]
+    public static void ReloadTutoringTerrain()
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            Debug.LogError("[TutoringSetup] 请先打开 Tutoring 场景。");
+            return;
+        }
+
+        if (!string.Equals(scene.path, TUTORING_SCENE_PATH, System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.LogError($"[TutoringSetup] 当前场景是 '{scene.path}'。请先打开 '{TUTORING_SCENE_PATH}' 再执行 Reload。\n" +
+                           "否则会找不到 Tutoring 的 LDtk 根对象。");
+            return;
+        }
+
+        // 复用 LDtkSceneSetup 里已修好的通用 reload 逻辑：
+        //   - 按 prefab source（.ldtk）查找根对象，不依赖名字
+        //   - 强制 reimport → 销毁旧实例 → 重新实例化 → GenerateGeometry
+        LDtkSceneSetup.ReloadLDtkInCurrentScene(
+            forceReimport: true,
+            ldtkPathOverride: TUTORING_LDTK_PATH);
+
+        // 同步相机边界 + 左右空气墙 + DeathZone 到当前 LDtk 实际范围，
+        // 避免地图扩展后仍沿用旧常量边界造成“空气墙”。
+        if (TryGetCurrentMapBounds(scene, out float mapMinX, out float mapMaxX, out float mapMinY, out float mapMaxY))
+        {
+            ApplyMapBoundsToScene(scene, mapMinX, mapMaxX, mapMinY, mapMaxY);
+            EditorSceneManager.MarkSceneDirty(scene);
+            Debug.Log($"[TutoringSetup] Reload 后已同步场景边界到 LDtk：X({mapMinX:F2}~{mapMaxX:F2}) Y({mapMinY:F2}~{mapMaxY:F2})。");
+        }
+        else
+        {
+            Debug.LogWarning("[TutoringSetup] Reload 完成，但未能从场景中的 LDtk 根对象读取地图边界。" +
+                             "请检查 Hierarchy 中是否存在来自 Tutoring.ldtk 的 prefab root。");
+        }
+    }
 
     // ── 第一步：只需运行一次，建 UI + 背景 ──────────────────────────────────
     [MenuItem("Tools/Tutoring/1. Setup Tutoring UI (run once)")]
@@ -55,13 +98,14 @@ public static class TutoringSetup
         SetFullStretch(overlayGO.AddComponent<RectTransform>());
         overlayGO.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.55f);
 
-        // 内容面板（右侧）
+        // 内容面板（全屏）
         var panelGO = new GameObject("ContentPanel");
         panelGO.transform.SetParent(hintRootGO.transform, false);
         var panelRect = panelGO.AddComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.55f, 0.15f);
-        panelRect.anchorMax = new Vector2(0.95f, 0.85f);
-        panelRect.offsetMin = panelRect.offsetMax = Vector2.zero;
+        panelRect.anchorMin = Vector2.zero;
+        panelRect.anchorMax = Vector2.one;
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
 
         // 深色背景 + 蓝色边框 + 内层深色
         AddLayeredBackground(panelGO);
@@ -70,130 +114,38 @@ public static class TutoringSetup
         var hintImgGO = new GameObject("HintImage");
         hintImgGO.transform.SetParent(panelGO.transform, false);
         var hintRect = hintImgGO.AddComponent<RectTransform>();
-        hintRect.anchorMin = new Vector2(0f, 0.1f);
+        hintRect.anchorMin = Vector2.zero;
         hintRect.anchorMax = Vector2.one;
-        hintRect.offsetMin = new Vector2(16f, 8f);
-        hintRect.offsetMax = new Vector2(-16f, -50f);
+        hintRect.offsetMin = Vector2.zero;
+        hintRect.offsetMax = Vector2.zero;
         var hintImg = hintImgGO.AddComponent<Image>();
         hintImg.sprite = movingRuleSprite;
-        hintImg.preserveAspect = true;
+        hintImg.preserveAspect = false;
 
-        // 关闭按钮
-        var closeBtnGO = new GameObject("CloseButton");
-        closeBtnGO.transform.SetParent(panelGO.transform, false);
-        var cbRect = closeBtnGO.AddComponent<RectTransform>();
-        cbRect.anchorMin = cbRect.anchorMax = cbRect.pivot = Vector2.one;
-        cbRect.sizeDelta = new Vector2(60f, 60f);
-        cbRect.anchoredPosition = new Vector2(-8f, -8f);
-        closeBtnGO.AddComponent<Image>().color = new Color(0.75f, 0.15f, 0.15f, 1f);
-        closeBtnGO.AddComponent<Button>();
-        var closeTxt = AddText(closeBtnGO, "×", 36, Color.white);
-        closeTxt.alignment = TextAnchor.MiddleCenter;
-
-        // 底部提示文字
+        // 底部提示文字（叠在图片上方，固定高度 36px 贴底部）
         var tipGO = new GameObject("TipText");
         tipGO.transform.SetParent(panelGO.transform, false);
         var tipRect = tipGO.AddComponent<RectTransform>();
         tipRect.anchorMin = new Vector2(0f, 0f);
-        tipRect.anchorMax = new Vector2(1f, 0.1f);
-        tipRect.offsetMin = new Vector2(16f, 8f);
-        tipRect.offsetMax = new Vector2(-16f, -4f);
-        var tipTxt = AddText(tipGO, "按任意键关闭", 18, new Color(0.6f, 0.6f, 0.6f, 1f));
+        tipRect.anchorMax = new Vector2(1f, 0f);
+        tipRect.pivot = new Vector2(0.5f, 0f);
+        tipRect.offsetMin = new Vector2(0f, 12f);
+        tipRect.offsetMax = new Vector2(0f, 48f);
+        var tipTxt = AddText(tipGO, "Press ESC to quit", 22, new Color(1f, 0.2f, 0.2f, 1f));
         tipTxt.alignment = TextAnchor.MiddleCenter;
 
         hintRootGO.SetActive(false);
 
-        // ── LDtk 地形（如果场景里没有就补上）────────────────────────────────
-        bool hasLevels = false;
-        foreach (var root in scene.GetRootGameObjects())
-            if (root.name == "Levels") { hasLevels = true; break; }
-
-        if (!hasLevels)
+        // ── 相机边界 + 左右空气墙 + 死亡区（按当前 Tutoring.ldtk 实际范围生成） ──
+        float mapMinX = 159f, mapMaxX = 226f, mapMinY = 31.5f, mapMaxY = 63f; // fallback
+        if (!TryGetCurrentMapBounds(scene, out mapMinX, out mapMaxX, out mapMinY, out mapMaxY))
         {
-            const string ldtkPath = "Assets/IDTK/Tutoring.ldtk";
-            var ldtkAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ldtkPath);
-            if (ldtkAsset != null)
-            {
-                var ldtkInst = (GameObject)PrefabUtility.InstantiatePrefab(ldtkAsset);
-                ldtkInst.name = "Levels";
-                // 只显示 Tutoring 关卡
-                foreach (Transform child in ldtkInst.transform)
-                {
-                    var world = child.GetComponent<LDtkUnity.LDtkComponentWorld>();
-                    if (world != null)
-                    {
-                        foreach (Transform level in child)
-                            level.gameObject.SetActive(level.name == "Tutoring");
-                        break;
-                    }
-                }
-                Debug.Log("[TutoringSetup] LDtk 地形已加入场景。");
-            }
-            else
-            {
-                Debug.LogWarning($"[TutoringSetup] 找不到 {ldtkPath}，请确认文件存在。");
-            }
+            Debug.LogWarning("[TutoringSetup] 未能从 Tutoring.ldtk 实例读取边界，使用 fallback 常量。" +
+                             "建议先运行 Tools/Tutoring/0. Reload Tutoring LDtk Terrain。");
         }
 
-        // ── 背景 ─────────────────────────────────────────────────────────────
-        DestroyExisting("Background");
-        var bgPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Background.prefab");
-        if (bgPrefab != null)
-        {
-            var bgInst = (GameObject)PrefabUtility.InstantiatePrefab(bgPrefab);
-            bgInst.transform.SetAsFirstSibling();
-        }
-        else
-        {
-            Debug.LogWarning("[TutoringSetup] 找不到 Background.prefab，请先在其他场景运行 Tools/Setup Background。");
-        }
-
-        // ── 相机偏移 + 边界 ───────────────────────────────────────────────────
-        // Tutoring 关卡 Unity 世界坐标范围（从 LDtk 读取，PPU=16）
-        // worldX=2544, pxWid=1072 → x: 159 ~ 226
-        // worldY=-1008, pxHei=504 → y: 63 ~ 31.5
-        const float mapMinX = 159f, mapMaxX = 226f;
-        const float mapMinY = 31.5f, mapMaxY = 63f;
-
-        foreach (var root in scene.GetRootGameObjects())
-        {
-            var cf = root.GetComponent<CameraFollow>() ?? root.GetComponentInChildren<CameraFollow>();
-            if (cf == null) continue;
-
-            var camComp = root.GetComponent<Camera>() ?? root.GetComponentInChildren<Camera>();
-            float orthoSize = camComp != null ? camComp.orthographicSize : 10f;
-            float aspect    = 16f / 9f; // 目标分辨率 1920×1080
-            float halfW = orthoSize * aspect;
-            float halfH = orthoSize;
-
-            var so = new SerializedObject(cf);
-            so.FindProperty("offset").vector2Value = new Vector2(5f, 2f);
-            so.FindProperty("useBounds").boolValue = true;
-            // 相机中心不能超出地图范围（留出半屏空间）
-            so.FindProperty("minX").floatValue = mapMinX + halfW;
-            so.FindProperty("maxX").floatValue = mapMaxX - halfW;
-            // Y 方向：若地图高度 < 相机高度则锁定 Y 中央
-            float mapCenterY = (mapMinY + mapMaxY) * 0.5f;
-            so.FindProperty("minY").floatValue = (mapMaxY - mapMinY) > halfH * 2f
-                ? mapMinY + halfH : mapCenterY;
-            so.FindProperty("maxY").floatValue = (mapMaxY - mapMinY) > halfH * 2f
-                ? mapMaxY - halfH : mapCenterY;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            Debug.Log($"[TutoringSetup] 相机边界设置：X({mapMinX + halfW:F1}~{mapMaxX - halfW:F1}) Y({mapMinY + halfH:F1}~{mapMaxY - halfH:F1})");
-            break;
-        }
-
-        // ── 死亡区（地图底部下方）────────────────────────────────────────────
-        DestroyExisting("DeathZone");
-        var dzGO = new GameObject("DeathZone");
-        dzGO.tag = "Untagged";
-        // 宽度覆盖整个地图，位置在底部下方 5 units
-        var dzCol = dzGO.AddComponent<BoxCollider2D>();
-        dzCol.isTrigger = true;
-        dzGO.transform.position = new Vector3((mapMinX + mapMaxX) * 0.5f, mapMinY - 5f, 0f);
-        dzCol.size = new Vector2(mapMaxX - mapMinX + 20f, 4f);
-        dzGO.AddComponent<DeathZone>();
-        Debug.Log($"[TutoringSetup] DeathZone 已创建，位置 y={mapMinY - 5f}，宽度 {mapMaxX - mapMinX + 20f}。");
+        ApplyMapBoundsToScene(scene, mapMinX, mapMaxX, mapMinY, mapMaxY);
+        Debug.Log($"[TutoringSetup] 场景边界已应用：X({mapMinX:F2}~{mapMaxX:F2}) Y({mapMinY:F2}~{mapMaxY:F2})。");
 
         // ── 同时生成 HintTrigger Prefab 供后续使用 ───────────────────────────
         BuildTriggerPrefab();
@@ -336,5 +288,116 @@ public static class TutoringSetup
     {
         foreach (var root in EditorSceneManager.GetActiveScene().GetRootGameObjects())
             if (root.name == objName) { Object.DestroyImmediate(root); return; }
+    }
+
+    static bool TryGetCurrentMapBounds(Scene scene, out float minX, out float maxX, out float minY, out float maxY)
+    {
+        minX = maxX = minY = maxY = 0f;
+        bool hasAny = false;
+
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            var src = PrefabUtility.GetCorrespondingObjectFromSource(root);
+            if (src == null) continue;
+
+            string srcPath = AssetDatabase.GetAssetPath(src);
+            if (!string.Equals(srcPath, TUTORING_LDTK_PATH, System.StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            Transform world = root.transform;
+            foreach (Transform child in root.transform)
+            {
+                if (child.GetComponent<LDtkComponentWorld>() != null)
+                {
+                    world = child;
+                    break;
+                }
+            }
+
+            foreach (Transform level in world)
+            {
+                var renderers = level.GetComponentsInChildren<Renderer>(true);
+                foreach (var r in renderers)
+                {
+                    if (!hasAny)
+                    {
+                        minX = r.bounds.min.x;
+                        maxX = r.bounds.max.x;
+                        minY = r.bounds.min.y;
+                        maxY = r.bounds.max.y;
+                        hasAny = true;
+                    }
+                    else
+                    {
+                        minX = Mathf.Min(minX, r.bounds.min.x);
+                        maxX = Mathf.Max(maxX, r.bounds.max.x);
+                        minY = Mathf.Min(minY, r.bounds.min.y);
+                        maxY = Mathf.Max(maxY, r.bounds.max.y);
+                    }
+                }
+            }
+
+            // Scene only has one Tutoring LDtk root.
+            break;
+        }
+
+        return hasAny;
+    }
+
+    static void ApplyMapBoundsToScene(Scene scene, float mapMinX, float mapMaxX, float mapMinY, float mapMaxY)
+    {
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            var cf = root.GetComponent<CameraFollow>() ?? root.GetComponentInChildren<CameraFollow>();
+            if (cf == null) continue;
+
+            var camComp = root.GetComponent<Camera>() ?? root.GetComponentInChildren<Camera>();
+            float orthoSize = camComp != null ? camComp.orthographicSize : 10f;
+            float aspect = camComp != null ? camComp.aspect : 16f / 9f;
+            float halfW = orthoSize * aspect;
+            float halfH = orthoSize;
+
+            var so = new SerializedObject(cf);
+            so.FindProperty("offset").vector2Value = new Vector2(5f, 2f);
+            so.FindProperty("useBounds").boolValue = true;
+            so.FindProperty("minX").floatValue = mapMinX + halfW;
+            so.FindProperty("maxX").floatValue = mapMaxX - halfW;
+
+            float mapCenterY = (mapMinY + mapMaxY) * 0.5f;
+            so.FindProperty("minY").floatValue = (mapMaxY - mapMinY) > halfH * 2f
+                ? mapMinY + halfH : mapCenterY;
+            so.FindProperty("maxY").floatValue = (mapMaxY - mapMinY) > halfH * 2f
+                ? mapMaxY - halfH : mapCenterY;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            break;
+        }
+
+        // Keep compatibility with existing setup asset names.
+        DestroyExisting("WallLeft");
+        DestroyExisting("WallRight");
+
+        float wallHeight = mapMaxY - mapMinY + 20f;
+        float wallCenterY = (mapMinY + mapMaxY) * 0.5f;
+
+        var wallL = new GameObject("WallLeft");
+        var wallLCol = wallL.AddComponent<BoxCollider2D>();
+        wallL.transform.position = new Vector3(mapMinX - 1f, wallCenterY, 0f);
+        wallLCol.size = new Vector2(2f, wallHeight);
+        wallL.layer = LayerMask.NameToLayer("Ground");
+
+        var wallR = new GameObject("WallRight");
+        var wallRCol = wallR.AddComponent<BoxCollider2D>();
+        wallR.transform.position = new Vector3(mapMaxX + 1f, wallCenterY, 0f);
+        wallRCol.size = new Vector2(2f, wallHeight);
+        wallR.layer = LayerMask.NameToLayer("Ground");
+
+        DestroyExisting("DeathZone");
+        var dzGO = new GameObject("DeathZone");
+        dzGO.tag = "Untagged";
+        var dzCol = dzGO.AddComponent<BoxCollider2D>();
+        dzCol.isTrigger = true;
+        dzGO.transform.position = new Vector3((mapMinX + mapMaxX) * 0.5f, mapMinY - 5f, 0f);
+        dzCol.size = new Vector2(mapMaxX - mapMinX + 20f, 4f);
+        dzGO.AddComponent<DeathZone>();
     }
 }

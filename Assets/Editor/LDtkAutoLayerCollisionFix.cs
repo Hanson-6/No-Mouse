@@ -30,7 +30,8 @@ public class LDtkAutoLayerCollisionFix : LDtkPostprocessor
                 var rb = col.gameObject.GetComponent<Rigidbody2D>();
                 if (rb != null) rb.simulated = false;
 
-                Debug.Log($"[LDtkAutoLayerCollisionFix] Disabled physics on AutoLayer in '{root.name}'.");
+                if (LDtkSceneSetup.IsDiagnosticEnabled)
+                    Debug.Log($"[LDtkAutoLayerCollisionFix] Disabled physics on AutoLayer in '{root.name}'.");
             }
         }
     }

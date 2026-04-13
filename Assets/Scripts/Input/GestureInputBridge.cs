@@ -22,7 +22,7 @@ public class GestureInputBridge : MonoBehaviour
     // 距离断开阈值：Player 和 Box 中心距离超过这个值时断开连接
     // Player 宽度 ≈ 0.32, Box 宽度 ≈ 0.32, 紧贴时中心距 ≈ 0.32
     // 留一些余量（0.6），这样 Pull 时 Player 远离一小段仍保持连接
-    [SerializeField] private float unlinkDistance = 0.6f;
+    [SerializeField] private float unlinkDistance = 2f;
 
     // 当前手势类型
     private GestureType currentGesture = GestureType.None;

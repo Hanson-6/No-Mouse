@@ -147,3 +147,6 @@ MonoBehaviour:
   pressedSprite: {fileID: 1781168676880224993, guid: cc0c27125f4f365438ddfff7b810954a, type: 3}
   pressDownAmount: 0.15
   hintSprite: {fileID: 21300000, guid: f06f9ccf49d88ff4e8ab7b5aa2d6ad79, type: 3}
+  tipText: Press ESC to quit
+  openDuration: 0.25
+  closeDuration: 0.15
