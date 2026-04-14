@@ -10,6 +10,9 @@ using GestureRecognition.Service;
 /// </summary>
 public class MainMenu : MonoBehaviour
 {
+    private const string PreferredFirstLevelScenePath = "Assets/Scenes/Tutoring.unity";
+    private const string SecondaryFirstLevelScenePath = "Assets/Scenes/Tutorial.unity";
+
     [Tooltip("Build index of the first level scene.")]
     public int firstLevelIndex = 1;
 
@@ -54,7 +57,9 @@ public class MainMenu : MonoBehaviour
         SaveManager.DeleteSave();
         GameData.Reset();
         Time.timeScale = 1f;
-        SceneManager.LoadScene(firstLevelIndex);
+
+        int resolvedIndex = ResolveFirstLevelBuildIndex();
+        SceneManager.LoadScene(resolvedIndex);
     }
 
     public void ContinueGame()
@@ -64,20 +69,8 @@ public class MainMenu : MonoBehaviour
 
         Time.timeScale = 1f;
 
-        if (SaveManager.ContinueFromLatestSnapshot())
-            return;
-
-        Debug.LogWarning("[MainMenu] 未命中快照恢复，降级到旧存档流程。");
-
-        SaveManager.Load();
-        int levelIndex = GameData.CurrentLevel;
-        if (levelIndex > 0 && levelIndex < SceneManager.sceneCountInBuildSettings)
-            SceneManager.LoadScene(levelIndex);
-        else
-        {
-            GameData.Reset();
-            SceneManager.LoadScene(firstLevelIndex);
-        }
+        if (!SaveManager.ContinueFromLatestSnapshot())
+            Debug.LogWarning("[MainMenu] Continue 失败：未找到可恢复的 session/checkpoint 存档。");
     }
 
     public void StartGame()
@@ -123,5 +116,19 @@ public class MainMenu : MonoBehaviour
             menuCanvas.transform.localScale = Vector3.one;
             Debug.Log("[MainMenu][Diag] MenuCanvas scale was zero; restored to (1,1,1).");
         }
+    }
+
+    private static int ResolveFirstLevelBuildIndex()
+    {
+        int preferredIndex = SceneUtility.GetBuildIndexByScenePath(PreferredFirstLevelScenePath);
+        if (preferredIndex >= 0)
+            return preferredIndex;
+
+        int secondaryIndex = SceneUtility.GetBuildIndexByScenePath(SecondaryFirstLevelScenePath);
+        if (secondaryIndex >= 0)
+            return secondaryIndex;
+
+        Debug.LogWarning($"[MainMenu] Neither '{PreferredFirstLevelScenePath}' nor '{SecondaryFirstLevelScenePath}' is in Build Settings. Fallback to index 1.");
+        return 1;
     }
 }

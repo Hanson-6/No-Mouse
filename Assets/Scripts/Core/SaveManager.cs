@@ -8,7 +8,9 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 存档管理器。
-/// 开发阶段默认将快照写入 Assets/Snapshots/，每次 Save&Quit 保存一个 JSON 快照，且仅保留最新一个。
+/// 快照写入 Assets/Snapshots/。
+/// - checkpoint_latest.json：永久 checkpoint 存档（仅 checkpoint 触发覆盖）
+/// - session_live.json：运行期临时存档（进程退出清理）
 /// </summary>
 public static class SaveManager
 {
@@ -19,74 +21,75 @@ public static class SaveManager
     private const string KEY_LATEST_SNAPSHOT = "LatestSnapshot";
 
     private const int SNAPSHOT_VERSION = 1;
-    private const int MAX_SNAPSHOT_FILES = 1;
     private const string RIGIDBODY_COMPONENT_TYPE = "UnityEngine.Rigidbody2D";
     private const string SNAPSHOT_FOLDER_NAME = "Snapshots";
-    private const string MANIFEST_FILE_NAME = "manifest.json";
+    private const string CHECKPOINT_FILE_NAME = "checkpoint_latest.json";
+    private const string SESSION_FILE_NAME = "session_live.json";
+    private const string MAIN_MENU_SCENE_PATH = "Assets/Scenes/MainMenu.unity";
 
     private static SnapshotFileData pendingSnapshot;
     private static SnapshotRunner runner;
     private static bool isRestoring;
     private static bool isLoadingSnapshotScene;
+    private static bool runtimeHooksRegistered;
+    private static bool isApplicationQuitting;
 
     private static string SnapshotDirectoryPath => Path.Combine(Application.dataPath, SNAPSHOT_FOLDER_NAME);
-    private static string ManifestPath => Path.Combine(SnapshotDirectoryPath, MANIFEST_FILE_NAME);
+    private static string CheckpointSnapshotPath => Path.Combine(SnapshotDirectoryPath, CHECKPOINT_FILE_NAME);
+    private static string SessionSnapshotPath => Path.Combine(SnapshotDirectoryPath, SESSION_FILE_NAME);
 
     public static void Save()
     {
-        EnsureSnapshotDirectoryAndPrune();
+        SaveSessionSnapshot();
+    }
+
+    public static void SaveSessionSnapshot()
+    {
+        EnsureSnapshotDirectory();
+
+        if (isApplicationQuitting)
+            return;
 
         if (isRestoring)
         {
-            Debug.LogWarning("[SaveManager] 当前正在恢复快照，已跳过保存请求。");
+            Debug.LogWarning("[SaveManager] 当前正在恢复快照，已跳过 session 保存请求。");
             return;
         }
 
-        try
+        SnapshotFileData snapshot = TryCaptureSnapshotForSave("session");
+        if (snapshot == null)
+            return;
+
+        if (WriteSnapshotFile(snapshot, SessionSnapshotPath, "session"))
+            CacheLegacySummary(snapshot, SESSION_FILE_NAME);
+    }
+
+    public static void SaveCheckpoint()
+    {
+        EnsureSnapshotDirectory();
+
+        if (isApplicationQuitting)
+            return;
+
+        if (isRestoring)
         {
-            var snapshot = CaptureSnapshot();
-            if (snapshot == null)
-            {
-                Debug.LogWarning("[SaveManager] 快照保存失败：无法捕获场景状态。");
-                return;
-            }
-
-            Directory.CreateDirectory(SnapshotDirectoryPath);
-
-            string fileName = BuildSnapshotFileName();
-            string snapshotPath = Path.Combine(SnapshotDirectoryPath, fileName);
-            string json = JsonUtility.ToJson(snapshot, true);
-            File.WriteAllText(snapshotPath, json);
-
-            SnapshotManifest manifest = LoadManifest();
-            if (manifest.files == null)
-                manifest.files = new List<string>();
-
-            manifest.files.RemoveAll(string.IsNullOrWhiteSpace);
-            manifest.files.Remove(fileName);
-            manifest.files.Add(fileName);
-            manifest.latest = fileName;
-            PruneOldSnapshots(manifest);
-            SaveManifest(manifest);
-
-            PlayerPrefs.SetInt(KEY_LEVEL, snapshot.gameData.currentLevel);
-            PlayerPrefs.SetInt(KEY_LIVES, snapshot.gameData.lives);
-            PlayerPrefs.SetInt(KEY_SCORE, snapshot.gameData.score);
-            PlayerPrefs.SetInt(KEY_EXISTS, 1);
-            PlayerPrefs.SetString(KEY_LATEST_SNAPSHOT, fileName);
-            PlayerPrefs.Save();
-
-            Debug.Log($"[SaveManager] 快照已保存: {snapshotPath}");
+            Debug.LogWarning("[SaveManager] 当前正在恢复快照，已跳过 checkpoint 保存请求。");
+            return;
         }
-        catch (Exception e)
-        {
-            Debug.LogError($"[SaveManager] 保存快照失败: {e.Message}\n{e.StackTrace}");
-        }
+
+        SnapshotFileData snapshot = TryCaptureSnapshotForSave("checkpoint");
+        if (snapshot == null)
+            return;
+
+        bool checkpointSaved = WriteSnapshotFile(snapshot, CheckpointSnapshotPath, "checkpoint");
+        bool sessionSaved = WriteSnapshotFile(snapshot, SessionSnapshotPath, "session");
+        if (checkpointSaved || sessionSaved)
+            CacheLegacySummary(snapshot, CHECKPOINT_FILE_NAME);
     }
 
     public static void Load()
     {
-        SnapshotFileData snapshot = LoadLatestSnapshot();
+        SnapshotFileData snapshot = LoadContinueSnapshot();
         if (snapshot != null)
         {
             ApplyGameData(snapshot.gameData);
@@ -102,7 +105,7 @@ public static class SaveManager
 
     public static bool ContinueFromLatestSnapshot()
     {
-        EnsureSnapshotDirectoryAndPrune();
+        EnsureSnapshotDirectory();
 
         if (isLoadingSnapshotScene || pendingSnapshot != null)
         {
@@ -110,7 +113,7 @@ public static class SaveManager
             return true;
         }
 
-        SnapshotFileData snapshot = LoadLatestSnapshot();
+        SnapshotFileData snapshot = LoadContinueSnapshot();
         if (snapshot == null)
         {
             Debug.LogWarning("[SaveManager] Continue 失败：未找到快照文件。");
@@ -118,6 +121,54 @@ public static class SaveManager
         }
 
         return ContinueFromSnapshot(snapshot);
+    }
+
+    public static bool ContinueFromCheckpointSnapshot()
+    {
+        EnsureSnapshotDirectory();
+
+        if (isLoadingSnapshotScene || pendingSnapshot != null)
+        {
+            Debug.LogWarning("[SaveManager] BackToCheckpoint 请求被忽略：已有快照加载/恢复在进行中。");
+            return true;
+        }
+
+        SnapshotFileData snapshot = LoadSnapshotByPath(CheckpointSnapshotPath, "checkpoint");
+        if (snapshot == null)
+        {
+            Debug.LogWarning("[SaveManager] BackToCheckpoint 失败：未找到 checkpoint 快照文件。");
+            return false;
+        }
+
+        return ContinueFromSnapshot(snapshot);
+    }
+
+    public static bool HasCheckpointSave()
+    {
+        EnsureSnapshotDirectory();
+        return HasCheckpointSnapshot();
+    }
+
+    public static void ClearSessionSnapshot()
+    {
+        EnsureSnapshotDirectory();
+        DeleteSnapshotFileWithMeta(SessionSnapshotPath);
+    }
+
+    public static void ClearCheckpointSnapshot()
+    {
+        EnsureSnapshotDirectory();
+        DeleteSnapshotFileWithMeta(CheckpointSnapshotPath);
+    }
+
+    public static void SaveCurrentSessionLive()
+    {
+        SaveSessionSnapshot();
+    }
+
+    public static void SaveAndQuit()
+    {
+        SaveSessionSnapshot();
     }
 
     private static bool ContinueFromSnapshot(SnapshotFileData snapshot)
@@ -161,28 +212,43 @@ public static class SaveManager
         return true;
     }
 
+    private static SnapshotFileData LoadContinueSnapshot()
+    {
+        SnapshotFileData session = LoadSnapshotByPath(SessionSnapshotPath, "session");
+        if (session != null)
+            return session;
+
+        return LoadSnapshotByPath(CheckpointSnapshotPath, "checkpoint");
+    }
+
+    private static bool HasSessionSnapshot()
+    {
+        return LoadSnapshotByPath(SessionSnapshotPath, "session") != null;
+    }
+
+    private static bool HasCheckpointSnapshot()
+    {
+        return LoadSnapshotByPath(CheckpointSnapshotPath, "checkpoint") != null;
+    }
+
     public static bool HasSave()
     {
-        EnsureSnapshotDirectoryAndPrune();
-
-        SnapshotFileData snapshot = LoadLatestSnapshot();
-        if (snapshot != null)
-            return true;
-
-        return PlayerPrefs.GetInt(KEY_EXISTS, 0) == 1;
+        EnsureSnapshotDirectory();
+        return HasSessionSnapshot() || HasCheckpointSnapshot();
     }
 
     public static void DeleteSave()
     {
-        EnsureSnapshotDirectoryAndPrune();
+        EnsureSnapshotDirectory();
 
         if (Directory.Exists(SnapshotDirectoryPath))
         {
-            foreach (string file in Directory.GetFiles(SnapshotDirectoryPath, "*.json"))
-            {
+            foreach (string file in Directory.GetFiles(SnapshotDirectoryPath, "snapshot_*.json", SearchOption.TopDirectoryOnly))
                 DeleteSnapshotFileWithMeta(file);
-            }
         }
+
+        DeleteSnapshotFileWithMeta(SessionSnapshotPath);
+        DeleteSnapshotFileWithMeta(CheckpointSnapshotPath);
 
         PlayerPrefs.DeleteKey(KEY_LEVEL);
         PlayerPrefs.DeleteKey(KEY_LIVES);
@@ -196,6 +262,81 @@ public static class SaveManager
         pendingSnapshot = null;
         isLoadingSnapshotScene = false;
         Debug.Log("[SaveManager] 存档已删除");
+    }
+
+    private static SnapshotFileData TryCaptureSnapshotForSave(string label)
+    {
+        try
+        {
+            SnapshotFileData snapshot = CaptureSnapshot();
+            if (snapshot == null)
+            {
+                Debug.LogWarning($"[SaveManager] {label} 快照保存失败：无法捕获场景状态。");
+                return null;
+            }
+
+            return snapshot;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[SaveManager] 保存 {label} 快照失败: {e.Message}\n{e.StackTrace}");
+            return null;
+        }
+    }
+
+    private static bool WriteSnapshotFile(SnapshotFileData snapshot, string path, string label)
+    {
+        if (snapshot == null || string.IsNullOrEmpty(path))
+            return false;
+
+        try
+        {
+            Directory.CreateDirectory(SnapshotDirectoryPath);
+            string json = JsonUtility.ToJson(snapshot, true);
+            File.WriteAllText(path, json);
+            Debug.Log($"[SaveManager] {label} 快照已保存: {path}");
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[SaveManager] 写入 {label} 快照失败: {path} ({e.Message})");
+            return false;
+        }
+    }
+
+    private static SnapshotFileData LoadSnapshotByPath(string path, string label)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            return null;
+
+        try
+        {
+            string json = File.ReadAllText(path);
+            return JsonUtility.FromJson<SnapshotFileData>(json);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[SaveManager] 读取 {label} 快照失败: {path} ({e.Message})");
+            return null;
+        }
+    }
+
+    private static void CacheLegacySummary(SnapshotFileData snapshot, string latestFileName)
+    {
+        if (snapshot == null || snapshot.gameData == null)
+            return;
+
+        PlayerPrefs.SetInt(KEY_LEVEL, snapshot.gameData.currentLevel);
+        PlayerPrefs.SetInt(KEY_LIVES, snapshot.gameData.lives);
+        PlayerPrefs.SetInt(KEY_SCORE, snapshot.gameData.score);
+        PlayerPrefs.SetInt(KEY_EXISTS, 1);
+
+        if (!string.IsNullOrEmpty(latestFileName))
+            PlayerPrefs.SetString(KEY_LATEST_SNAPSHOT, latestFileName);
+        else
+            PlayerPrefs.DeleteKey(KEY_LATEST_SNAPSHOT);
+
+        PlayerPrefs.Save();
     }
 
     private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -627,115 +768,49 @@ public static class SaveManager
         }
     }
 
-    private static string BuildSnapshotFileName()
+    private static void EnsureSnapshotDirectory()
     {
-        string stamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fff");
-        return "snapshot_" + stamp + ".json";
+        Directory.CreateDirectory(SnapshotDirectoryPath);
     }
 
-    private static void PruneOldSnapshots(SnapshotManifest manifest)
+    private static void RegisterRuntimeHooks()
     {
-        if (manifest.files == null)
-            manifest.files = new List<string>();
-
-        while (manifest.files.Count > MAX_SNAPSHOT_FILES)
-        {
-            string oldest = manifest.files[0];
-            manifest.files.RemoveAt(0);
-
-            string oldPath = Path.Combine(SnapshotDirectoryPath, oldest);
-            DeleteSnapshotFileWithMeta(oldPath);
-        }
-
-        if (!string.IsNullOrEmpty(manifest.latest) && !manifest.files.Contains(manifest.latest))
-            manifest.latest = manifest.files.Count > 0 ? manifest.files[manifest.files.Count - 1] : string.Empty;
-    }
-
-    public static void EnsureSnapshotDirectoryAndPrune()
-    {
-        if (Application.isPlaying && isLoadingSnapshotScene)
+        if (runtimeHooksRegistered)
             return;
 
-        Directory.CreateDirectory(SnapshotDirectoryPath);
-
-        SnapshotManifest manifest = LoadManifest();
-        if (manifest.files == null)
-            manifest.files = new List<string>();
-
-        string[] files = Directory.GetFiles(SnapshotDirectoryPath, "snapshot_*.json", SearchOption.TopDirectoryOnly);
-        Array.Sort(files, (a, b) => string.CompareOrdinal(Path.GetFileName(a), Path.GetFileName(b)));
-
-        manifest.files.Clear();
-        for (int i = 0; i < files.Length; i++)
-            manifest.files.Add(Path.GetFileName(files[i]));
-
-        manifest.latest = manifest.files.Count > 0 ? manifest.files[manifest.files.Count - 1] : string.Empty;
-        PruneOldSnapshots(manifest);
-        SaveManifest(manifest);
-
-        if (!string.IsNullOrEmpty(manifest.latest))
-            PlayerPrefs.SetString(KEY_LATEST_SNAPSHOT, manifest.latest);
-        else
-            PlayerPrefs.DeleteKey(KEY_LATEST_SNAPSHOT);
-
-        PlayerPrefs.Save();
+        Application.quitting += OnApplicationQuitting;
+        SceneManager.activeSceneChanged += OnActiveSceneChanged;
+        runtimeHooksRegistered = true;
     }
 
-    private static SnapshotManifest LoadManifest()
+    private static void OnApplicationQuitting()
     {
-        if (!File.Exists(ManifestPath))
-            return new SnapshotManifest();
-
-        try
-        {
-            string json = File.ReadAllText(ManifestPath);
-            SnapshotManifest manifest = JsonUtility.FromJson<SnapshotManifest>(json);
-            if (manifest != null && manifest.files == null)
-                manifest.files = new List<string>();
-            return manifest ?? new SnapshotManifest();
-        }
-        catch (Exception e)
-        {
-            Debug.LogWarning($"[SaveManager] 读取 manifest 失败: {e.Message}");
-            return new SnapshotManifest();
-        }
+        isApplicationQuitting = true;
+        ClearSessionSnapshot();
+        pendingSnapshot = null;
+        isLoadingSnapshotScene = false;
     }
 
-    private static void SaveManifest(SnapshotManifest manifest)
+    private static void OnActiveSceneChanged(Scene from, Scene to)
     {
-        Directory.CreateDirectory(SnapshotDirectoryPath);
-        string json = JsonUtility.ToJson(manifest, true);
-        File.WriteAllText(ManifestPath, json);
+        if (isLoadingSnapshotScene || isRestoring || isApplicationQuitting)
+            return;
+
+        if (IsMainMenuScene(to))
+            return;
+
+        SaveSessionSnapshot();
     }
 
-    private static SnapshotFileData LoadLatestSnapshot()
+    private static bool IsMainMenuScene(Scene scene)
     {
-        EnsureSnapshotDirectoryAndPrune();
+        if (!scene.IsValid())
+            return false;
 
-        SnapshotManifest manifest = LoadManifest();
-        if (manifest.files == null)
-            manifest.files = new List<string>();
+        if (scene.buildIndex == 0)
+            return true;
 
-        string candidate = manifest.latest;
-
-        if (string.IsNullOrEmpty(candidate))
-            candidate = PlayerPrefs.GetString(KEY_LATEST_SNAPSHOT, string.Empty);
-
-        if (!string.IsNullOrEmpty(candidate))
-        {
-            SnapshotFileData exact = LoadSnapshotByFileName(candidate);
-            if (exact != null)
-                return exact;
-        }
-
-        for (int i = manifest.files.Count - 1; i >= 0; i--)
-        {
-            SnapshotFileData fallback = LoadSnapshotByFileName(manifest.files[i]);
-            if (fallback != null)
-                return fallback;
-        }
-
-        return LoadLatestSnapshotByDirectoryScan();
+        return string.Equals(scene.path, MAIN_MENU_SCENE_PATH, StringComparison.Ordinal);
     }
 
     private static void DeleteSnapshotFileWithMeta(string path)
@@ -765,58 +840,11 @@ public static class SaveManager
         }
     }
 
-    private static SnapshotFileData LoadLatestSnapshotByDirectoryScan()
-    {
-        if (!Directory.Exists(SnapshotDirectoryPath))
-            return null;
-
-        string[] files = Directory.GetFiles(SnapshotDirectoryPath, "snapshot_*.json", SearchOption.TopDirectoryOnly);
-        if (files == null || files.Length == 0)
-            return null;
-
-        Array.Sort(files, (a, b) => string.CompareOrdinal(Path.GetFileName(b), Path.GetFileName(a)));
-
-        for (int i = 0; i < files.Length; i++)
-        {
-            string name = Path.GetFileName(files[i]);
-            SnapshotFileData data = LoadSnapshotByFileName(name);
-            if (data != null)
-                return data;
-        }
-
-        return null;
-    }
-
-    private static SnapshotFileData LoadSnapshotByFileName(string fileName)
-    {
-        if (string.IsNullOrEmpty(fileName)) return null;
-
-        string path = Path.Combine(SnapshotDirectoryPath, fileName);
-        if (!File.Exists(path)) return null;
-
-        try
-        {
-            string json = File.ReadAllText(path);
-            return JsonUtility.FromJson<SnapshotFileData>(json);
-        }
-        catch (Exception e)
-        {
-            Debug.LogWarning($"[SaveManager] 读取快照失败: {path} ({e.Message})");
-            return null;
-        }
-    }
-
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
     private static void RuntimeBootstrap()
     {
-        EnsureSnapshotDirectoryAndPrune();
-    }
-
-    [Serializable]
-    private class SnapshotManifest
-    {
-        public List<string> files = new List<string>();
-        public string latest;
+        EnsureSnapshotDirectory();
+        RegisterRuntimeHooks();
     }
 
     [Serializable]

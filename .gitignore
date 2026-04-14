@@ -30,6 +30,10 @@ Assets/Snapshots/snapshot_*.json
 Assets/Snapshots/snapshot_*.json.meta
 Assets/Snapshots/manifest.json
 Assets/Snapshots/manifest.json.meta
+Assets/Snapshots/checkpoint_latest.json
+Assets/Snapshots/checkpoint_latest.json.meta
+Assets/Snapshots/session_live.json
+Assets/Snapshots/session_live.json.meta
 .plastic/
 
 AGENTS.md

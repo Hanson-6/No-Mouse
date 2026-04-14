@@ -10,6 +10,9 @@ using UnityEngine.UI;
 /// </summary>
 public class CameraGateUI : MonoBehaviour
 {
+    private const string PreferredFirstLevelScenePath = "Assets/Scenes/Tutoring.unity";
+    private const string SecondaryFirstLevelScenePath = "Assets/Scenes/Tutorial.unity";
+
     [Header("Optional UI")]
     [SerializeField] private Text statusText;
 
@@ -160,7 +163,7 @@ public class CameraGateUI : MonoBehaviour
         }
 
         Time.timeScale = 1f;
-        SceneManager.LoadScene(firstLevelIndex);
+        SceneManager.LoadScene(ResolveFirstLevelBuildIndex());
     }
 
     // Optional fallback hook for UI button OnClick
@@ -174,14 +177,21 @@ public class CameraGateUI : MonoBehaviour
 
         Time.timeScale = 1f;
 
-        if (SaveManager.ContinueFromLatestSnapshot())
-            return;
+        if (!SaveManager.ContinueFromLatestSnapshot())
+            Debug.LogWarning("[CameraGateUI] Continue 失败：未找到可恢复的 session/checkpoint 存档。");
+    }
 
-        SaveManager.Load();
-        int levelIndex = GameData.CurrentLevel;
-        if (levelIndex > 0 && levelIndex < SceneManager.sceneCountInBuildSettings)
-            SceneManager.LoadScene(levelIndex);
-        else
-            SceneManager.LoadScene(firstLevelIndex);
+    private int ResolveFirstLevelBuildIndex()
+    {
+        int preferredIndex = SceneUtility.GetBuildIndexByScenePath(PreferredFirstLevelScenePath);
+        if (preferredIndex >= 0)
+            return preferredIndex;
+
+        int secondaryIndex = SceneUtility.GetBuildIndexByScenePath(SecondaryFirstLevelScenePath);
+        if (secondaryIndex >= 0)
+            return secondaryIndex;
+
+        Debug.LogWarning($"[CameraGateUI] Neither '{PreferredFirstLevelScenePath}' nor '{SecondaryFirstLevelScenePath}' is in Build Settings. Fallback to serialized firstLevelIndex={firstLevelIndex}.");
+        return firstLevelIndex;
     }
 }

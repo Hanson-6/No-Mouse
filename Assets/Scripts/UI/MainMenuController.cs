@@ -10,7 +10,7 @@ using GestureRecognition.Service;
 /// 管理主菜单的四个按钮：新游戏、继续游戏、退出。
 ///
 /// 按钮会在 Awake 中自动按名字查找并连接：
-///   - NewGameButton  → 新游戏（删除旧存档，从第一关开始）
+///   - NewGameButton  → 新游戏（删除旧存档，从 Tutoring 开始）
 ///   - ContinueButton → 继续游戏（读取存档，从存档关卡开始；无存档时隐藏）
 ///   - QuitButton     → 退出游戏
 ///
@@ -19,6 +19,9 @@ using GestureRecognition.Service;
 /// </summary>
 public class MainMenuController : MonoBehaviour
 {
+    private const string PreferredFirstLevelScenePath = "Assets/Scenes/Tutoring.unity";
+    private const string SecondaryFirstLevelScenePath = "Assets/Scenes/Tutorial.unity";
+
     [Header("Button References (auto-found if left empty)")]
     public Button newGameButton;
     public Button continueButton;
@@ -141,6 +144,29 @@ public class MainMenuController : MonoBehaviour
         {
             _menuButtons[_selectedIndex].onClick.Invoke();
         }
+
+        SyncSelectionFromEventSystem();
+        UpdateSelectionVisuals();
+    }
+
+    private void SyncSelectionFromEventSystem()
+    {
+        EventSystem es = EventSystem.current;
+        if (es == null)
+            return;
+
+        GameObject selected = es.currentSelectedGameObject;
+        if (selected == null)
+            return;
+
+        for (int i = 0; i < _menuButtons.Length; i++)
+        {
+            if (_menuButtons[i] != null && _menuButtons[i].gameObject == selected)
+            {
+                _selectedIndex = i;
+                return;
+            }
+        }
     }
 
     private void UpdateSelectionVisuals()
@@ -161,7 +187,7 @@ public class MainMenuController : MonoBehaviour
     // ── Public methods ─────────────────────────────────────────────────────
 
     /// <summary>
-    /// 新游戏：删除旧存档，重置 GameData，从第一关开始。
+    /// 新游戏：删除旧存档，重置 GameData，从 Tutoring 开始。
     /// </summary>
     public void NewGame()
     {
@@ -171,7 +197,9 @@ public class MainMenuController : MonoBehaviour
         SaveManager.DeleteSave();
         GameData.Reset();
         Time.timeScale = 1f;
-        SceneManager.LoadScene(1); // Level1 的 build index
+
+        int firstLevelIndex = ResolveFirstLevelBuildIndex();
+        SceneManager.LoadScene(firstLevelIndex);
     }
 
     /// <summary>
@@ -261,20 +289,21 @@ public class MainMenuController : MonoBehaviour
     {
         Time.timeScale = 1f;
 
-        if (SaveManager.ContinueFromLatestSnapshot())
-            return;
+        if (!SaveManager.ContinueFromLatestSnapshot())
+            Debug.LogWarning("[MainMenuController] Continue 失败：未找到可恢复的 session/checkpoint 存档。");
+    }
 
-        Debug.LogWarning("[MainMenuController] 未命中快照恢复，降级到旧存档流程。");
+    private static int ResolveFirstLevelBuildIndex()
+    {
+        int preferredIndex = SceneUtility.GetBuildIndexByScenePath(PreferredFirstLevelScenePath);
+        if (preferredIndex >= 0)
+            return preferredIndex;
 
-        SaveManager.Load();
-        int levelIndex = GameData.CurrentLevel;
-        if (levelIndex > 0 && levelIndex < SceneManager.sceneCountInBuildSettings)
-            SceneManager.LoadScene(levelIndex);
-        else
-        {
-            Debug.LogWarning($"[MainMenuController] 存档关卡索引无效: {levelIndex}，从第一关开始。");
-            GameData.Reset();
-            SceneManager.LoadScene(1);
-        }
+        int secondaryIndex = SceneUtility.GetBuildIndexByScenePath(SecondaryFirstLevelScenePath);
+        if (secondaryIndex >= 0)
+            return secondaryIndex;
+
+        Debug.LogWarning($"[MainMenuController] Neither '{PreferredFirstLevelScenePath}' nor '{SecondaryFirstLevelScenePath}' is in Build Settings. Fallback to index 1.");
+        return 1;
     }
 }

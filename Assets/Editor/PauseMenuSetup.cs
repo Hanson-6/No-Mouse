@@ -6,14 +6,15 @@ using UnityEngine.UI;
 /// <summary>
 /// Tools → Setup Pause Menu
 ///
-/// 在当前打开的场景（应该是 Level1）中创建暂停菜单 UI：
+/// 在当前打开的场景中创建暂停菜单 UI：
 ///   - PauseCanvas (Screen Space - Overlay, 最高 sortOrder)
 ///     ├── PauseButton  (右上角暂停按钮图标)
 ///     └── PausePanel   (暂停面板，默认隐藏)
 ///         ├── PanelBackground (半透明背景图)
+///         ├── MenuButton      (返回主菜单)
 ///         ├── ResumeButton    (继续游戏)
-///         ├── SaveQuitButton  (保存并退出)
-///         └── QuitNoSaveButton(返回主菜单)
+///         ├── RestartLevelButton   (重开当前关卡)
+///         └── BackToCheckpointButton(回到最近 checkpoint)
 ///   - 自动挂载 PauseMenu.cs 脚本到 PauseCanvas
 ///   - 自动将所有图片设置为 Point 过滤（像素风格清晰）
 ///   - 保存场景
@@ -25,8 +26,10 @@ public static class PauseMenuSetup
     // 图片资源路径（Assets/Textures/Buttons/ 下的文件）
     private const string TEX_PAUSE_BTN    = "Assets/Textures/Buttons/PauseButton.png";
     private const string TEX_RESUME_BTN   = "Assets/Textures/Buttons/ResumeButton.png";
-    private const string TEX_SAVEQUIT_BTN = "Assets/Textures/Buttons/SaveQuitButton.png";
-    private const string TEX_QUITNOSAVE   = "Assets/Textures/Buttons/QuitNoSaveButton.png";
+    private const string TEX_RESTART_BTN = "Assets/Textures/Buttons/RestartLevelButton.png";
+    private const string TEX_BACK_TO_CHECKPOINT_BTN = "Assets/Textures/Buttons/BackToCheckpointButton.png";
+    private const string TEX_MENU_BTN = "Assets/Textures/Buttons/MenuButton.png";
+    private const string TEX_MENU_BTN_FALLBACK = "Assets/Textures/Buttons/QuitNoSaveButton.png";
     private const string TEX_PANEL_BG     = "Assets/Textures/Buttons/PausePanel.png";
 
     [MenuItem("Tools/Setup Pause Menu")]
@@ -35,22 +38,27 @@ public static class PauseMenuSetup
         // ── 0. 确保图片导入设置正确 ─────────────────────────────────────
         ConfigureSpriteImport(TEX_PAUSE_BTN);
         ConfigureSpriteImport(TEX_RESUME_BTN);
-        ConfigureSpriteImport(TEX_SAVEQUIT_BTN);
-        ConfigureSpriteImport(TEX_QUITNOSAVE);
+        ConfigureSpriteImport(TEX_RESTART_BTN);
+        ConfigureSpriteImport(TEX_BACK_TO_CHECKPOINT_BTN);
+        ConfigureSpriteImport(TEX_MENU_BTN);
+        ConfigureSpriteImport(TEX_MENU_BTN_FALLBACK);
         ConfigureSpriteImport(TEX_PANEL_BG);
 
         // ── 1. 加载所有 Sprite ──────────────────────────────────────────
         Sprite pauseSprite    = AssetDatabase.LoadAssetAtPath<Sprite>(TEX_PAUSE_BTN);
         Sprite resumeSprite   = AssetDatabase.LoadAssetAtPath<Sprite>(TEX_RESUME_BTN);
-        Sprite saveQuitSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TEX_SAVEQUIT_BTN);
-        Sprite quitNoSaveSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TEX_QUITNOSAVE);
+        Sprite restartSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TEX_RESTART_BTN);
+        Sprite backToCheckpointSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TEX_BACK_TO_CHECKPOINT_BTN);
+        Sprite menuSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TEX_MENU_BTN);
+        if (menuSprite == null)
+            menuSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TEX_MENU_BTN_FALLBACK);
         Sprite panelBgSprite  = AssetDatabase.LoadAssetAtPath<Sprite>(TEX_PANEL_BG);
 
         if (pauseSprite == null || resumeSprite == null ||
-            saveQuitSprite == null || quitNoSaveSprite == null)
+            restartSprite == null || backToCheckpointSprite == null || menuSprite == null)
         {
             Debug.LogError("[PauseMenuSetup] 找不到一个或多个按钮图片，请确认 Assets/Textures/Buttons/ 下有：" +
-                           "PauseButton.png, ResumeButton.png, SaveQuitButton.png, QuitNoSaveButton.png");
+                           "PauseButton.png, ResumeButton.png, RestartLevelButton.png, BackToCheckpointButton.png, MenuButton.png(或 QuitNoSaveButton.png)");
             return;
         }
 
@@ -136,26 +144,41 @@ public static class PauseMenuSetup
         dimRect.sizeDelta = Vector2.zero;
         dimRect.anchoredPosition = Vector2.zero;
 
-        // ── 7. 创建面板上的三个按钮 ────────────────────────────────────
+        // ── 7. 创建面板上的四个按钮 ────────────────────────────────────
         float buttonHeight = 100f;
-        float spacing      = 20f;
-        float startY       = (buttonHeight + spacing); // 第一个按钮在中心偏上
+        float spacing      = 18f;
+        float stepY        = buttonHeight + spacing;
 
         Vector2 resumeSize   = GetButtonSize(resumeSprite, buttonHeight, 280f, 620f);
-        Vector2 saveQuitSize = GetButtonSize(saveQuitSprite, buttonHeight, 280f, 620f);
-        Vector2 quitSize     = GetButtonSize(quitNoSaveSprite, buttonHeight, 280f, 620f);
+        Vector2 restartSize = GetButtonSize(restartSprite, buttonHeight, 280f, 620f);
+        Vector2 checkpointSize     = GetButtonSize(backToCheckpointSprite, buttonHeight, 280f, 620f);
+        Vector2 menuSize = GetButtonSize(menuSprite, buttonHeight, 280f, 620f);
+
+        float maxButtonWidth = Mathf.Max(Mathf.Max(resumeSize.x, restartSize.x), Mathf.Max(checkpointSize.x, menuSize.x));
+        float panelWidth = Mathf.Max(560f, maxButtonWidth + 140f);
+        float panelHeight = Mathf.Max(520f, buttonHeight * 4f + spacing * 3f + 140f);
+        panelRect.sizeDelta = new Vector2(panelWidth, panelHeight);
+
+        float yTop = stepY * 1.5f;
+        float yUpperMid = stepY * 0.5f;
+        float yLowerMid = -stepY * 0.5f;
+        float yBottom = -stepY * 1.5f;
+
+        // 返回主菜单按钮（置于最上方）
+        GameObject menuBtnGO = CreateImageButton(panelGO.transform, "MenuButton", menuSprite);
+        SetupPanelButton(menuBtnGO, menuSize, new Vector2(0f, yTop));
 
         // 继续游戏按钮
         GameObject resumeBtnGO = CreateImageButton(panelGO.transform, "ResumeButton", resumeSprite);
-        SetupPanelButton(resumeBtnGO, resumeSize, new Vector2(0f, startY));
+        SetupPanelButton(resumeBtnGO, resumeSize, new Vector2(0f, yUpperMid));
 
-        // 保存并退出按钮
-        GameObject saveQuitBtnGO = CreateImageButton(panelGO.transform, "SaveQuitButton", saveQuitSprite);
-        SetupPanelButton(saveQuitBtnGO, saveQuitSize, new Vector2(0f, 0f));
+        // 重开关卡按钮
+        GameObject restartBtnGO = CreateImageButton(panelGO.transform, "RestartLevelButton", restartSprite);
+        SetupPanelButton(restartBtnGO, restartSize, new Vector2(0f, yLowerMid));
 
-        // 返回主菜单按钮
-        GameObject quitNoSaveBtnGO = CreateImageButton(panelGO.transform, "QuitNoSaveButton", quitNoSaveSprite);
-        SetupPanelButton(quitNoSaveBtnGO, quitSize, new Vector2(0f, -startY));
+        // 回到 checkpoint 按钮
+        GameObject backToCheckpointBtnGO = CreateImageButton(panelGO.transform, "BackToCheckpointButton", backToCheckpointSprite);
+        SetupPanelButton(backToCheckpointBtnGO, checkpointSize, new Vector2(0f, yBottom));
 
         // ── 8. 面板默认隐藏 ─────────────────────────────────────────────
         panelGO.SetActive(false);
@@ -165,8 +188,9 @@ public static class PauseMenuSetup
         pauseMenu.pausePanel     = panelGO;
         pauseMenu.pauseButton    = pauseBtnGO.GetComponent<Button>();
         pauseMenu.resumeButton   = resumeBtnGO.GetComponent<Button>();
-        pauseMenu.saveQuitButton = saveQuitBtnGO.GetComponent<Button>();
-        pauseMenu.quitNoSaveButton = quitNoSaveBtnGO.GetComponent<Button>();
+        pauseMenu.restartLevelButton = restartBtnGO.GetComponent<Button>();
+        pauseMenu.backToCheckpointButton = backToCheckpointBtnGO.GetComponent<Button>();
+        pauseMenu.menuButton = menuBtnGO.GetComponent<Button>();
 
         // ── 10. 确保场景中有 EventSystem ─────────────────────────────────
         if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)

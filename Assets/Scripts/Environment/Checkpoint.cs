@@ -69,6 +69,8 @@ public class Checkpoint : MonoBehaviour, ISnapshotSaveable
             GameData.SetCheckpoint(activeScene.buildIndex, activeScene.path, transform.position);
         }
 
+        SaveManager.SaveCheckpoint();
+
         if (audioSource != null && activateSound != null)
             audioSource.PlayOneShot(activateSound, activateSoundVolume);
 
