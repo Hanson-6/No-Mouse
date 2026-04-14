@@ -58,6 +58,15 @@ namespace GestureRecognition.Detection
         /// <summary>Actual height of the camera feed.</summary>
         public int Height => _webCamTexture != null ? _webCamTexture.height : 0;
 
+        /// <summary>Whether the underlying WebCamTexture is currently playing.</summary>
+        public bool IsTexturePlaying => _webCamTexture != null && _webCamTexture.isPlaying;
+
+        /// <summary>Whether this frame was updated by webcam hardware.</summary>
+        public bool DidUpdateThisFrame => _webCamTexture != null && _webCamTexture.didUpdateThisFrame;
+
+        /// <summary>Latest CPU-side pixel buffer captured from webcam.</summary>
+        public Color32[] LatestPixelBuffer => _pixelBuffer;
+
         /// <summary>Fired once the camera is ready (width > 16).</summary>
         public event Action OnCameraReady;
 
@@ -69,7 +78,7 @@ namespace GestureRecognition.Detection
         /// Starts the camera. Optionally specify a device name
         /// (pass null to use the first available camera).
         /// </summary>
-        public IEnumerator StartCamera(string deviceName = null)
+        public IEnumerator StartCamera(string deviceName = null, float startupTimeoutSeconds = 5f)
         {
             if (_isRunning)
             {
@@ -103,7 +112,26 @@ namespace GestureRecognition.Detection
 
             // Wait until the camera actually delivers frames.
             // Unity's WebCamTexture reports width=16 until ready.
-            yield return new WaitUntil(() => _webCamTexture.width > 16);
+            float startedAt = Time.realtimeSinceStartup;
+            while (_webCamTexture != null && _webCamTexture.width <= 16)
+            {
+                if (Time.realtimeSinceStartup - startedAt > startupTimeoutSeconds)
+                {
+                    Debug.LogError("[CameraManager] Camera startup timed out.");
+                    _webCamTexture.Stop();
+                    Destroy(_webCamTexture);
+                    _webCamTexture = null;
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            if (_webCamTexture == null || _webCamTexture.width <= 16)
+            {
+                Debug.LogError("[CameraManager] Camera startup failed before ready.");
+                yield break;
+            }
 
             // Allocate CPU-side buffers for pixel readback
             _cpuTexture = new Texture2D(

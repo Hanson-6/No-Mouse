@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using GestureRecognition.Service;
 
 /// <summary>
 /// 备用主菜单脚本（简化版）。
@@ -12,8 +13,13 @@ public class MainMenu : MonoBehaviour
     [Tooltip("Build index of the first level scene.")]
     public int firstLevelIndex = 1;
 
+    [Tooltip("Require camera readiness before entering gameplay scenes.")]
+    [SerializeField] private bool requireCameraReady = true;
+
     void Start()
     {
+        EnsureMenuCanvasScale();
+
         // 尝试找新版按钮名
         var newGameBtn = GameObject.Find("NewGameButton")?.GetComponent<Button>();
         var continueBtn = GameObject.Find("ContinueButton")?.GetComponent<Button>();
@@ -42,6 +48,9 @@ public class MainMenu : MonoBehaviour
 
     public void NewGame()
     {
+        if (requireCameraReady && !CanStartGameplay())
+            return;
+
         SaveManager.DeleteSave();
         GameData.Reset();
         Time.timeScale = 1f;
@@ -50,6 +59,9 @@ public class MainMenu : MonoBehaviour
 
     public void ContinueGame()
     {
+        if (requireCameraReady && !CanStartGameplay())
+            return;
+
         Time.timeScale = 1f;
 
         if (SaveManager.ContinueFromLatestSnapshot())
@@ -76,5 +88,40 @@ public class MainMenu : MonoBehaviour
     public void QuitGame()
     {
         Application.Quit();
+    }
+
+    private bool CanStartGameplay()
+    {
+        if (GestureService.Instance == null)
+        {
+            Debug.LogWarning("[MainMenu][Diag] Start blocked: GestureService missing.");
+            return false;
+        }
+
+        if (!GestureService.Instance.IsRunning)
+            GestureService.Instance.StartRecognition();
+
+        if (!GestureService.Instance.IsCameraReadyForGameplay())
+        {
+            Debug.LogWarning(
+                $"[MainMenu][Diag] Start blocked: state={GestureService.Instance.CameraState} running={GestureService.Instance.IsRunning} occluded={GestureService.Instance.IsCameraOccluded}.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private static void EnsureMenuCanvasScale()
+    {
+        GameObject menuCanvas = GameObject.Find("MenuCanvas");
+        if (menuCanvas == null)
+            return;
+
+        Vector3 scale = menuCanvas.transform.localScale;
+        if (Mathf.Abs(scale.x) < 0.001f && Mathf.Abs(scale.y) < 0.001f)
+        {
+            menuCanvas.transform.localScale = Vector3.one;
+            Debug.Log("[MainMenu][Diag] MenuCanvas scale was zero; restored to (1,1,1).");
+        }
     }
 }

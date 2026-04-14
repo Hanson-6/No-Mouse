@@ -132,6 +132,21 @@ namespace GestureRecognition.Detection
         public HandLandmarkData LatestResult => _latestResult;
 
         /// <summary>
+        /// True when running without native MediaPipe hand-landmarker backend.
+        /// </summary>
+        public bool IsUsingStubBackend
+        {
+            get
+            {
+#if MEDIAPIPE_INSTALLED
+                return _handLandmarker == null;
+#else
+                return true;
+#endif
+            }
+        }
+
+        /// <summary>
         /// Fired each time new landmark data is available.
         /// </summary>
         public event Action<HandLandmarkData> OnLandmarksUpdated;

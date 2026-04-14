@@ -39,8 +39,12 @@ public class PauseMenu : MonoBehaviour
     private Button[] _menuButtons;
     private int _selectedIndex = 0;
 
+    private const string DiagPrefix = "[PauseMenu][Diag]";
+
     void Start()
     {
+        EnsureCanvasScale();
+
         // 自动按名字查找 UI 元素（如果没有在 Inspector 中手动指定）
         if (pausePanel == null)
         {
@@ -90,6 +94,20 @@ public class PauseMenu : MonoBehaviour
         _menuButtons = btnList.ToArray();
 
         isPaused = false;
+    }
+
+    private void EnsureCanvasScale()
+    {
+        Transform root = transform;
+        if (root == null)
+            return;
+
+        Vector3 scale = root.localScale;
+        if (Mathf.Abs(scale.x) < 0.001f && Mathf.Abs(scale.y) < 0.001f)
+        {
+            root.localScale = Vector3.one;
+            Debug.Log($"{DiagPrefix} Root canvas scale was zero; restored to (1,1,1).");
+        }
     }
 
     void Update()

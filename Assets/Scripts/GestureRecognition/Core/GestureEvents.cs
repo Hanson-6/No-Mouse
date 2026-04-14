@@ -20,6 +20,8 @@ namespace GestureRecognition.Core
     /// </summary>
     public static class GestureEvents
     {
+        public static bool EnableDiagnostics = true;
+
         // -----------------------------------------------------------------
         // Events
         // -----------------------------------------------------------------
@@ -52,6 +54,16 @@ namespace GestureRecognition.Core
         /// </summary>
         public static event Action<bool> OnRecognitionStateChanged;
 
+        /// <summary>
+        /// Fired when runtime camera state changes.
+        /// </summary>
+        public static event Action<CameraRuntimeState> OnCameraStateChanged;
+
+        /// <summary>
+        /// Fired when camera-occlusion state changes.
+        /// </summary>
+        public static event Action<bool> OnCameraOcclusionChanged;
+
         // -----------------------------------------------------------------
         // Internal invoke methods (called by GestureService)
         // -----------------------------------------------------------------
@@ -63,6 +75,10 @@ namespace GestureRecognition.Core
 
         internal static void InvokeGestureChanged(GestureResult result)
         {
+            if (EnableDiagnostics)
+            {
+                UnityEngine.Debug.Log($"[GestureEvents][Diag] GestureChanged type={result.Type} conf={result.Confidence:F2}");
+            }
             OnGestureChanged?.Invoke(result);
         }
 
@@ -73,12 +89,38 @@ namespace GestureRecognition.Core
 
         internal static void InvokeHandDetectionChanged(bool detected)
         {
+            if (EnableDiagnostics)
+            {
+                UnityEngine.Debug.Log($"[GestureEvents][Diag] HandDetected={detected}");
+            }
             OnHandDetectionChanged?.Invoke(detected);
         }
 
         internal static void InvokeRecognitionStateChanged(bool isRunning)
         {
+            if (EnableDiagnostics)
+            {
+                UnityEngine.Debug.Log($"[GestureEvents][Diag] RecognitionRunning={isRunning}");
+            }
             OnRecognitionStateChanged?.Invoke(isRunning);
+        }
+
+        internal static void InvokeCameraStateChanged(CameraRuntimeState state)
+        {
+            if (EnableDiagnostics)
+            {
+                UnityEngine.Debug.Log($"[GestureEvents][Diag] CameraState={state}");
+            }
+            OnCameraStateChanged?.Invoke(state);
+        }
+
+        internal static void InvokeCameraOcclusionChanged(bool occluded)
+        {
+            if (EnableDiagnostics)
+            {
+                UnityEngine.Debug.Log($"[GestureEvents][Diag] CameraOccluded={occluded}");
+            }
+            OnCameraOcclusionChanged?.Invoke(occluded);
         }
 
         /// <summary>
@@ -91,6 +133,8 @@ namespace GestureRecognition.Core
             OnHandPositionUpdated = null;
             OnHandDetectionChanged = null;
             OnRecognitionStateChanged = null;
+            OnCameraStateChanged = null;
+            OnCameraOcclusionChanged = null;
         }
     }
 }

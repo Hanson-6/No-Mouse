@@ -73,8 +73,13 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     private bool horizontalTouch;
 
     // ── MovingPlatform 跟随 ─────────────────────────────────────────────────
-    // 当 Box 站在 MovingPlatform 上但未被 Link 时，需要跟随平台水平移动
+    // 当 Box 站在 MovingPlatform 上但未被 Link 时，需要跟随平台位移（X/Y）
     private MovingPlatform currentPlatform;
+
+    // 记录最近一次外部驱动的水平速度（来自 Push/Pull 或平台），
+    // 以便离开平台时保持自然抛物线，而不是立刻变成垂直下落。
+    private float carryHorizontalVelocity;
+    private bool carryVelocityPending;
 
     [System.Serializable]
     private class SnapshotState
@@ -118,6 +123,9 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
             if (player != null)
                 groundLayer = player.groundLayer;
         }
+
+        carryHorizontalVelocity = 0f;
+        carryVelocityPending = false;
     }
 
     void OnEnable()  => _allBoxes.Add(this);
@@ -262,16 +270,33 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
 
                 // 在平台上时叠加平台速度，保证推动过程中 Box 不会"掉队"
                 if (currentPlatform != null)
+                {
                     boxVx += currentPlatform.CurrentVelocityX;
+                    rb.velocity = new Vector2(boxVx, currentPlatform.CurrentVelocityY);
+                }
+                else
+                {
+                    rb.velocity = new Vector2(boxVx, rb.velocity.y);
+                }
 
-                rb.velocity = new Vector2(boxVx, rb.velocity.y);
+                carryHorizontalVelocity = boxVx;
+                carryVelocityPending = true;
             }
             else // Pull 模式
             {
                 float boxVx = playerVx;
                 if (currentPlatform != null)
+                {
                     boxVx += currentPlatform.CurrentVelocityX;
-                rb.velocity = new Vector2(boxVx, rb.velocity.y);
+                    rb.velocity = new Vector2(boxVx, currentPlatform.CurrentVelocityY);
+                }
+                else
+                {
+                    rb.velocity = new Vector2(boxVx, rb.velocity.y);
+                }
+
+                carryHorizontalVelocity = boxVx;
+                carryVelocityPending = true;
             }
 
             // Step-up: auto-climb small ledges when the box is moving horizontally
@@ -301,28 +326,72 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
                     rb.useFullKinematicContacts = true;
                 }
 
-                float platformDeltaX = currentPlatform.CurrentVelocityX * Time.fixedDeltaTime;
-                rb.MovePosition(rb.position + new Vector2(platformDeltaX, 0f));
+                Vector2 platformDelta = currentPlatform.CurrentVelocity * Time.fixedDeltaTime;
+                rb.MovePosition(rb.position + platformDelta);
+
+                carryHorizontalVelocity = currentPlatform.CurrentVelocityX;
+                carryVelocityPending = true;
             }
             else
             {
-                // 不在平台上：切换回 Dynamic，冻结 X（只靠重力下落）
+                // 不在平台上：切换回 Dynamic，并保留离台瞬间的水平速度
                 if (rb.bodyType != RigidbodyType2D.Kinematic)
                 {
-                    // 已经是 Dynamic，正常设约束
-                    rb.constraints = RigidbodyConstraints2D.FreezePositionX
-                                   | RigidbodyConstraints2D.FreezeRotation;
+                    bool grounded = IsGroundedForConstraint();
+                    if (grounded)
+                    {
+                        rb.constraints = RigidbodyConstraints2D.FreezePositionX
+                                       | RigidbodyConstraints2D.FreezeRotation;
+                        rb.velocity = new Vector2(0f, rb.velocity.y);
+                        carryVelocityPending = false;
+                    }
+                    else
+                    {
+                        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+                        if (carryVelocityPending)
+                        {
+                            rb.velocity = new Vector2(carryHorizontalVelocity, rb.velocity.y);
+                            carryVelocityPending = false;
+                        }
+                    }
                 }
                 else
                 {
                     // 从 Kinematic 切回 Dynamic（刚离开平台）
                     rb.bodyType = RigidbodyType2D.Dynamic;
                     rb.useFullKinematicContacts = false;
-                    rb.constraints = RigidbodyConstraints2D.FreezePositionX
-                                   | RigidbodyConstraints2D.FreezeRotation;
+                    rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+
+                    rb.velocity = new Vector2(carryHorizontalVelocity, rb.velocity.y);
+                    carryVelocityPending = false;
                 }
             }
         }
+    }
+
+    private bool IsGroundedForConstraint()
+    {
+        if (boxCollider == null || groundLayer == 0)
+            return false;
+
+        Bounds bounds = boxCollider.bounds;
+        float probeY = bounds.min.y + 0.01f;
+        float probeDistance = 0.08f;
+        float inset = 0.03f;
+
+        Vector2 left = new Vector2(bounds.min.x + inset, probeY);
+        Vector2 center = new Vector2(bounds.center.x, probeY);
+        Vector2 right = new Vector2(bounds.max.x - inset, probeY);
+
+        return HitsGround(left, probeDistance)
+            || HitsGround(center, probeDistance)
+            || HitsGround(right, probeDistance);
+    }
+
+    private bool HitsGround(Vector2 origin, float distance)
+    {
+        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, distance, groundLayer);
+        return hit.collider != null;
     }
 
     /// <summary>
@@ -426,6 +495,9 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
 
         // Clear platform reference — will be re-established by collision events
         currentPlatform = null;
+
+        carryHorizontalVelocity = snapshot.velocityX;
+        carryVelocityPending = false;
 
         isLinked = snapshot.isLinked;
         int maxMode = (int)BoxLinkMode.Pull;

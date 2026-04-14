@@ -106,6 +106,60 @@ namespace GestureRecognition.Service
         [Range(0f, 0.95f)]
         private float _positionSmoothing = 0.5f;
 
+        [Header("Camera Diagnostics")]
+        [Tooltip("Print concise runtime diagnostic logs for camera state and occlusion events.")]
+        [SerializeField]
+        private bool _emitDiagnosticLogs = true;
+
+        [Tooltip("Timeout while waiting for webcam startup.")]
+        [SerializeField]
+        private float _cameraStartupTimeoutSeconds = 5f;
+
+        [Tooltip("Consecutive null/no-update frames before marking camera stream unhealthy.")]
+        [SerializeField]
+        private int _noFrameThreshold = 20;
+
+        [Tooltip("Seconds without webcam updates before marking camera stream unhealthy.")]
+        [SerializeField]
+        private float _staleFrameTimeoutSeconds = 1.0f;
+
+        [Tooltip("Recent hand window (seconds) used to improve occlusion confidence.")]
+        [SerializeField]
+        private float _recentHandWindowSeconds = 1.0f;
+
+        [Header("Occlusion Detection")]
+        [Tooltip("Enable camera occlusion detection (e.g., finger covering lens).")]
+        [SerializeField]
+        private bool _enableOcclusionDetection = true;
+
+        [SerializeField] [Range(2, 8)]
+        private int _occlusionSampleStep = 4;
+
+        [SerializeField] [Range(0f, 1f)]
+        private float _occlusionDarkThreshold = 0.25f;
+
+        [SerializeField] [Range(0f, 1f)]
+        private float _occlusionMinDarkRatio = 0.86f;
+
+        [SerializeField] [Range(0f, 1f)]
+        private float _occlusionEnterScore = 0.80f;
+
+        [SerializeField] [Range(0f, 1f)]
+        private float _occlusionExitScore = 0.55f;
+
+        [SerializeField]
+        private int _occlusionEnterFrames = 12;
+
+        [SerializeField]
+        private int _occlusionExitFrames = 8;
+
+        [SerializeField] [Range(0f, 0.25f)]
+        private float _occlusionRecentHandBoost = 0.08f;
+
+        [Tooltip("How often to print occlusion metrics (seconds).")]
+        [SerializeField]
+        private float _occlusionMetricLogInterval = 1.0f;
+
         // -----------------------------------------------------------------
         // Runtime components
         // -----------------------------------------------------------------
@@ -117,6 +171,9 @@ namespace GestureRecognition.Service
 
         /// <summary>处理循环是否在跑（对外的"识别中"状态）</summary>
         private bool _isRunning;
+
+        /// <summary>初始化协程是否正在进行，防止重复启动。</summary>
+        private bool _isStarting;
 
         /// <summary>硬件（摄像头+MediaPipe）是否已初始化就绪</summary>
         private bool _hardwareReady;
@@ -130,6 +187,14 @@ namespace GestureRecognition.Service
         private GestureType _previousGestureType = GestureType.None;
         private bool _previousHandDetected;
         private float _startTime;
+        private float _lastHandSeenRealtime = -999f;
+        private int _consecutiveNoFrameCount;
+        private float _lastFrameUpdateRealtime = -999f;
+        private CameraRuntimeState _cameraState = CameraRuntimeState.Unknown;
+        private CameraOcclusionDetector _occlusionDetector;
+        private bool _isCameraOccluded;
+        private CameraOcclusionMetrics _lastOcclusionMetrics;
+        private float _nextOcclusionMetricLogTime;
 
         // -----------------------------------------------------------------
         // Public properties
@@ -150,6 +215,15 @@ namespace GestureRecognition.Service
         /// <summary>The MediaPipe bridge (for advanced usage / testing).</summary>
         public MediaPipeBridge Bridge => _mediaPipeBridge;
 
+        /// <summary>Current runtime camera state used for gameplay gating.</summary>
+        public CameraRuntimeState CameraState => _cameraState;
+
+        /// <summary>Whether camera lens is currently considered occluded.</summary>
+        public bool IsCameraOccluded => _isCameraOccluded;
+
+        /// <summary>Latest occlusion metrics for debugging/calibration.</summary>
+        public CameraOcclusionMetrics OcclusionMetrics => _lastOcclusionMetrics;
+
         // -----------------------------------------------------------------
         // Public API — Frontend calls these
         // -----------------------------------------------------------------
@@ -161,12 +235,13 @@ namespace GestureRecognition.Service
         /// </summary>
         public void StartRecognition()
         {
-            if (_isRunning)
+            if (_isRunning || _isStarting)
             {
-                Debug.LogWarning("[GestureService] Already running.");
+                Debug.LogWarning("[GestureService] Start ignored (already running or starting).");
                 return;
             }
 
+            _isStarting = true;
             StartCoroutine(StartRecognitionCoroutine());
         }
 
@@ -182,6 +257,7 @@ namespace GestureRecognition.Service
             }
 
             _isRunning = false;
+            _isStarting = false;
             StopAllCoroutines(); // 停掉可能仍在运行的初始化协程
 
             // 不关闭摄像头和 MediaPipe — 它们继续在后台运行
@@ -190,6 +266,13 @@ namespace GestureRecognition.Service
 
             GestureEvents.InvokeRecognitionStateChanged(false);
             Debug.Log("[GestureService] Recognition paused (hardware still running).");
+        }
+
+        public bool IsCameraReadyForGameplay()
+        {
+            return _isRunning
+                && _cameraState == CameraRuntimeState.Ready
+                && !_isCameraOccluded;
         }
 
         /// <summary>
@@ -241,6 +324,7 @@ namespace GestureRecognition.Service
             }
 
             _instance = this;
+            GestureEvents.EnableDiagnostics = _emitDiagnosticLogs;
 
             if (_gestureConfig == null)
             {
@@ -258,6 +342,15 @@ namespace GestureRecognition.Service
             _gestureClassifier = new GestureClassifier(
                 _gestureConfig != null ? _gestureConfig.ConfidenceThreshold : 0.6f);
             _handTracker = new HandTracker(_positionSmoothing);
+            _occlusionDetector = new CameraOcclusionDetector(
+                _occlusionSampleStep,
+                _occlusionDarkThreshold,
+                _occlusionMinDarkRatio,
+                _occlusionEnterScore,
+                _occlusionExitScore,
+                _occlusionEnterFrames,
+                _occlusionExitFrames,
+                _occlusionRecentHandBoost);
         }
 
         private void OnEnable()
@@ -310,6 +403,7 @@ namespace GestureRecognition.Service
 
             // ── 真正的 singleton 被销毁（退出应用 / 手动 Destroy）──
             _isRunning = false;
+            _isStarting = false;
             StopAllCoroutines();
 
             if (_cameraManager != null)
@@ -403,26 +497,70 @@ namespace GestureRecognition.Service
 
         private IEnumerator StartRecognitionCoroutine()
         {
+            GestureEvents.EnableDiagnostics = _emitDiagnosticLogs;
+
             // ── 首次启动：初始化硬件 ─────────────────────────────────────────
             if (!_hardwareReady)
             {
                 Debug.Log("[GestureService] First start — initializing hardware...");
+                SetCameraState(CameraRuntimeState.Starting, "start-init");
+
+                if (WebCamTexture.devices.Length == 0)
+                {
+                    SetCameraState(CameraRuntimeState.NoDevice, "no-webcam-device");
+                    Debug.LogError("[GestureService] No webcam detected. Recognition start aborted.");
+                    _isStarting = false;
+                    yield break;
+                }
+
+#if UNITY_WEBGL || UNITY_ANDROID || UNITY_IOS
+                if (!Application.HasUserAuthorization(UserAuthorization.WebCam))
+                {
+                    yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
+                }
+
+                if (!Application.HasUserAuthorization(UserAuthorization.WebCam))
+                {
+                    SetCameraState(CameraRuntimeState.PermissionDenied, "webcam-permission-denied");
+                    Debug.LogError("[GestureService] Webcam permission denied. Recognition start aborted.");
+                    _isStarting = false;
+                    yield break;
+                }
+#endif
 
                 // 1. Start camera
                 string device = string.IsNullOrEmpty(_cameraDeviceName)
                     ? null
                     : _cameraDeviceName;
 
-                yield return _cameraManager.StartCamera(device);
+                yield return _cameraManager.StartCamera(device, _cameraStartupTimeoutSeconds);
 
                 if (!_cameraManager.IsRunning)
                 {
+                    SetCameraState(CameraRuntimeState.NoFrame, "camera-start-failed");
                     Debug.LogError("[GestureService] Failed to start camera.");
+                    _isStarting = false;
                     yield break;
                 }
 
                 // 2. Initialize MediaPipe (async — model loading may take time)
                 yield return _mediaPipeBridge.InitializeAsync();
+
+                if (!_mediaPipeBridge.IsInitialized)
+                {
+                    SetCameraState(CameraRuntimeState.BackendUnavailable, "mediapipe-init-failed");
+                    Debug.LogError("[GestureService] MediaPipe bridge is not initialized.");
+                    _isStarting = false;
+                    yield break;
+                }
+
+                if (_mediaPipeBridge.IsUsingStubBackend)
+                {
+                    SetCameraState(CameraRuntimeState.BackendUnavailable, "mediapipe-stub-backend");
+                    Debug.LogError("[GestureService] MediaPipe is running in stub backend mode. Recognition start aborted.");
+                    _isStarting = false;
+                    yield break;
+                }
 
                 _hardwareReady = true;
                 Debug.Log("[GestureService] Hardware ready (camera + MediaPipe).");
@@ -434,11 +572,22 @@ namespace GestureRecognition.Service
 
             // ── 恢复处理循环 ─────────────────────────────────────────────────
             _isRunning = true;
+            _isStarting = false;
             _startTime = Time.time;
             _previousGestureType = GestureType.None;
             _previousHandDetected = false;
+            _consecutiveNoFrameCount = 0;
+            _lastHandSeenRealtime = Time.realtimeSinceStartup;
+            _lastFrameUpdateRealtime = Time.realtimeSinceStartup;
+            if (_occlusionDetector != null)
+                _occlusionDetector.Reset();
+            _isCameraOccluded = false;
+            _lastOcclusionMetrics = default(CameraOcclusionMetrics);
+            _nextOcclusionMetricLogTime = Time.realtimeSinceStartup + _occlusionMetricLogInterval;
+            GestureEvents.InvokeCameraOcclusionChanged(false);
 
             GestureEvents.InvokeRecognitionStateChanged(true);
+            SetCameraState(CameraRuntimeState.Ready, "recognition-started");
             Debug.Log("[GestureService] Recognition started.");
 
             // ── 自动显示面板 ─────────────────────────────────────────────────
@@ -474,22 +623,53 @@ namespace GestureRecognition.Service
         {
             // Get current camera frame
             Texture2D frame = _cameraManager.GetCurrentFrame();
+            bool frameUpdated = _cameraManager.DidUpdateThisFrame;
+            float now = Time.realtimeSinceStartup;
+
             if (frame == null)
             {
-                // 即使拿不到帧（摄像头尚未就绪或偶尔返回 null），
-                // 仍然发送 Empty 结果，确保 UI 永远不会卡住。
-                _currentResult = GestureResult.Empty;
-                GestureEvents.InvokeGestureUpdated(_currentResult);
-                if (_previousGestureType != GestureType.None)
+                _consecutiveNoFrameCount++;
+
+                bool staleByCount = _consecutiveNoFrameCount >= _noFrameThreshold;
+                bool staleByTime =
+                    now - _lastFrameUpdateRealtime >= _staleFrameTimeoutSeconds;
+
+                if (staleByCount || staleByTime)
                 {
-                    GestureEvents.InvokeGestureChanged(_currentResult);
-                    _previousGestureType = GestureType.None;
+                    CameraRuntimeState degraded = _cameraManager.IsTexturePlaying
+                        ? CameraRuntimeState.NoFrame
+                        : CameraRuntimeState.StreamStopped;
+                    SetCameraState(degraded, "frame-unavailable");
                 }
-                if (_previousHandDetected)
+
+                if (_isCameraOccluded)
                 {
-                    GestureEvents.InvokeHandDetectionChanged(false);
-                    _previousHandDetected = false;
+                    SetCameraOccluded(false, "stream-unavailable");
                 }
+
+                PublishEmptyResult();
+                return;
+            }
+
+            if (frameUpdated)
+            {
+                _consecutiveNoFrameCount = 0;
+                _lastFrameUpdateRealtime = now;
+                SetCameraState(CameraRuntimeState.Ready, "frame-updated");
+            }
+            else if (now - _lastFrameUpdateRealtime >= _staleFrameTimeoutSeconds)
+            {
+                CameraRuntimeState degraded = _cameraManager.IsTexturePlaying
+                    ? CameraRuntimeState.NoFrame
+                    : CameraRuntimeState.StreamStopped;
+                SetCameraState(degraded, "frame-stale");
+
+                if (_isCameraOccluded)
+                {
+                    SetCameraOccluded(false, "stale-frame");
+                }
+
+                PublishEmptyResult();
                 return;
             }
 
@@ -504,6 +684,7 @@ namespace GestureRecognition.Service
             if (landmarks.IsValid)
             {
                 handPosition = _handTracker.Update(landmarks);
+                _lastHandSeenRealtime = Time.realtimeSinceStartup;
             }
             else
             {
@@ -527,6 +708,33 @@ namespace GestureRecognition.Service
                 gestureType, confidence, handPosition,
                 landmarks.IsValid, timestamp);
 
+            if (_enableOcclusionDetection && _occlusionDetector != null)
+            {
+                bool handSeenRecently =
+                    landmarks.IsValid ||
+                    (Time.realtimeSinceStartup - _lastHandSeenRealtime) <= _recentHandWindowSeconds;
+
+                bool occluded = _occlusionDetector.Update(
+                    _cameraManager.LatestPixelBuffer,
+                    _cameraManager.Width,
+                    _cameraManager.Height,
+                    handSeenRecently,
+                    out _lastOcclusionMetrics);
+
+                SetCameraOccluded(occluded, "occlusion-evaluated");
+
+                if (_emitDiagnosticLogs && Time.realtimeSinceStartup >= _nextOcclusionMetricLogTime)
+                {
+                    Debug.Log(
+                        $"[GestureService][Diag] OcclusionMetrics score={_lastOcclusionMetrics.Score:F2} dark={_lastOcclusionMetrics.DarkRatio:F2} var={_lastOcclusionMetrics.LumaVariance:F4} edge={_lastOcclusionMetrics.EdgeDensity:F4}");
+                    _nextOcclusionMetricLogTime = Time.realtimeSinceStartup + _occlusionMetricLogInterval;
+                }
+            }
+            else if (_isCameraOccluded)
+            {
+                SetCameraOccluded(false, "occlusion-disabled");
+            }
+
             // Fire events
             GestureEvents.InvokeGestureUpdated(_currentResult);
 
@@ -545,6 +753,53 @@ namespace GestureRecognition.Service
             {
                 GestureEvents.InvokeHandDetectionChanged(landmarks.IsValid);
                 _previousHandDetected = landmarks.IsValid;
+            }
+        }
+
+        private void PublishEmptyResult()
+        {
+            _currentResult = GestureResult.Empty;
+            GestureEvents.InvokeGestureUpdated(_currentResult);
+
+            if (_previousGestureType != GestureType.None)
+            {
+                GestureEvents.InvokeGestureChanged(_currentResult);
+                _previousGestureType = GestureType.None;
+            }
+
+            if (_previousHandDetected)
+            {
+                GestureEvents.InvokeHandDetectionChanged(false);
+                _previousHandDetected = false;
+            }
+        }
+
+        private void SetCameraState(CameraRuntimeState state, string reason)
+        {
+            if (_cameraState == state)
+                return;
+
+            _cameraState = state;
+            GestureEvents.InvokeCameraStateChanged(state);
+
+            if (_emitDiagnosticLogs)
+            {
+                Debug.Log($"[GestureService][Diag] CameraState={state} reason={reason}");
+            }
+        }
+
+        private void SetCameraOccluded(bool occluded, string reason)
+        {
+            if (_isCameraOccluded == occluded)
+                return;
+
+            _isCameraOccluded = occluded;
+            GestureEvents.InvokeCameraOcclusionChanged(occluded);
+
+            if (_emitDiagnosticLogs)
+            {
+                Debug.Log(
+                    $"[GestureService][Diag] CameraOccluded={occluded} reason={reason} score={_lastOcclusionMetrics.Score:F2} dark={_lastOcclusionMetrics.DarkRatio:F2}");
             }
         }
     }

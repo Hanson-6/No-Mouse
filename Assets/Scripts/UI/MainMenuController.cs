@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using GestureRecognition.Service;
 
 /// <summary>
 /// 主菜单控制器。
@@ -30,6 +31,15 @@ public class MainMenuController : MonoBehaviour
     /// <summary>用于键盘导航的菜单按钮列表</summary>
     private Button[] _menuButtons;
     private int _selectedIndex = 0;
+
+    [Header("Camera Gate")]
+    [Tooltip("Require camera readiness before entering gameplay scenes.")]
+    [SerializeField] private bool requireCameraReady = true;
+
+    [Tooltip("Optional status text to display camera-gate diagnostics.")]
+    [SerializeField] private Text cameraStatusText;
+
+    private CameraGateUI _cameraGate;
 
     void Awake()
     {
@@ -84,6 +94,9 @@ public class MainMenuController : MonoBehaviour
 
     void Start()
     {
+        EnsureMenuCanvasScale();
+        EnsureCameraGate();
+
         // 初始化可以被键盘选择的有效按钮数组
         var btnList = new System.Collections.Generic.List<Button>();
         
@@ -153,6 +166,9 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void NewGame()
     {
+        if (requireCameraReady && !CanStartGameplay())
+            return;
+
         SaveManager.DeleteSave();
         GameData.Reset();
         Time.timeScale = 1f;
@@ -164,23 +180,10 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void ContinueGame()
     {
-        Time.timeScale = 1f;
-
-        if (SaveManager.ContinueFromLatestSnapshot())
+        if (requireCameraReady && !CanStartGameplay())
             return;
 
-        Debug.LogWarning("[MainMenuController] 未命中快照恢复，降级到旧存档流程。");
-
-        SaveManager.Load();
-        int levelIndex = GameData.CurrentLevel;
-        if (levelIndex > 0 && levelIndex < SceneManager.sceneCountInBuildSettings)
-            SceneManager.LoadScene(levelIndex);
-        else
-        {
-            Debug.LogWarning($"[MainMenuController] 存档关卡索引无效: {levelIndex}，从第一关开始。");
-            GameData.Reset();
-            SceneManager.LoadScene(1);
-        }
+        ContinueGameInternal();
     }
 
     /// <summary>
@@ -203,5 +206,76 @@ public class MainMenuController : MonoBehaviour
     public void StartGame()
     {
         NewGame();
+    }
+
+    private void EnsureCameraGate()
+    {
+        if (!requireCameraReady)
+            return;
+
+        _cameraGate = GetComponent<CameraGateUI>();
+        if (_cameraGate == null)
+        {
+            _cameraGate = gameObject.AddComponent<CameraGateUI>();
+            Debug.Log("[MainMenuController][Diag] CameraGateUI attached automatically.");
+        }
+
+        _cameraGate.Configure(cameraStatusText, newGameButton, continueButton);
+    }
+
+    private bool CanStartGameplay()
+    {
+        if (GestureService.Instance == null)
+        {
+            Debug.LogWarning("[MainMenuController][Diag] Start blocked: GestureService missing.");
+            return false;
+        }
+
+        if (!GestureService.Instance.IsRunning)
+            GestureService.Instance.StartRecognition();
+
+        if (!GestureService.Instance.IsCameraReadyForGameplay())
+        {
+            Debug.LogWarning(
+                $"[MainMenuController][Diag] Start blocked: state={GestureService.Instance.CameraState} running={GestureService.Instance.IsRunning} occluded={GestureService.Instance.IsCameraOccluded}.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private static void EnsureMenuCanvasScale()
+    {
+        GameObject menuCanvas = GameObject.Find("MenuCanvas");
+        if (menuCanvas == null)
+            return;
+
+        Vector3 scale = menuCanvas.transform.localScale;
+        if (Mathf.Abs(scale.x) < 0.001f && Mathf.Abs(scale.y) < 0.001f)
+        {
+            menuCanvas.transform.localScale = Vector3.one;
+            Debug.Log("[MainMenuController][Diag] MenuCanvas scale was zero; restored to (1,1,1).");
+        }
+    }
+
+    private static void ContinueGameInternal()
+    {
+        Time.timeScale = 1f;
+
+        if (SaveManager.ContinueFromLatestSnapshot())
+            return;
+
+        Debug.LogWarning("[MainMenuController] 未命中快照恢复，降级到旧存档流程。");
+
+        SaveManager.Load();
+        int levelIndex = GameData.CurrentLevel;
+        if (levelIndex > 0 && levelIndex < SceneManager.sceneCountInBuildSettings)
+            SceneManager.LoadScene(levelIndex);
+        else
+        {
+            Debug.LogWarning($"[MainMenuController] 存档关卡索引无效: {levelIndex}，从第一关开始。");
+            GameData.Reset();
+            SceneManager.LoadScene(1);
+        }
     }
 }

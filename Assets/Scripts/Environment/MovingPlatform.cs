@@ -35,7 +35,9 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
     private Vector3 lastPosition;
     private bool activated;  // used only in buttonControlled mode
 
-    public float CurrentVelocityX { get; private set; }
+    public Vector2 CurrentVelocity { get; private set; }
+    public float CurrentVelocityX => CurrentVelocity.x;
+    public float CurrentVelocityY => CurrentVelocity.y;
 
     [System.Serializable]
     private class SnapshotState
@@ -89,7 +91,7 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         }
 
         lastPosition = transform.position;
-        CurrentVelocityX = 0f;
+        CurrentVelocity = Vector2.zero;
     }
 
     void Update()
@@ -105,9 +107,14 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
 
         float dt = Time.deltaTime;
         if (dt > 0f)
-            CurrentVelocityX = (transform.position.x - lastPosition.x) / dt;
+        {
+            Vector3 delta = transform.position - lastPosition;
+            CurrentVelocity = new Vector2(delta.x / dt, delta.y / dt);
+        }
         else
-            CurrentVelocityX = 0f;
+        {
+            CurrentVelocity = Vector2.zero;
+        }
 
         lastPosition = transform.position;
     }
@@ -244,6 +251,6 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         activated = data.activated;
 
         lastPosition = transform.position;
-        CurrentVelocityX = 0f;
+        CurrentVelocity = Vector2.zero;
     }
 }
