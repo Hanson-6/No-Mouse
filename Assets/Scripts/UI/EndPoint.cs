@@ -22,6 +22,14 @@ public class EndPoint : MonoBehaviour
         triggered = true;
         GameData.CurrentLevel = SceneManager.GetActiveScene().buildIndex;
 
+        if (GameManager.Instance != null)
+            GameManager.Instance.ResetRespawnToInitial();
+        else
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            GameData.ClearCheckpoint(activeScene.buildIndex, activeScene.path);
+        }
+
         if (animator != null)
             animator.SetBool("Pressed", true);
 

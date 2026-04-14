@@ -10,6 +10,9 @@ public class GameManager : MonoBehaviour
     [Header("Respawn")]
     public Transform respawnPoint;
 
+    private Vector3 initialRespawnPosition;
+    private bool hasInitialRespawnPosition;
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -18,6 +21,10 @@ public class GameManager : MonoBehaviour
             return;
         }
         Instance = this;
+
+        CacheInitialRespawnPoint();
+        ApplyCheckpointRespawnIfAvailable();
+        MovePlayerToRespawnIfNeeded();
 
         if (FindObjectOfType<GestureService>() == null)
         {
@@ -45,7 +52,52 @@ public class GameManager : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        CacheInitialRespawnPoint();
+        ApplyCheckpointRespawnIfAvailable();
+        MovePlayerToRespawnIfNeeded();
         EnsureGestureGameplayBindings();
+    }
+
+    private void CacheInitialRespawnPoint()
+    {
+        if (respawnPoint == null)
+        {
+            hasInitialRespawnPosition = false;
+            return;
+        }
+
+        initialRespawnPosition = respawnPoint.position;
+        hasInitialRespawnPosition = true;
+    }
+
+    private void ApplyCheckpointRespawnIfAvailable()
+    {
+        if (respawnPoint == null)
+            return;
+
+        Scene activeScene = SceneManager.GetActiveScene();
+        if (GameData.TryGetCheckpoint(activeScene.buildIndex, activeScene.path, out Vector3 checkpointPos))
+            respawnPoint.position = checkpointPos;
+    }
+
+    private void MovePlayerToRespawnIfNeeded()
+    {
+        if (respawnPoint == null)
+            return;
+
+        Scene activeScene = SceneManager.GetActiveScene();
+        if (!GameData.TryGetCheckpoint(activeScene.buildIndex, activeScene.path, out _))
+            return;
+
+        var player = FindObjectOfType<PlayerController>();
+        if (player == null)
+            return;
+
+        player.transform.position = respawnPoint.position;
+
+        var playerRb = player.GetComponent<Rigidbody2D>();
+        if (playerRb != null)
+            playerRb.velocity = Vector2.zero;
     }
 
     private void EnsureGestureGameplayBindings()
@@ -84,6 +136,28 @@ public class GameManager : MonoBehaviour
     public Vector3 GetRespawnPoint()
     {
         return respawnPoint != null ? respawnPoint.position : Vector3.zero;
+    }
+
+    public void SetCheckpoint(Transform checkpointTransform)
+    {
+        if (checkpointTransform == null || respawnPoint == null)
+            return;
+
+        Vector3 checkpointPos = checkpointTransform.position;
+        respawnPoint.position = checkpointPos;
+
+        Scene activeScene = SceneManager.GetActiveScene();
+        GameData.SetCheckpoint(activeScene.buildIndex, activeScene.path, checkpointPos);
+    }
+
+    public void ResetRespawnToInitial()
+    {
+        if (!hasInitialRespawnPosition || respawnPoint == null)
+            return;
+
+        Scene activeScene = SceneManager.GetActiveScene();
+        respawnPoint.position = initialRespawnPosition;
+        GameData.ClearCheckpoint(activeScene.buildIndex, activeScene.path);
     }
 
     public void RestartLevel()

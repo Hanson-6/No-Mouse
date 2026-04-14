@@ -191,6 +191,8 @@ public static class SaveManager
         PlayerPrefs.DeleteKey(KEY_LATEST_SNAPSHOT);
         PlayerPrefs.Save();
 
+        GameData.ClearCheckpoint();
+
         pendingSnapshot = null;
         isLoadingSnapshotScene = false;
         Debug.Log("[SaveManager] 存档已删除");
@@ -257,8 +259,13 @@ public static class SaveManager
             gameData = new GameDataSnapshot
             {
                 currentLevel = scene.buildIndex,
+                scenePath = scene.path,
                 lives = GameData.Lives,
-                score = GameData.Score
+                score = GameData.Score,
+                hasCheckpoint = GameData.TryGetCheckpoint(scene.buildIndex, scene.path, out Vector3 checkpointPos),
+                checkpointX = checkpointPos.x,
+                checkpointY = checkpointPos.y,
+                checkpointZ = checkpointPos.z
             },
             componentStates = new List<ComponentSnapshotEntry>()
         };
@@ -349,6 +356,7 @@ public static class SaveManager
         AddTypedSnapshotEntries<PushableBox>(scene, entries);
         AddTypedSnapshotEntries<SwitchDoor>(scene, entries);
         AddTypedSnapshotEntries<ButtonController>(scene, entries);
+        AddTypedSnapshotEntries<Checkpoint>(scene, entries);
     }
 
     private static void AddTypedSnapshotEntries<T>(Scene scene, Dictionary<string, ComponentSnapshotEntry> entries)
@@ -605,6 +613,18 @@ public static class SaveManager
         GameData.CurrentLevel = data.currentLevel;
         GameData.Lives = data.lives;
         GameData.Score = data.score;
+
+        if (data.hasCheckpoint)
+        {
+            GameData.SetCheckpoint(
+                data.currentLevel,
+                data.scenePath,
+                new Vector3(data.checkpointX, data.checkpointY, data.checkpointZ));
+        }
+        else
+        {
+            GameData.ClearCheckpoint(data.currentLevel, data.scenePath);
+        }
     }
 
     private static string BuildSnapshotFileName()
@@ -814,8 +834,13 @@ public static class SaveManager
     private class GameDataSnapshot
     {
         public int currentLevel;
+        public string scenePath;
         public int lives;
         public int score;
+        public bool hasCheckpoint;
+        public float checkpointX;
+        public float checkpointY;
+        public float checkpointZ;
     }
 
     [Serializable]

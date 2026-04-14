@@ -16,6 +16,7 @@ public static class TutoringSetup
     private const string TEX_MOVING_RULE   = "Assets/moving_rule.png";
     private const string TEX_CAVE_SPRITES2 = "Assets/CaveAssets/Spritesheets/Decorations/CaveDetailSprites2.png";
     private const string TRIGGER_PREFAB_PATH = "Assets/Prefabs/HintTrigger.prefab";
+    private const string CHECKPOINT_PREFAB_PATH = "Assets/Prefabs/Checkpoint.prefab";
 
     // ── 重新加载 Tutoring.ldtk 地形 ──────────────────────────────────────────
     [MenuItem("Tools/Tutoring/0. Reload Tutoring LDtk Terrain")]
@@ -193,6 +194,51 @@ public static class TutoringSetup
         foreach (var root in scene.GetRootGameObjects())
             if (root.name.StartsWith("HintTrigger")) count++;
         instance.name = count == 0 ? "HintTrigger" : $"HintTrigger ({count})";
+
+        Selection.activeGameObject = instance;
+        EditorSceneManager.MarkSceneDirty(scene);
+        Debug.Log($"[TutoringSetup] 已放置 {instance.name}，请在 Scene 视图中移动到目标位置。");
+    }
+
+    [MenuItem("Tools/Tutoring/3. Place Checkpoint")]
+    public static void PlaceCheckpoint()
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            Debug.LogError("[TutoringSetup] 请先打开 Tutoring 场景。");
+            return;
+        }
+
+        if (!string.Equals(scene.path, TUTORING_SCENE_PATH, System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.LogWarning($"[TutoringSetup] 当前场景是 '{scene.path}'。请先打开 '{TUTORING_SCENE_PATH}' 再放置 Checkpoint。");
+            return;
+        }
+
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CHECKPOINT_PREFAB_PATH);
+        if (prefab == null)
+        {
+            Debug.LogError($"[TutoringSetup] 找不到 Checkpoint prefab：{CHECKPOINT_PREFAB_PATH}");
+            return;
+        }
+
+        var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        if (instance == null)
+        {
+            Debug.LogError("[TutoringSetup] 放置 Checkpoint 失败。");
+            return;
+        }
+
+        var cam = Camera.main;
+        instance.transform.position = cam != null
+            ? new Vector3(cam.transform.position.x, cam.transform.position.y, 0f)
+            : new Vector3(196f, 47f, 0f);
+
+        int count = 0;
+        foreach (var root in scene.GetRootGameObjects())
+            if (root.name.StartsWith("Checkpoint")) count++;
+        instance.name = count == 0 ? "Checkpoint" : $"Checkpoint ({count})";
 
         Selection.activeGameObject = instance;
         EditorSceneManager.MarkSceneDirty(scene);
