@@ -38,6 +38,8 @@ public class PauseMenu : MonoBehaviour
     /// <summary>用于键盘导航的菜单按钮列表</summary>
     private Button[] _menuButtons;
     private int _selectedIndex = 0;
+    private static readonly Color SelectedButtonTint = Color.white;
+    private static readonly Color UnselectedButtonTint = new Color(0.92f, 0.92f, 0.92f, 1f);
 
     private const string DiagPrefix = "[PauseMenu][Diag]";
 
@@ -148,16 +150,11 @@ public class PauseMenu : MonoBehaviour
         {
             if (_menuButtons[i] != null)
             {
-                // 如果是当前选中的按钮，放大一点作为提示，否则恢复原状
-                if (i == _selectedIndex)
-                {
-                    _menuButtons[i].transform.localScale = new Vector3(1.1f, 1.1f, 1.1f);
-                    // 改变颜色也可以在这里加，但放大通常已经足够明显
-                }
-                else
-                {
-                    _menuButtons[i].transform.localScale = Vector3.one;
-                }
+                _menuButtons[i].transform.localScale = Vector3.one;
+
+                Image image = _menuButtons[i].targetGraphic as Image;
+                if (image != null)
+                    image.color = (i == _selectedIndex) ? SelectedButtonTint : UnselectedButtonTint;
             }
         }
     }

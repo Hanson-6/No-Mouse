@@ -31,6 +31,8 @@ public class MainMenuController : MonoBehaviour
     /// <summary>用于键盘导航的菜单按钮列表</summary>
     private Button[] _menuButtons;
     private int _selectedIndex = 0;
+    private static readonly Color SelectedButtonTint = Color.white;
+    private static readonly Color UnselectedButtonTint = new Color(0.92f, 0.92f, 0.92f, 1f);
 
     [Header("Camera Gate")]
     [Tooltip("Require camera readiness before entering gameplay scenes.")]
@@ -147,14 +149,11 @@ public class MainMenuController : MonoBehaviour
         {
             if (_menuButtons[i] != null)
             {
-                if (i == _selectedIndex)
-                {
-                    _menuButtons[i].transform.localScale = new Vector3(1.1f, 1.1f, 1.1f);
-                }
-                else
-                {
-                    _menuButtons[i].transform.localScale = Vector3.one;
-                }
+                _menuButtons[i].transform.localScale = Vector3.one;
+
+                Image image = _menuButtons[i].targetGraphic as Image;
+                if (image != null)
+                    image.color = (i == _selectedIndex) ? SelectedButtonTint : UnselectedButtonTint;
             }
         }
     }

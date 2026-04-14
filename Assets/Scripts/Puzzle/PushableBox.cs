@@ -268,10 +268,12 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
                                     || (pushDirection < 0f && playerVx < 0f);
                 float boxVx = movingInPushDir ? playerVx : 0f;
 
-                // 在平台上时叠加平台速度，保证推动过程中 Box 不会"掉队"
+                // 在平台上时，仅在玩家主动推动时叠加平台水平速度。
+                // 玩家静止时箱子也应保持静止。
                 if (currentPlatform != null)
                 {
-                    boxVx += currentPlatform.CurrentVelocityX;
+                    float platformCarryX = movingInPushDir ? currentPlatform.CurrentVelocityX : 0f;
+                    boxVx += platformCarryX;
                     rb.velocity = new Vector2(boxVx, currentPlatform.CurrentVelocityY);
                 }
                 else
@@ -284,10 +286,12 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
             }
             else // Pull 模式
             {
+                bool playerIsMoving = Mathf.Abs(playerVx) > 0.01f;
                 float boxVx = playerVx;
                 if (currentPlatform != null)
                 {
-                    boxVx += currentPlatform.CurrentVelocityX;
+                    float platformCarryX = playerIsMoving ? currentPlatform.CurrentVelocityX : 0f;
+                    boxVx += platformCarryX;
                     rb.velocity = new Vector2(boxVx, currentPlatform.CurrentVelocityY);
                 }
                 else
