@@ -37,6 +37,17 @@ namespace GestureRecognition.Core
         /// <summary>Open palm — all fingers extended.</summary>
         OpenPalm = 5,
 
+        /// <summary>
+        /// Switch gesture — dual-hand combo (one Push palm + one Fist),
+        /// regardless of left/right order.
+        /// </summary>
+        Switch = 6,
+
+        /// <summary>
+        /// Invulnerable body gesture — dual-hand combo (both hands are Fist).
+        /// </summary>
+        InvulnerableBody = 7,
+
         // ---------------------------------------------------------------
         // Add new gestures above this line.
         // ---------------------------------------------------------------

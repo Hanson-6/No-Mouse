@@ -153,7 +153,6 @@ MonoBehaviour:
   verticalRange: 0
   zoneTint: {r: 0.58, g: 0.58, b: 0.58, a: 0.55}
   cloneTint: {r: 0.6, g: 0.6, b: 0.6, a: 1}
-  swapKey: 107
   cloneObjectName: MirrorClone
 --- !u!1 &1399933135137121487
 GameObject:

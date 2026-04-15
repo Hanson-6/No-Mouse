@@ -35,6 +35,10 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
     [SerializeField] private AudioClip doubleJumpSound;
     [SerializeField] private AudioClip deathSound;
 
+    [Header("Invulnerable Body")]
+    [SerializeField] private Color invulnerableBodyTint = new Color(0.98f, 0.88f, 0.58f, 1f);
+    [SerializeField, Min(0.1f)] private float invulnerableBodyTintLerpSpeed = 10f;
+
     private AudioSource audioSource;
     private Rigidbody2D rb;
     private Animator animator;
@@ -58,6 +62,9 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
     private readonly Collider2D[] groundOverlapHits = new Collider2D[8];
     private ContactFilter2D groundProbeFilter;
     private MovingPlatform currentPlatform;
+    private bool isInvulnerableBodyActive;
+    private bool movementInputLocked;
+    private Color defaultSpriteColor;
     // ── 手势系统控制字段 ──────────────────────────────────────────────────
     // facingLocked: Pull 时锁定面朝方向，防止 sprite 翻转
     // moveDirection: 0=不限制, 1=只能往右, -1=只能往左
@@ -88,6 +95,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
     /// <summary>玩家当前是否面朝右。GestureInputBridge 用来判断面朝 Box 条件。</summary>
     public bool FacingRight => !spriteRenderer.flipX;
     public float HorizontalInput => moveInput;
+    public bool IsInvulnerableBodyActive => isInvulnerableBodyActive;
 
     void Awake()
     {
@@ -96,6 +104,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         spriteRenderer = GetComponent<SpriteRenderer>();
         ownCollider = GetComponent<Collider2D>();
         audioSource = GetComponent<AudioSource>();
+        defaultSpriteColor = spriteRenderer != null ? spriteRenderer.color : Color.white;
         defaultGravityScale = rb.gravityScale;
         hasDoubleJumpTrigger = HasAnimatorParameter(doubleJumpTriggerHash, AnimatorControllerParameterType.Trigger);
 
@@ -114,25 +123,35 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
 
     void Update()
     {
+        UpdateInvulnerableBodyVisual();
+
         if (isDead) return;
 
-        moveInput = Input.GetAxisRaw("Horizontal");
+        if (movementInputLocked)
+        {
+            moveInput = 0f;
+            jumpBufferTimer = 0f;
+        }
+        else
+        {
+            moveInput = Input.GetAxisRaw("Horizontal");
+
+            // Jump
+            if (Input.GetButtonDown("Jump"))
+            {
+                jumpBufferTimer = jumpBufferTime;
+            }
+            else if (jumpBufferTimer > 0f)
+            {
+                jumpBufferTimer -= Time.deltaTime;
+            }
+        }
 
         // 方向限制：Push 时只能往面朝方向走，Pull 时只能往反方向走
         if (moveDirection != 0 && moveInput != 0f)
         {
             if (Mathf.Sign(moveInput) != Mathf.Sign(moveDirection))
                 moveInput = 0f;
-        }
-
-        // Jump
-        if (Input.GetButtonDown("Jump"))
-        {
-            jumpBufferTimer = jumpBufferTime;
-        }
-        else if (jumpBufferTimer > 0f)
-        {
-            jumpBufferTimer -= Time.deltaTime;
         }
 
         // 面朝方向翻转（Pull 时锁定，不允许翻转）
@@ -349,9 +368,40 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         animator.SetFloat("Speed", 0f);
     }
 
+    public bool CanActivateInvulnerableBody(float stationaryVelocityThreshold = 0.08f)
+    {
+        if (isDead || rb == null)
+            return false;
+
+        if (!isGrounded)
+            return false;
+
+        if (Mathf.Abs(moveInput) > 0.01f)
+            return false;
+
+        float platformVelocityX = currentPlatform != null ? currentPlatform.CurrentVelocityX : 0f;
+        float relativeVelocityX = rb.velocity.x - platformVelocityX;
+        if (Mathf.Abs(relativeVelocityX) > stationaryVelocityThreshold)
+            return false;
+
+        if (Mathf.Abs(rb.velocity.y) > stationaryVelocityThreshold)
+            return false;
+
+        return true;
+    }
+
+    public void SetInvulnerableBodyActive(bool active)
+    {
+        isInvulnerableBodyActive = active;
+        movementInputLocked = active;
+
+        if (!active)
+            moveInput = 0f;
+    }
+
     public void Die()
     {
-        if (isDead) return; // 守卫：防止 Die() 被重复调用
+        if (isDead || isInvulnerableBodyActive) return; // 守卫：防止重复调用；无敌状态免疫伤害
         isDead = true; // 标记死亡状态，阻止后续 Update/FixedUpdate 逻辑
 
         rb.velocity = Vector2.zero; // Unity 内置 --> 停止玩家移动
@@ -429,7 +479,18 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         jumpCount = snapshot.jumpCount;
         jumpBufferTimer = snapshot.jumpBufferTimer;
         coyoteTimer = snapshot.coyoteTimer;
+        SetInvulnerableBodyActive(false);
 
         currentPlatform = null;
+    }
+
+    private void UpdateInvulnerableBodyVisual()
+    {
+        if (spriteRenderer == null)
+            return;
+
+        Color target = isInvulnerableBodyActive ? invulnerableBodyTint : defaultSpriteColor;
+        float t = Mathf.Clamp01(Time.deltaTime * invulnerableBodyTintLerpSpeed);
+        spriteRenderer.color = Color.Lerp(spriteRenderer.color, target, t);
     }
 }

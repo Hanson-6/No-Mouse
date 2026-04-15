@@ -1,4 +1,5 @@
 using UnityEngine;
+using GestureRecognition.Core;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(BoxCollider2D))]
@@ -17,7 +18,6 @@ public class MirrorController : MonoBehaviour
 
     [Header("Mirror Clone")]
     [SerializeField] private Color cloneTint = new Color(0.6f, 0.6f, 0.6f, 1f);
-    [SerializeField] private KeyCode swapKey = KeyCode.K;
     [SerializeField] private string cloneObjectName = "MirrorClone";
 
     private BoxCollider2D mirrorCollider;
@@ -45,12 +45,14 @@ public class MirrorController : MonoBehaviour
     void OnEnable()
     {
         mirrorCollider = GetComponent<BoxCollider2D>();
+        GestureEvents.OnGestureChanged += OnGestureChanged;
         EnsureZoneReferences();
         RefreshZoneVisuals();
     }
 
     void OnDisable()
     {
+        GestureEvents.OnGestureChanged -= OnGestureChanged;
         pendingSwap = false;
         SetPlayerInZone(false);
         DestroyClone();
@@ -71,9 +73,6 @@ public class MirrorController : MonoBehaviour
 
     void LateUpdate()
     {
-        if (Input.GetKeyDown(swapKey))
-            pendingSwap = true;
-
         EnsureZoneReferences();
         RefreshZoneVisuals();
 
@@ -138,6 +137,12 @@ public class MirrorController : MonoBehaviour
             SwapPlayerTo(mirroredPosition, dx);
             pendingSwap = false;
         }
+    }
+
+    private void OnGestureChanged(GestureResult result)
+    {
+        if (result.Type == GestureType.Switch)
+            pendingSwap = true;
     }
 
     private void EnsureZoneReferences()

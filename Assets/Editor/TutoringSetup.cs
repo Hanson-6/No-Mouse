@@ -132,7 +132,7 @@ public static class TutoringSetup
         tipRect.pivot = new Vector2(0.5f, 0f);
         tipRect.offsetMin = new Vector2(0f, 12f);
         tipRect.offsetMax = new Vector2(0f, 48f);
-        var tipTxt = AddText(tipGO, "Press Q to quit", 22, new Color(1f, 0.2f, 0.2f, 1f));
+        var tipTxt = AddText(tipGO, "Press Esc to quit", 22, new Color(1f, 0.2f, 0.2f, 1f));
         tipTxt.alignment = TextAnchor.MiddleCenter;
 
         hintRootGO.SetActive(false);

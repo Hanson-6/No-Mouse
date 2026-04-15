@@ -113,6 +113,14 @@ public class GameManager : MonoBehaviour
         }
         gestureBridge.SetPlayer(player);
 
+        var invulnerableBodyController = FindObjectOfType<InvulnerableBodyController>();
+        if (invulnerableBodyController == null)
+        {
+            var go = new GameObject("InvulnerableBodyController");
+            invulnerableBodyController = go.AddComponent<InvulnerableBodyController>();
+        }
+        invulnerableBodyController.SetPlayer(player);
+
         var spiritHand = FindObjectOfType<SpiritHandDisplay>();
         if (spiritHand == null)
         {

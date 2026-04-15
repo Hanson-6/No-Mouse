@@ -758,7 +758,19 @@ namespace GestureRecognition.Service
                     landmarks.Landmarks, out confidence);
             }
 
-            EvaluateAndLogDualHandCombos(_mediaPipeBridge.LatestMultiResult);
+            DualHandComboType dualCombo = EvaluateAndLogDualHandCombos(_mediaPipeBridge.LatestMultiResult);
+            bool switchComboActive = dualCombo == DualHandComboType.Switch;
+            bool invulnerableBodyActive = dualCombo == DualHandComboType.InvulnerableBody;
+            if (switchComboActive)
+            {
+                gestureType = GestureType.Switch;
+                confidence = 1f;
+            }
+            else if (invulnerableBodyActive)
+            {
+                gestureType = GestureType.InvulnerableBody;
+                confidence = 1f;
+            }
 
             // Build result
             float timestamp = Time.time - _startTime;
@@ -869,7 +881,14 @@ namespace GestureRecognition.Service
             }
         }
 
-        private void EvaluateAndLogDualHandCombos(MultiHandLandmarkData multiData)
+        private enum DualHandComboType
+        {
+            None,
+            Switch,
+            InvulnerableBody
+        }
+
+        private DualHandComboType EvaluateAndLogDualHandCombos(MultiHandLandmarkData multiData)
         {
             if (!TryResolveHandSlots(multiData, out DetectedHandData leftHand, out DetectedHandData rightHand))
             {
@@ -879,7 +898,7 @@ namespace GestureRecognition.Service
                 _leftHandGestureType = GestureType.None;
                 _rightHandGestureType = GestureType.None;
                 _lastLoggedDualCombo = string.Empty;
-                return;
+                return DualHandComboType.None;
             }
 
             _hasLeftHandSlot = leftHand.IsValid;
@@ -891,26 +910,37 @@ namespace GestureRecognition.Service
             _leftHandGestureType = leftType;
             _rightHandGestureType = rightType;
 
+            bool switchComboActive = IsSwitchCombo(leftType, rightType);
+            bool invulnerableBodyActive = IsInvulnerableBodyCombo(leftType, rightType);
+
+            DualHandComboType comboType = DualHandComboType.None;
+            if (switchComboActive)
+                comboType = DualHandComboType.Switch;
+            else if (invulnerableBodyActive)
+                comboType = DualHandComboType.InvulnerableBody;
+
             if (!_enableDualHandComboLogs)
             {
                 _lastLoggedDualCombo = string.Empty;
-                return;
+                return comboType;
             }
 
             string combo = string.Empty;
-            if (leftType == GestureType.Push && rightType == GestureType.Fist)
+            if (switchComboActive)
             {
-                combo = "左 PUSH + 右 FIST";
+                combo = leftType == GestureType.Push
+                    ? "SWITCH（左 PUSH + 右 FIST）"
+                    : "SWITCH（左 FIST + 右 PUSH）";
             }
-            else if (leftType == GestureType.Fist && rightType == GestureType.Fist)
+            else if (invulnerableBodyActive)
             {
-                combo = "双 FIST";
+                combo = "INVULNERABLE BODY（双 FIST）";
             }
 
             if (string.IsNullOrEmpty(combo))
             {
                 _lastLoggedDualCombo = string.Empty;
-                return;
+                return comboType;
             }
 
             if (!string.Equals(_lastLoggedDualCombo, combo))
@@ -918,6 +948,20 @@ namespace GestureRecognition.Service
                 Debug.Log($"[DualHand] {combo}");
                 _lastLoggedDualCombo = combo;
             }
+
+            return comboType;
+        }
+
+        private static bool IsSwitchCombo(GestureType leftType, GestureType rightType)
+        {
+            bool leftPushRightFist = leftType == GestureType.Push && rightType == GestureType.Fist;
+            bool leftFistRightPush = leftType == GestureType.Fist && rightType == GestureType.Push;
+            return leftPushRightFist || leftFistRightPush;
+        }
+
+        private static bool IsInvulnerableBodyCombo(GestureType leftType, GestureType rightType)
+        {
+            return leftType == GestureType.Fist && rightType == GestureType.Fist;
         }
 
         private bool TryResolveHandSlots(

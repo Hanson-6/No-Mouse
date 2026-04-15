@@ -18,7 +18,7 @@ public class TutorialHintTrigger : MonoBehaviour
 
     [Header("Hint Content")]
     [SerializeField] private Sprite hintSprite;
-    [SerializeField] private string tipText = "Press Q to quit";
+    [SerializeField] private string tipText = "Press Esc to quit";
 
     [Header("Panel Animation")]
     [SerializeField] private float openDuration = 0.25f;
@@ -30,6 +30,12 @@ public class TutorialHintTrigger : MonoBehaviour
     private Vector3 pressedPos;
     private readonly HashSet<int> activePressers = new HashSet<int>();
     private bool isPanelOpen;
+
+    public static bool IsAnyHintPanelOpen => openPanelCount > 0;
+    public static bool DidConsumeEscapeThisFrame => lastEscapeCloseFrame == Time.frameCount;
+
+    private static int openPanelCount;
+    private static int lastEscapeCloseFrame = -1;
 
     private GameObject hintPanel;
     private RectTransform hintPanelRect;
@@ -70,6 +76,18 @@ public class TutorialHintTrigger : MonoBehaviour
                 foreach (var txt in hintPanel.GetComponentsInChildren<Text>(true))
                 {
                     if (txt.gameObject.name == "TipText") { tipLabel = txt; break; }
+                    if (txt.gameObject.name == "Text" && txt.transform.parent != null && txt.transform.parent.name == "TipText")
+                    {
+                        tipLabel = txt;
+                        break;
+                    }
+                }
+
+                if (tipLabel == null)
+                {
+                    var tipRoot = hintPanel.transform.Find("ContentPanel/TipText");
+                    if (tipRoot != null)
+                        tipLabel = tipRoot.GetComponentInChildren<Text>(true);
                 }
             }
         }
@@ -88,8 +106,18 @@ public class TutorialHintTrigger : MonoBehaviour
 
     void Update()
     {
-        if (isPanelOpen && Input.GetKeyDown(KeyCode.Q))
-            ClosePanel();
+        if (isPanelOpen && Input.GetKeyDown(KeyCode.Escape))
+            ClosePanel(closedByEscape: true);
+    }
+
+    void OnDisable()
+    {
+        SetPanelOpenState(false);
+
+        if (playerRb != null)
+            playerRb.constraints = originalConstraints;
+
+        activePressers.Clear();
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -150,7 +178,7 @@ public class TutorialHintTrigger : MonoBehaviour
         if (tipLabel != null)
             tipLabel.text = tipText;
 
-        isPanelOpen = true;
+        SetPanelOpenState(true);
         if (animCoroutine != null) StopCoroutine(animCoroutine);
         animCoroutine = StartCoroutine(AnimatePanel(open: true));
     }
@@ -162,10 +190,13 @@ public class TutorialHintTrigger : MonoBehaviour
             sr.sprite = unpressedSprite;
     }
 
-    public void ClosePanel()
+    public void ClosePanel(bool closedByEscape = false)
     {
         if (hintPanel == null) return;
-        isPanelOpen = false;
+        SetPanelOpenState(false);
+
+        if (closedByEscape)
+            lastEscapeCloseFrame = Time.frameCount;
 
         if (animCoroutine != null) StopCoroutine(animCoroutine);
         animCoroutine = StartCoroutine(AnimatePanel(open: false));
@@ -196,5 +227,18 @@ public class TutorialHintTrigger : MonoBehaviour
 
         if (!open)
             hintPanel.SetActive(false);
+    }
+
+    private void SetPanelOpenState(bool open)
+    {
+        if (isPanelOpen == open)
+            return;
+
+        isPanelOpen = open;
+
+        if (open)
+            openPanelCount++;
+        else
+            openPanelCount = Mathf.Max(0, openPanelCount - 1);
     }
 }
