@@ -17,6 +17,14 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     [SerializeField] private float maxStepHeight = 0.465f;
     [Tooltip("Horizontal distance to probe ahead for steps")]
     [SerializeField] private float stepCheckDistance = 0.15f;
+    [Tooltip("Minimum horizontal speed required before attempting step-up")]
+    [SerializeField] private float minStepMoveSpeed = 0.35f;
+    [Tooltip("Extra forward clearance used when stepping up")]
+    [SerializeField] private float stepForwardClearance = 0.02f;
+    [Tooltip("Maximum forward nudge applied by step-up (prevents visible lurch)")]
+    [SerializeField] private float maxStepForwardNudge = 0.06f;
+    [Tooltip("Minimum delay between two step-up teleports")]
+    [SerializeField] private float stepUpCooldown = 0.05f;
     [Tooltip("Edge radius on the BoxCollider2D — rounds corners to slide over tiny height differences")]
     [SerializeField] private float colliderEdgeRadius = 0.02f;
     [Tooltip("Layer mask for ground/terrain (must match PlayerController's groundLayer)")]
@@ -54,6 +62,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     private Rigidbody2D rb; // 箱子自己的 Rigidbody2D（通过 GetComponent 获取）
     private BoxCollider2D boxCollider; // 用于 step climb 检测
     private Rigidbody2D playerRb;   // 当前接触箱子的玩家的 Rigidbody2D（碰撞检测时获取）
+    private PlayerController playerController;
 
     // ── 连接状态 ────────────────────────────────────────────────────────────
     // isLinked: 碰撞触发后由 GestureInputBridge 设为 true，手势消失时设为 false
@@ -80,6 +89,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     // 以便离开平台时保持自然抛物线，而不是立刻变成垂直下落。
     private float carryHorizontalVelocity;
     private bool carryVelocityPending;
+    private float stepUpCooldownTimer;
 
     [System.Serializable]
     private class SnapshotState
@@ -126,6 +136,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
 
         carryHorizontalVelocity = 0f;
         carryVelocityPending = false;
+        stepUpCooldownTimer = 0f;
     }
 
     void OnEnable()  => _allBoxes.Add(this);
@@ -150,6 +161,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
         }
 
         playerRb = col.gameObject.GetComponent<Rigidbody2D>();
+        playerController = col.gameObject.GetComponent<PlayerController>();
         horizontalTouch = true;
     }
     // 总结：
@@ -178,6 +190,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
         if (!isLinked)
         {
             playerRb = null;
+            playerController = null;
         }
     }
     // 总结：
@@ -248,6 +261,9 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     // - 断开条件：手势消失 / 距离超限（由 GestureInputBridge 调用 Unlink）
     void FixedUpdate()
     {
+        if (stepUpCooldownTimer > 0f)
+            stepUpCooldownTimer -= Time.fixedDeltaTime;
+
         if (isLinked && playerRb != null)
         {
             // ── 已连接：Dynamic 模式，响应 Player 的推/拉 ──────────────────
@@ -261,23 +277,41 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
             float playerVx = playerRb.velocity.x;
+            float playerInputX = playerController != null ? playerController.HorizontalInput : 0f;
 
             if (linkMode == BoxLinkMode.Push)
             {
-                bool movingInPushDir = (pushDirection > 0f && playerVx > 0f)
-                                    || (pushDirection < 0f && playerVx < 0f);
-                float boxVx = movingInPushDir ? playerVx : 0f;
+                bool hasInputSource = playerController != null;
+                bool movingInPushDir;
+                if (hasInputSource)
+                {
+                    movingInPushDir = (pushDirection > 0f && playerInputX > 0.01f)
+                                   || (pushDirection < 0f && playerInputX < -0.01f);
+                }
+                else
+                {
+                    float platformVx = currentPlatform != null ? currentPlatform.CurrentVelocityX : 0f;
+                    float playerControlVx = playerVx - platformVx;
+                    movingInPushDir = (pushDirection > 0f && playerControlVx > 0.01f)
+                                   || (pushDirection < 0f && playerControlVx < -0.01f);
+                }
 
-                // 在平台上时，仅在玩家主动推动时叠加平台水平速度。
-                // 玩家静止时箱子也应保持静止。
+                float boxVx;
+
                 if (currentPlatform != null)
                 {
-                    float platformCarryX = movingInPushDir ? currentPlatform.CurrentVelocityX : 0f;
-                    boxVx += platformCarryX;
+                    // 在平台上时：
+                    // - 玩家主动推：箱子跟随玩家世界速度（已含平台位移）
+                    // - 玩家停下：箱子仅跟随平台，保持相对平台静止
+                    boxVx = movingInPushDir ? playerVx : currentPlatform.CurrentVelocityX;
                     rb.velocity = new Vector2(boxVx, currentPlatform.CurrentVelocityY);
                 }
                 else
                 {
+                    // 不在平台上：
+                    // - 玩家主动推：箱子跟随玩家
+                    // - 玩家停下：箱子水平急停
+                    boxVx = movingInPushDir ? playerVx : 0f;
                     rb.velocity = new Vector2(boxVx, rb.velocity.y);
                 }
 
@@ -286,12 +320,10 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
             }
             else // Pull 模式
             {
-                bool playerIsMoving = Mathf.Abs(playerVx) > 0.01f;
                 float boxVx = playerVx;
                 if (currentPlatform != null)
                 {
-                    float platformCarryX = playerIsMoving ? currentPlatform.CurrentVelocityX : 0f;
-                    boxVx += platformCarryX;
+                    // Pull 直接跟随玩家世界速度，避免平台位移被重复叠加。
                     rb.velocity = new Vector2(boxVx, currentPlatform.CurrentVelocityY);
                 }
                 else
@@ -304,7 +336,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
             }
 
             // Step-up: auto-climb small ledges when the box is moving horizontally
-            if (Mathf.Abs(rb.velocity.x) > 0.01f)
+            if (stepUpCooldownTimer <= 0f && Mathf.Abs(rb.velocity.x) > minStepMoveSpeed)
             {
                 Vector2 dir = rb.velocity.x > 0f ? Vector2.right : Vector2.left;
                 TryStepUp(dir);
@@ -438,11 +470,16 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
         if (heightDiff <= 0.005f || heightDiff > maxStepHeight) return;
 
         // 4. Teleport UP + FORWARD
-        float forwardNudge = probePastWall + 0.02f;
+        float minForwardNudge = Mathf.Max(0.005f, stepForwardClearance);
+        float maxForwardNudge = Mathf.Max(minForwardNudge, maxStepForwardNudge);
+        float forwardNudge = Mathf.Clamp(distToWall + minForwardNudge, minForwardNudge, maxForwardNudge);
+
         Vector2 newPos = rb.position;
         newPos.y += heightDiff + 0.02f;
         newPos.x += direction.x * forwardNudge;
         rb.position = newPos;
+
+        stepUpCooldownTimer = Mathf.Max(0f, stepUpCooldown);
 
         if (rb.velocity.y < 0f)
             rb.velocity = new Vector2(rb.velocity.x, 0f);
@@ -510,6 +547,9 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
         horizontalTouch = snapshot.horizontalTouch;
 
         if (!isLinked)
+        {
             playerRb = null;
+            playerController = null;
+        }
     }
 }

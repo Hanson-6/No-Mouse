@@ -86,6 +86,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
 
     /// <summary>玩家当前是否面朝右。GestureInputBridge 用来判断面朝 Box 条件。</summary>
     public bool FacingRight => !spriteRenderer.flipX;
+    public float HorizontalInput => moveInput;
 
     void Awake()
     {
