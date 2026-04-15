@@ -30,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 17.69, y: 5.73, z: 0}
-  m_LocalScale: {x: 2.9081148, y: 2.3567273, z: 1}
+  m_LocalScale: {x: 2.908115, y: 2.3567274, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -92,6 +92,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a206230a8b7dfc34e9d18a71ad21a133, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  winSound: {fileID: 8300000, guid: 803bd649330e93640947beb2cc13deb3, type: 3}
 --- !u!212 &5425305929860447176
 SpriteRenderer:
   m_ObjectHideFlags: 0

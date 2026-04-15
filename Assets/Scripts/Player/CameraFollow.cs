@@ -18,15 +18,25 @@ public class CameraFollow : MonoBehaviour
     public bool useBounds = false;
     public float minX, maxX, minY, maxY;
 
+    [Header("Mirror Zone View")]
+    [SerializeField] private bool expandViewInMirrorZone = true;
+    [SerializeField, Min(1f)] private float mirrorZoneViewMultiplier = 2f;
+    [SerializeField, Min(0f)] private float viewSizeLerpSpeed = 8f;
+
     private Camera cam;
+    private float baseOrthographicSize;
 
     void Awake()
     {
         cam = GetComponent<Camera>();
+        if (cam != null)
+            baseOrthographicSize = Mathf.Max(0.01f, cam.orthographicSize);
     }
 
     void Start()
     {
+        UpdateCameraViewSize();
+
         if (target == null) return;
 
         float targetY = lockY ? fixedY : target.position.y + offset.y;
@@ -45,6 +55,8 @@ public class CameraFollow : MonoBehaviour
 
     void LateUpdate()
     {
+        UpdateCameraViewSize();
+
         if (target == null) return;
 
         float targetY = lockY ? fixedY : target.position.y + offset.y;
@@ -66,7 +78,30 @@ public class CameraFollow : MonoBehaviour
         if (cameraComponent != null)
         {
             cameraComponent.allowMSAA = false;
+            if (!Application.isPlaying)
+                baseOrthographicSize = Mathf.Max(0.01f, cameraComponent.orthographicSize);
         }
+
+        mirrorZoneViewMultiplier = Mathf.Max(1f, mirrorZoneViewMultiplier);
+        viewSizeLerpSpeed = Mathf.Max(0f, viewSizeLerpSpeed);
+    }
+
+    void UpdateCameraViewSize()
+    {
+        if (cam == null || !cam.orthographic)
+            return;
+
+        float targetSize = baseOrthographicSize;
+        if (expandViewInMirrorZone && MirrorController.IsPlayerInAnyMirrorZone)
+            targetSize = baseOrthographicSize * mirrorZoneViewMultiplier;
+
+        if (viewSizeLerpSpeed <= 0f)
+        {
+            cam.orthographicSize = targetSize;
+            return;
+        }
+
+        cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, targetSize, viewSizeLerpSpeed * Time.deltaTime);
     }
 
     Vector3 SnapToPixelGrid(Vector3 worldPosition)

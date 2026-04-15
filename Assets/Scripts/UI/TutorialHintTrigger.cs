@@ -18,7 +18,7 @@ public class TutorialHintTrigger : MonoBehaviour
 
     [Header("Hint Content")]
     [SerializeField] private Sprite hintSprite;
-    [SerializeField] private string tipText = "Press ESC to quit";
+    [SerializeField] private string tipText = "Press Q to quit";
 
     [Header("Panel Animation")]
     [SerializeField] private float openDuration = 0.25f;
@@ -88,7 +88,7 @@ public class TutorialHintTrigger : MonoBehaviour
 
     void Update()
     {
-        if (isPanelOpen && Input.GetKeyDown(KeyCode.Escape))
+        if (isPanelOpen && Input.GetKeyDown(KeyCode.Q))
             ClosePanel();
     }
 

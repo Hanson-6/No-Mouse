@@ -47,6 +47,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
     private bool isGrounded;
     /// <summary>玩家是否在地面上。GestureInputBridge 用于判断跳跃释放抓取。</summary>
     public bool IsGrounded => isGrounded;
+    public bool IsDead => isDead;
     private int jumpCount;
     private float jumpBufferTimer;
     private float coyoteTimer;
