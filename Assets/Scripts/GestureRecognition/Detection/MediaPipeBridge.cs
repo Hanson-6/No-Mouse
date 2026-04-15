@@ -52,6 +52,34 @@ namespace GestureRecognition.Detection
     }
 
     /// <summary>
+    /// A single detected hand with landmarks and handedness information.
+    /// </summary>
+    public struct DetectedHandData
+    {
+        /// <summary>21 hand landmarks for this hand.</summary>
+        public Vector3[] Landmarks;
+
+        /// <summary>Whether this hand entry is valid.</summary>
+        public bool IsValid;
+
+        /// <summary>Handedness label, typically "Left" or "Right".</summary>
+        public string Handedness;
+
+        /// <summary>Confidence score of handedness prediction.</summary>
+        public float HandednessScore;
+    }
+
+    /// <summary>
+    /// Multi-hand landmark data for one frame.
+    /// </summary>
+    public struct MultiHandLandmarkData
+    {
+        public DetectedHandData[] Hands;
+
+        public bool IsValid => Hands != null && Hands.Length > 0;
+    }
+
+    /// <summary>
     /// Bridge to MediaPipe Unity Plugin.
     /// <para>
     /// When MediaPipe is not installed, this provides a stub that always
@@ -100,7 +128,7 @@ namespace GestureRecognition.Detection
 
         [Header("MediaPipe Settings")]
         [Tooltip("Maximum number of hands to detect.")]
-        [SerializeField] private int _numHands = 1;
+        [SerializeField] private int _numHands = 2;
 
         [Tooltip("Minimum confidence for hand detection.")]
         [SerializeField] [Range(0.1f, 1f)] private float _minDetectionConfidence = 0.5f;
@@ -117,6 +145,7 @@ namespace GestureRecognition.Detection
 
         private bool _isInitialized;
         private HandLandmarkData _latestResult;
+        private MultiHandLandmarkData _latestMultiResult;
         private long _frameTimestampMs;
 
 #if MEDIAPIPE_INSTALLED
@@ -130,6 +159,9 @@ namespace GestureRecognition.Detection
 
         /// <summary>The most recent hand landmark data.</summary>
         public HandLandmarkData LatestResult => _latestResult;
+
+        /// <summary>The most recent multi-hand landmark data.</summary>
+        public MultiHandLandmarkData LatestMultiResult => _latestMultiResult;
 
         /// <summary>
         /// True when running without native MediaPipe hand-landmarker backend.
@@ -173,6 +205,10 @@ namespace GestureRecognition.Detection
                 {
                     Landmarks = new Vector3[LandmarkCount],
                     IsValid = false
+                };
+                _latestMultiResult = new MultiHandLandmarkData
+                {
+                    Hands = Array.Empty<DetectedHandData>()
                 };
                 _frameTimestampMs = 0;
                 _isInitialized = true;
@@ -310,6 +346,11 @@ namespace GestureRecognition.Detection
                 IsValid = false
             };
 
+            _latestMultiResult = new MultiHandLandmarkData
+            {
+                Hands = Array.Empty<DetectedHandData>()
+            };
+
             _frameTimestampMs = 0;
             _isInitialized = true;
 
@@ -350,6 +391,11 @@ namespace GestureRecognition.Detection
             {
                 Landmarks = _latestResult.Landmarks,
                 IsValid = false
+            };
+
+            _latestMultiResult = new MultiHandLandmarkData
+            {
+                Hands = Array.Empty<DetectedHandData>()
             };
 
             OnLandmarksUpdated?.Invoke(_latestResult);
@@ -405,6 +451,29 @@ namespace GestureRecognition.Detection
         public void InjectMockData(HandLandmarkData mockData)
         {
             _latestResult = mockData;
+
+            if (mockData.IsValid && mockData.Landmarks != null)
+            {
+                var hand = new DetectedHandData
+                {
+                    Landmarks = (Vector3[])mockData.Landmarks.Clone(),
+                    IsValid = true,
+                    Handedness = string.Empty,
+                    HandednessScore = 0f
+                };
+                _latestMultiResult = new MultiHandLandmarkData
+                {
+                    Hands = new[] { hand }
+                };
+            }
+            else
+            {
+                _latestMultiResult = new MultiHandLandmarkData
+                {
+                    Hands = Array.Empty<DetectedHandData>()
+                };
+            }
+
             OnLandmarksUpdated?.Invoke(_latestResult);
         }
 
@@ -440,6 +509,7 @@ namespace GestureRecognition.Detection
                 {
                     // Convert MediaPipe result to our HandLandmarkData
                     ConvertResult(_mpResult, ref _latestResult);
+                    ConvertMultiResult(_mpResult, ref _latestMultiResult);
                 }
                 else
                 {
@@ -447,6 +517,11 @@ namespace GestureRecognition.Detection
                     {
                         Landmarks = _latestResult.Landmarks ?? new Vector3[LandmarkCount],
                         IsValid = false
+                    };
+
+                    _latestMultiResult = new MultiHandLandmarkData
+                    {
+                        Hands = Array.Empty<DetectedHandData>()
                     };
                 }
             }
@@ -457,6 +532,11 @@ namespace GestureRecognition.Detection
                 {
                     Landmarks = _latestResult.Landmarks ?? new Vector3[LandmarkCount],
                     IsValid = false
+                };
+
+                _latestMultiResult = new MultiHandLandmarkData
+                {
+                    Hands = Array.Empty<DetectedHandData>()
                 };
             }
             finally
@@ -498,6 +578,87 @@ namespace GestureRecognition.Detection
             }
 
             output.IsValid = true;
+        }
+
+        private void ConvertMultiResult(HandLandmarkerResult mpResult, ref MultiHandLandmarkData output)
+        {
+            int handCount = mpResult.handLandmarks != null ? mpResult.handLandmarks.Count : 0;
+            if (handCount <= 0)
+            {
+                output = new MultiHandLandmarkData
+                {
+                    Hands = Array.Empty<DetectedHandData>()
+                };
+                return;
+            }
+
+            var hands = output.Hands;
+            if (hands == null || hands.Length != handCount)
+            {
+                hands = new DetectedHandData[handCount];
+            }
+
+            for (int handIndex = 0; handIndex < handCount; handIndex++)
+            {
+                var hand = hands[handIndex];
+
+                if (hand.Landmarks == null || hand.Landmarks.Length < LandmarkCount)
+                {
+                    hand.Landmarks = new Vector3[LandmarkCount];
+                }
+
+                var mpHand = mpResult.handLandmarks[handIndex];
+                var landmarks = mpHand.landmarks;
+
+                int count = Mathf.Min(landmarks.Count, LandmarkCount);
+                for (int landmarkIndex = 0; landmarkIndex < count; landmarkIndex++)
+                {
+                    var lm = landmarks[landmarkIndex];
+                    hand.Landmarks[landmarkIndex] = new Vector3(lm.x, lm.y, lm.z);
+                }
+
+                for (int landmarkIndex = count; landmarkIndex < LandmarkCount; landmarkIndex++)
+                {
+                    hand.Landmarks[landmarkIndex] = Vector3.zero;
+                }
+
+                hand.IsValid = count == LandmarkCount;
+                hand.Handedness = ExtractHandednessLabel(mpResult, handIndex, out float handednessScore);
+                hand.HandednessScore = handednessScore;
+
+                hands[handIndex] = hand;
+            }
+
+            output = new MultiHandLandmarkData
+            {
+                Hands = hands
+            };
+        }
+
+        private static string ExtractHandednessLabel(HandLandmarkerResult mpResult, int handIndex, out float score)
+        {
+            score = 0f;
+
+            if (mpResult.handedness == null || handIndex < 0 || handIndex >= mpResult.handedness.Count)
+            {
+                return string.Empty;
+            }
+
+            var handedness = mpResult.handedness[handIndex];
+            if (handedness.categories == null || handedness.categories.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var bestCategory = handedness.categories[0];
+            score = bestCategory.score;
+
+            if (!string.IsNullOrEmpty(bestCategory.categoryName))
+            {
+                return bestCategory.categoryName;
+            }
+
+            return bestCategory.displayName ?? string.Empty;
         }
 #endif
 

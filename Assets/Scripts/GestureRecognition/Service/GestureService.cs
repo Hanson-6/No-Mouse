@@ -106,6 +106,16 @@ namespace GestureRecognition.Service
         [Range(0f, 0.95f)]
         private float _positionSmoothing = 0.5f;
 
+        [Header("Dual Hand Debug")]
+        [Tooltip("Log dual-hand combo when detected.")]
+        [SerializeField] private bool _enableDualHandComboLogs = true;
+
+        [Tooltip("Swap left/right handedness labels if camera setup is not mirrored.")]
+        [SerializeField] private bool _swapLeftRightHandedness = false;
+
+        [Tooltip("Minimum handedness confidence required for left/right assignment.")]
+        [SerializeField] [Range(0.1f, 1f)] private float _minHandednessConfidence = 0.5f;
+
         [Header("Camera Diagnostics")]
         [Tooltip("Print concise runtime diagnostic logs for camera state and occlusion events.")]
         [SerializeField]
@@ -156,9 +166,17 @@ namespace GestureRecognition.Service
         [SerializeField] [Range(0f, 0.25f)]
         private float _occlusionRecentHandBoost = 0.08f;
 
+        [Tooltip("Print periodic occlusion metric values for tuning (verbose).")]
+        [SerializeField]
+        private bool _emitOcclusionMetricLogs = false;
+
         [Tooltip("How often to print occlusion metrics (seconds).")]
         [SerializeField]
         private float _occlusionMetricLogInterval = 1.0f;
+
+        [Tooltip("Minimum interval between occlusion state logs (seconds).")]
+        [SerializeField]
+        private float _occlusionStateLogMinInterval = 0.3f;
 
         // -----------------------------------------------------------------
         // Runtime components
@@ -186,6 +204,12 @@ namespace GestureRecognition.Service
         private GestureResult _currentResult = GestureResult.Empty;
         private GestureType _previousGestureType = GestureType.None;
         private bool _previousHandDetected;
+        private string _lastLoggedDualCombo = string.Empty;
+        private bool _hasDualHandPair;
+        private bool _hasLeftHandSlot;
+        private bool _hasRightHandSlot;
+        private GestureType _leftHandGestureType = GestureType.None;
+        private GestureType _rightHandGestureType = GestureType.None;
         private float _startTime;
         private float _lastHandSeenRealtime = -999f;
         private int _consecutiveNoFrameCount;
@@ -195,6 +219,7 @@ namespace GestureRecognition.Service
         private bool _isCameraOccluded;
         private CameraOcclusionMetrics _lastOcclusionMetrics;
         private float _nextOcclusionMetricLogTime;
+        private float _lastOcclusionStateLogRealtime = -999f;
 
         // -----------------------------------------------------------------
         // Public properties
@@ -220,6 +245,21 @@ namespace GestureRecognition.Service
 
         /// <summary>Whether camera lens is currently considered occluded.</summary>
         public bool IsCameraOccluded => _isCameraOccluded;
+
+        /// <summary>Whether both left and right hand slots are currently available.</summary>
+        public bool HasDualHandPair => _hasDualHandPair;
+
+        /// <summary>Whether left hand slot currently has a tracked hand.</summary>
+        public bool HasLeftHandSlot => _hasLeftHandSlot;
+
+        /// <summary>Whether right hand slot currently has a tracked hand.</summary>
+        public bool HasRightHandSlot => _hasRightHandSlot;
+
+        /// <summary>Current classified gesture for the left hand slot.</summary>
+        public GestureType LeftHandGestureType => _leftHandGestureType;
+
+        /// <summary>Current classified gesture for the right hand slot.</summary>
+        public GestureType RightHandGestureType => _rightHandGestureType;
 
         /// <summary>Latest occlusion metrics for debugging/calibration.</summary>
         public CameraOcclusionMetrics OcclusionMetrics => _lastOcclusionMetrics;
@@ -263,6 +303,13 @@ namespace GestureRecognition.Service
             // 不关闭摄像头和 MediaPipe — 它们继续在后台运行
             _currentResult = GestureResult.Empty;
             _previousGestureType = GestureType.None;
+            _lastLoggedDualCombo = string.Empty;
+            _lastOcclusionStateLogRealtime = -999f;
+            _hasDualHandPair = false;
+            _hasLeftHandSlot = false;
+            _hasRightHandSlot = false;
+            _leftHandGestureType = GestureType.None;
+            _rightHandGestureType = GestureType.None;
 
             GestureEvents.InvokeRecognitionStateChanged(false);
             Debug.Log("[GestureService] Recognition paused (hardware still running).");
@@ -576,6 +623,12 @@ namespace GestureRecognition.Service
             _startTime = Time.time;
             _previousGestureType = GestureType.None;
             _previousHandDetected = false;
+            _lastLoggedDualCombo = string.Empty;
+            _hasDualHandPair = false;
+            _hasLeftHandSlot = false;
+            _hasRightHandSlot = false;
+            _leftHandGestureType = GestureType.None;
+            _rightHandGestureType = GestureType.None;
             _consecutiveNoFrameCount = 0;
             _lastHandSeenRealtime = Time.realtimeSinceStartup;
             _lastFrameUpdateRealtime = Time.realtimeSinceStartup;
@@ -584,6 +637,7 @@ namespace GestureRecognition.Service
             _isCameraOccluded = false;
             _lastOcclusionMetrics = default(CameraOcclusionMetrics);
             _nextOcclusionMetricLogTime = Time.realtimeSinceStartup + _occlusionMetricLogInterval;
+            _lastOcclusionStateLogRealtime = -999f;
             GestureEvents.InvokeCameraOcclusionChanged(false);
 
             GestureEvents.InvokeRecognitionStateChanged(true);
@@ -646,6 +700,7 @@ namespace GestureRecognition.Service
                 {
                     SetCameraOccluded(false, "stream-unavailable");
                 }
+                _occlusionDetector?.Reset();
 
                 PublishEmptyResult();
                 return;
@@ -668,6 +723,7 @@ namespace GestureRecognition.Service
                 {
                     SetCameraOccluded(false, "stale-frame");
                 }
+                _occlusionDetector?.Reset();
 
                 PublishEmptyResult();
                 return;
@@ -702,6 +758,8 @@ namespace GestureRecognition.Service
                     landmarks.Landmarks, out confidence);
             }
 
+            EvaluateAndLogDualHandCombos(_mediaPipeBridge.LatestMultiResult);
+
             // Build result
             float timestamp = Time.time - _startTime;
             _currentResult = new GestureResult(
@@ -723,7 +781,7 @@ namespace GestureRecognition.Service
 
                 SetCameraOccluded(occluded, "occlusion-evaluated");
 
-                if (_emitDiagnosticLogs && Time.realtimeSinceStartup >= _nextOcclusionMetricLogTime)
+                if (_emitDiagnosticLogs && _emitOcclusionMetricLogs && Time.realtimeSinceStartup >= _nextOcclusionMetricLogTime)
                 {
                     Debug.Log(
                         $"[GestureService][Diag] OcclusionMetrics score={_lastOcclusionMetrics.Score:F2} dark={_lastOcclusionMetrics.DarkRatio:F2} var={_lastOcclusionMetrics.LumaVariance:F4} edge={_lastOcclusionMetrics.EdgeDensity:F4}");
@@ -733,6 +791,7 @@ namespace GestureRecognition.Service
             else if (_isCameraOccluded)
             {
                 SetCameraOccluded(false, "occlusion-disabled");
+                _occlusionDetector?.Reset();
             }
 
             // Fire events
@@ -759,6 +818,12 @@ namespace GestureRecognition.Service
         private void PublishEmptyResult()
         {
             _currentResult = GestureResult.Empty;
+            _lastLoggedDualCombo = string.Empty;
+            _hasDualHandPair = false;
+            _hasLeftHandSlot = false;
+            _hasRightHandSlot = false;
+            _leftHandGestureType = GestureType.None;
+            _rightHandGestureType = GestureType.None;
             GestureEvents.InvokeGestureUpdated(_currentResult);
 
             if (_previousGestureType != GestureType.None)
@@ -796,11 +861,186 @@ namespace GestureRecognition.Service
             _isCameraOccluded = occluded;
             GestureEvents.InvokeCameraOcclusionChanged(occluded);
 
-            if (_emitDiagnosticLogs)
+            float now = Time.realtimeSinceStartup;
+            if (now - _lastOcclusionStateLogRealtime >= Mathf.Max(0f, _occlusionStateLogMinInterval))
             {
-                Debug.Log(
-                    $"[GestureService][Diag] CameraOccluded={occluded} reason={reason} score={_lastOcclusionMetrics.Score:F2} dark={_lastOcclusionMetrics.DarkRatio:F2}");
+                Debug.Log(occluded ? "[Occlusion] 摄像头被遮住" : "[Occlusion] 摄像头恢复");
+                _lastOcclusionStateLogRealtime = now;
             }
+        }
+
+        private void EvaluateAndLogDualHandCombos(MultiHandLandmarkData multiData)
+        {
+            if (!TryResolveHandSlots(multiData, out DetectedHandData leftHand, out DetectedHandData rightHand))
+            {
+                _hasDualHandPair = false;
+                _hasLeftHandSlot = false;
+                _hasRightHandSlot = false;
+                _leftHandGestureType = GestureType.None;
+                _rightHandGestureType = GestureType.None;
+                _lastLoggedDualCombo = string.Empty;
+                return;
+            }
+
+            _hasLeftHandSlot = leftHand.IsValid;
+            _hasRightHandSlot = rightHand.IsValid;
+            _hasDualHandPair = _hasLeftHandSlot && _hasRightHandSlot;
+
+            GestureType leftType = _hasLeftHandSlot ? ClassifyHandGesture(leftHand) : GestureType.None;
+            GestureType rightType = _hasRightHandSlot ? ClassifyHandGesture(rightHand) : GestureType.None;
+            _leftHandGestureType = leftType;
+            _rightHandGestureType = rightType;
+
+            if (!_enableDualHandComboLogs)
+            {
+                _lastLoggedDualCombo = string.Empty;
+                return;
+            }
+
+            string combo = string.Empty;
+            if (leftType == GestureType.Push && rightType == GestureType.Fist)
+            {
+                combo = "左 PUSH + 右 FIST";
+            }
+            else if (leftType == GestureType.Fist && rightType == GestureType.Fist)
+            {
+                combo = "双 FIST";
+            }
+
+            if (string.IsNullOrEmpty(combo))
+            {
+                _lastLoggedDualCombo = string.Empty;
+                return;
+            }
+
+            if (!string.Equals(_lastLoggedDualCombo, combo))
+            {
+                Debug.Log($"[DualHand] {combo}");
+                _lastLoggedDualCombo = combo;
+            }
+        }
+
+        private bool TryResolveHandSlots(
+            MultiHandLandmarkData multiData,
+            out DetectedHandData leftHand,
+            out DetectedHandData rightHand)
+        {
+            leftHand = default;
+            rightHand = default;
+
+            if (!multiData.IsValid)
+                return false;
+
+            for (int i = 0; i < multiData.Hands.Length; i++)
+            {
+                DetectedHandData hand = multiData.Hands[i];
+                if (!hand.IsValid || hand.Landmarks == null || hand.Landmarks.Length < MediaPipeBridge.LandmarkCount)
+                    continue;
+
+                string handedness = NormalizeHandedness(hand.Handedness);
+                bool confident = hand.HandednessScore >= _minHandednessConfidence;
+
+                if (confident && handedness == "Left")
+                {
+                    if (!leftHand.IsValid)
+                        leftHand = hand;
+                    continue;
+                }
+
+                if (confident && handedness == "Right")
+                {
+                    if (!rightHand.IsValid)
+                        rightHand = hand;
+                    continue;
+                }
+            }
+
+            if (leftHand.IsValid && rightHand.IsValid)
+                return true;
+
+            // Fallback by image x-ordering.
+            // For two hands: smaller x -> left, larger x -> right.
+            // For one hand: fill whichever side is currently missing.
+            int firstIndex = -1;
+            int secondIndex = -1;
+            float firstX = 0f;
+            float secondX = 0f;
+
+            for (int i = 0; i < multiData.Hands.Length; i++)
+            {
+                DetectedHandData hand = multiData.Hands[i];
+                if (!hand.IsValid || hand.Landmarks == null || hand.Landmarks.Length < MediaPipeBridge.LandmarkCount)
+                    continue;
+
+                float x = HandTracker.ComputePalmCenter(hand.Landmarks).x;
+                if (firstIndex < 0)
+                {
+                    firstIndex = i;
+                    firstX = x;
+                }
+                else if (secondIndex < 0)
+                {
+                    secondIndex = i;
+                    secondX = x;
+                }
+            }
+
+            if (firstIndex < 0)
+                return false;
+
+            if (secondIndex < 0)
+            {
+                // If handedness already assigned one slot, keep it as single-hand state.
+                if (leftHand.IsValid || rightHand.IsValid)
+                    return true;
+
+                // No handedness info: pick side by image-space x position.
+                if (firstX <= 0.5f)
+                    leftHand = multiData.Hands[firstIndex];
+                else
+                    rightHand = multiData.Hands[firstIndex];
+                return true;
+            }
+
+            if (firstX <= secondX)
+            {
+                if (!leftHand.IsValid) leftHand = multiData.Hands[firstIndex];
+                if (!rightHand.IsValid) rightHand = multiData.Hands[secondIndex];
+            }
+            else
+            {
+                if (!leftHand.IsValid) leftHand = multiData.Hands[secondIndex];
+                if (!rightHand.IsValid) rightHand = multiData.Hands[firstIndex];
+            }
+
+            return leftHand.IsValid || rightHand.IsValid;
+        }
+
+        private string NormalizeHandedness(string handedness)
+        {
+            if (string.IsNullOrEmpty(handedness))
+                return string.Empty;
+
+            string normalized = handedness.Trim();
+            if (string.Equals(normalized, "Left", System.StringComparison.OrdinalIgnoreCase))
+                normalized = "Left";
+            else if (string.Equals(normalized, "Right", System.StringComparison.OrdinalIgnoreCase))
+                normalized = "Right";
+            else
+                return string.Empty;
+
+            if (_swapLeftRightHandedness)
+                return normalized == "Left" ? "Right" : "Left";
+
+            return normalized;
+        }
+
+        private GestureType ClassifyHandGesture(DetectedHandData hand)
+        {
+            if (!hand.IsValid || hand.Landmarks == null || hand.Landmarks.Length < MediaPipeBridge.LandmarkCount)
+                return GestureType.None;
+
+            return _gestureClassifier.Classify(hand.Landmarks, out _);
         }
     }
 }

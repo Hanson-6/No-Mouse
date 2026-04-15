@@ -139,6 +139,12 @@ namespace GestureRecognition.UI
         private Image _gestureImage;
 
         [SerializeField]
+        private Image _leftGestureImage;
+
+        [SerializeField]
+        private Image _rightGestureImage;
+
+        [SerializeField]
         private Text _floorLabel;
 
         [SerializeField]
@@ -155,6 +161,8 @@ namespace GestureRecognition.UI
         private CanvasGroup _canvasGroup;
         private GestureType _lastDisplayedGesture = GestureType.None;
         private bool _uiBuilt;
+        private GestureType _lastLeftGesture = GestureType.None;
+        private GestureType _lastRightGesture = GestureType.None;
 
         // Child references created at runtime
         private RectTransform _titleBar;
@@ -308,6 +316,7 @@ namespace GestureRecognition.UI
                 _displayMode = DisplayMode.CameraWithOverlay;
             }
 
+            EnsureDualGestureSprites();
             UpdateDisplayMode();
         }
 
@@ -377,6 +386,73 @@ namespace GestureRecognition.UI
                     _lastDisplayedGesture = result.Type;
                 }
             }
+
+            UpdateDualHandOverlay();
+        }
+
+        private void UpdateDualHandOverlay()
+        {
+            if (_gestureConfig == null || _leftGestureImage == null || _rightGestureImage == null)
+                return;
+
+            if (_displayMode != DisplayMode.CameraFeed && _displayMode != DisplayMode.CameraWithOverlay)
+                return;
+
+            GestureService service = GestureService.Instance;
+            if (service == null || (!service.HasLeftHandSlot && !service.HasRightHandSlot))
+            {
+                if (_leftGestureImage.gameObject.activeSelf) _leftGestureImage.gameObject.SetActive(false);
+                if (_rightGestureImage.gameObject.activeSelf) _rightGestureImage.gameObject.SetActive(false);
+                if (_gestureImage != null && !_gestureImage.gameObject.activeSelf)
+                    _gestureImage.gameObject.SetActive(true);
+                _lastLeftGesture = GestureType.None;
+                _lastRightGesture = GestureType.None;
+                return;
+            }
+
+            GestureType leftType = service.LeftHandGestureType;
+            GestureType rightType = service.RightHandGestureType;
+            bool hasLeft = service.HasLeftHandSlot;
+            bool hasRight = service.HasRightHandSlot;
+
+            Sprite leftSprite = hasLeft ? ResolveOverlayGestureSprite(leftType) : null;
+            Sprite rightSprite = hasRight ? ResolveOverlayGestureSprite(rightType) : null;
+
+            if (leftSprite != null)
+            {
+                if (leftType != _lastLeftGesture || _leftGestureImage.sprite != leftSprite)
+                    _leftGestureImage.sprite = leftSprite;
+                if (!_leftGestureImage.gameObject.activeSelf) _leftGestureImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                if (_leftGestureImage.gameObject.activeSelf) _leftGestureImage.gameObject.SetActive(false);
+            }
+
+            if (rightSprite != null)
+            {
+                if (rightType != _lastRightGesture || _rightGestureImage.sprite != rightSprite)
+                    _rightGestureImage.sprite = rightSprite;
+                if (!_rightGestureImage.gameObject.activeSelf) _rightGestureImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                if (_rightGestureImage.gameObject.activeSelf) _rightGestureImage.gameObject.SetActive(false);
+            }
+
+            if (_gestureImage != null && _gestureImage.gameObject.activeSelf)
+                _gestureImage.gameObject.SetActive(false);
+
+            _lastLeftGesture = leftType;
+            _lastRightGesture = rightType;
+        }
+
+        private Sprite ResolveOverlayGestureSprite(GestureType type)
+        {
+            if (type == GestureType.None || type == GestureType.Count)
+                return null;
+
+            return _gestureConfig.GetSprite(type);
         }
 
         // -----------------------------------------------------------------
@@ -396,6 +472,16 @@ namespace GestureRecognition.UI
                         // In overlay mode, shrink the sprite to the corner
                         SetOverlayLayout();
                     }
+                    if (_leftGestureImage != null)
+                    {
+                        _leftGestureImage.gameObject.SetActive(false);
+                        SetLeftOverlayLayout();
+                    }
+                    if (_rightGestureImage != null)
+                    {
+                        _rightGestureImage.gameObject.SetActive(false);
+                        SetRightOverlayLayout();
+                    }
                     break;
 
                 case DisplayMode.CartoonSprite:
@@ -405,6 +491,8 @@ namespace GestureRecognition.UI
                         _gestureImage.gameObject.SetActive(true);
                         ResetOverlayLayout();
                     }
+                    if (_leftGestureImage != null) _leftGestureImage.gameObject.SetActive(false);
+                    if (_rightGestureImage != null) _rightGestureImage.gameObject.SetActive(false);
                     break;
             }
         }
@@ -415,6 +503,28 @@ namespace GestureRecognition.UI
 
             RectTransform rt = _gestureImage.rectTransform;
             // Bottom-right corner, 30% of panel size
+            rt.anchorMin = new Vector2(0.65f, 0f);
+            rt.anchorMax = new Vector2(1f, 0.4f);
+            rt.offsetMin = new Vector2(4f, 4f);
+            rt.offsetMax = new Vector2(-4f, -4f);
+        }
+
+        private void SetLeftOverlayLayout()
+        {
+            if (_leftGestureImage == null) return;
+
+            RectTransform rt = _leftGestureImage.rectTransform;
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(0.35f, 0.4f);
+            rt.offsetMin = new Vector2(4f, 4f);
+            rt.offsetMax = new Vector2(-4f, -4f);
+        }
+
+        private void SetRightOverlayLayout()
+        {
+            if (_rightGestureImage == null) return;
+
+            RectTransform rt = _rightGestureImage.rectTransform;
             rt.anchorMin = new Vector2(0.65f, 0f);
             rt.anchorMax = new Vector2(1f, 0.4f);
             rt.offsetMin = new Vector2(4f, 4f);
@@ -644,13 +754,41 @@ namespace GestureRecognition.UI
         private void EnsureGestureSprite()
         {
             if (_gestureImage != null)
+            {
+                EnsureDualGestureSprites();
                 return;
+            }
 
             RectTransform spriteRt = GetOrCreateChild("GestureSprite", _contentArea);
             StretchToParent(spriteRt);
 
             _gestureImage = GetOrAddComponent<Image>(spriteRt.gameObject);
             _gestureImage.preserveAspect = true;
+
+            EnsureDualGestureSprites();
+        }
+
+        private void EnsureDualGestureSprites()
+        {
+            if (_leftGestureImage == null)
+            {
+                RectTransform leftRt = GetOrCreateChild("LeftGestureSprite", _contentArea);
+                _leftGestureImage = GetOrAddComponent<Image>(leftRt.gameObject);
+                _leftGestureImage.preserveAspect = true;
+            }
+
+            if (_rightGestureImage == null)
+            {
+                RectTransform rightRt = GetOrCreateChild("RightGestureSprite", _contentArea);
+                _rightGestureImage = GetOrAddComponent<Image>(rightRt.gameObject);
+                _rightGestureImage.preserveAspect = true;
+            }
+
+            SetLeftOverlayLayout();
+            SetRightOverlayLayout();
+
+            _leftGestureImage.gameObject.SetActive(false);
+            _rightGestureImage.gameObject.SetActive(false);
         }
 
         private void BuildLabelArea(FrameLayout layout)

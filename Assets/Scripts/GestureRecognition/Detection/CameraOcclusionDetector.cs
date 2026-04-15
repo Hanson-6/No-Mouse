@@ -76,6 +76,7 @@ namespace GestureRecognition.Detection
             if (pixels == null || pixels.Length == 0 || width <= 0 || height <= 0)
             {
                 _enterCounter = 0;
+                _exitCounter = 0;
                 return _isOccluded;
             }
 
@@ -113,6 +114,7 @@ namespace GestureRecognition.Detection
             if (count < 64 || edgeCount < 64)
             {
                 _enterCounter = 0;
+                _exitCounter = 0;
                 return _isOccluded;
             }
 

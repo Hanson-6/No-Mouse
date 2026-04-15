@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using GestureRecognition.Core;
+using GestureRecognition.Service;
 
 // 精灵手显示系统
 //
@@ -128,6 +129,12 @@ public class SpiritHandDisplay : MonoBehaviour
 
     void OnGestureUpdated(GestureResult result)
     {
+        if (ShouldHideForDualDifferentHands())
+        {
+            Hide();
+            return;
+        }
+
         _currentGestureType = result.Type;
 
         if (!IsSupportedGesture(result.Type))
@@ -147,6 +154,18 @@ public class SpiritHandDisplay : MonoBehaviour
         _sr.sprite = resolvedSprite;
         RecalculateBaseScale(resolvedSprite);
         Show();
+    }
+
+    bool ShouldHideForDualDifferentHands()
+    {
+        GestureService service = GestureService.Instance;
+        if (service == null)
+            return false;
+
+        if (!service.HasLeftHandSlot || !service.HasRightHandSlot)
+            return false;
+
+        return service.LeftHandGestureType != service.RightHandGestureType;
     }
 
     Sprite ResolveSprite(GestureType type)
