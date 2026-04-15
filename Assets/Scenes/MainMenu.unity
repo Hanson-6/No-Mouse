@@ -365,8 +365,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -100}
-  m_SizeDelta: {x: 520.1626, y: 140}
+  m_AnchoredPosition: {x: 0, y: 20}
+  m_SizeDelta: {x: 371.5447, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1354212131
 MonoBehaviour:
@@ -390,7 +390,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+    m_HighlightedColor: {r: 0.84, g: 0.84, b: 0.84, a: 1}
     m_PressedColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
     m_SelectedColor: {r: 1, g: 1, b: 1, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
@@ -572,8 +572,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -260}
-  m_SizeDelta: {x: 520.1626, y: 140}
+  m_AnchoredPosition: {x: 0, y: -100}
+  m_SizeDelta: {x: 371.5447, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1463872455
 MonoBehaviour:
@@ -597,7 +597,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+    m_HighlightedColor: {r: 0.84, g: 0.84, b: 0.84, a: 1}
     m_PressedColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
     m_SelectedColor: {r: 1, g: 1, b: 1, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
@@ -878,8 +878,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 60}
-  m_SizeDelta: {x: 520.1626, y: 140}
+  m_AnchoredPosition: {x: 0, y: 140}
+  m_SizeDelta: {x: 371.5447, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1994582052
 MonoBehaviour:
@@ -903,7 +903,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+    m_HighlightedColor: {r: 0.84, g: 0.84, b: 0.84, a: 1}
     m_PressedColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
     m_SelectedColor: {r: 1, g: 1, b: 1, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}

@@ -155,15 +155,15 @@ public static class MainMenuSetup
         if (oldQuit != null) Object.DestroyImmediate(oldQuit.gameObject);
 
         // 三个按钮的垂直布局（屏幕中心偏下）
-        float btnHeight = 140f;
+        float btnHeight = 100f;
         float spacing   = 20f;
 
         // 如果有继续按钮图片，创建三个按钮；否则只创建两个
         bool hasContinue = (continueSprite != null);
 
-        Vector2 newGameSize  = GetButtonSize(newGameSprite, btnHeight, 280f, 760f);
-        Vector2 continueSize = hasContinue ? GetButtonSize(continueSprite, btnHeight, 280f, 760f) : Vector2.zero;
-        Vector2 quitSize     = GetButtonSize(quitSprite, btnHeight, 280f, 760f);
+        Vector2 newGameSize  = GetButtonSize(newGameSprite, btnHeight, 280f, 620f);
+        Vector2 continueSize = hasContinue ? GetButtonSize(continueSprite, btnHeight, 280f, 620f) : Vector2.zero;
+        Vector2 quitSize     = GetButtonSize(quitSprite, btnHeight, 280f, 620f);
 
         // 按钮组整体垂直偏移（负数 = 往下移）
         float groupOffsetY = -100f;
@@ -260,7 +260,7 @@ public static class MainMenuSetup
         btn.transition = Selectable.Transition.ColorTint;
         var colors = btn.colors;
         colors.normalColor      = Color.white;
-        colors.highlightedColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+        colors.highlightedColor = new Color(0.84f, 0.84f, 0.84f, 1f);
         colors.pressedColor     = new Color(0.7f, 0.7f, 0.7f, 1f);
         colors.selectedColor    = Color.white;
         btn.colors = colors;
