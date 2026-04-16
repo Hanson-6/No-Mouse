@@ -6,7 +6,8 @@ using GestureRecognition.Service;
 // 精灵手显示系统
 //
 // 功能：
-//   当 GestureService 检测到 Push（张开手掌）、Fist（握拳）或 Shoot（手枪）手势时，
+//   当 GestureService 检测到 Push（张开手掌）、Fist（握拳）、Shoot（手枪）、
+//   Switch（一拳一掌切换）或 InvulnerableBody（金身）手势时，
 //   在 Player 头顶显示对应的精灵手图标，并以脉动效果（Scale + Alpha 循环）
 //   提醒玩家当前手势已被系统识别。
 //
@@ -28,7 +29,9 @@ public class SpiritHandDisplay : MonoBehaviour
     {
         GestureType.Push,
         GestureType.Fist,
-        GestureType.Shoot
+        GestureType.Shoot,
+        GestureType.Switch,
+        GestureType.InvulnerableBody
     };
 
     [System.Serializable]
@@ -42,6 +45,8 @@ public class SpiritHandDisplay : MonoBehaviour
     [SerializeField] private Sprite pushSprite;   // Push 手势对应的图（张开手掌）
     [SerializeField] private Sprite fistSprite;   // Fist 手势对应的图（握拳 / Pull）
     [SerializeField] private Sprite shootSprite;  // Shoot 手势对应的图（手枪手势）
+    [SerializeField] private Sprite switchSprite; // Switch 手势对应的图（位置切换）
+    [SerializeField] private Sprite invulnerableBodySprite; // 金身手势对应的图
 
     [Header("手势大小倍率（输入值，默认 1.0）")]
     [SerializeField] private List<GestureSizeEntry> gestureSizeEntries = new List<GestureSizeEntry>();
@@ -129,7 +134,7 @@ public class SpiritHandDisplay : MonoBehaviour
 
     void OnGestureUpdated(GestureResult result)
     {
-        if (ShouldHideForDualDifferentHands())
+        if (ShouldHideForDualDifferentHands(result.Type))
         {
             Hide();
             return;
@@ -156,8 +161,11 @@ public class SpiritHandDisplay : MonoBehaviour
         Show();
     }
 
-    bool ShouldHideForDualDifferentHands()
+    bool ShouldHideForDualDifferentHands(GestureType detectedType)
     {
+        if (detectedType == GestureType.Switch)
+            return false;
+
         GestureService service = GestureService.Instance;
         if (service == null)
             return false;
@@ -187,6 +195,14 @@ public class SpiritHandDisplay : MonoBehaviour
 
             case GestureType.Shoot:
                 if (shootSprite != null) return shootSprite;
+                break;
+
+            case GestureType.Switch:
+                if (switchSprite != null) return switchSprite;
+                break;
+
+            case GestureType.InvulnerableBody:
+                if (invulnerableBodySprite != null) return invulnerableBodySprite;
                 break;
 
             default:

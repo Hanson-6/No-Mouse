@@ -26,10 +26,10 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 3aafeef89ffdd5741bfd98ba2d071125, type: 3}
     DisplayName: Open Palm
   - Type: 6
-    Sprite: {fileID: 21300000, guid: e284f74748c32cf4090e58d574332cc7, type: 3}
+    Sprite: {fileID: 21300000, guid: 2872111729abab74ca5e86bb39a50407, type: 3}
     DisplayName: Switch
   - Type: 7
-    Sprite: {fileID: 21300000, guid: c4bb9d42bae06c946b01c70ac10b6a1f, type: 3}
+    Sprite: {fileID: 21300000, guid: 966e24fe1a9e5c14c866e3f3482021cc, type: 3}
     DisplayName: InvulnerableBody
   _confidenceThreshold: 0.6
   _noneSprite: {fileID: 0}
