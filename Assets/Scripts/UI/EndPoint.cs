@@ -30,6 +30,8 @@ public class EndPoint : MonoBehaviour
             GameData.ClearCheckpoint(activeScene.buildIndex, activeScene.path);
         }
 
+        GameData.ClearDarkMode();
+
         if (animator != null)
             animator.SetBool("Pressed", true);
 

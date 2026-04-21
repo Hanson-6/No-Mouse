@@ -319,6 +319,7 @@ public class PauseMenu : MonoBehaviour
     public void RestartLevel()
     {
         Scene activeScene = SceneManager.GetActiveScene();
+        GameData.ClearDarkMode();
         GameData.ClearCheckpoint(activeScene.buildIndex, activeScene.path);
         SaveManager.ClearCheckpointSnapshot();
         SaveManager.ClearSessionSnapshot();
