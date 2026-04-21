@@ -9,6 +9,8 @@ public class Spike : MonoBehaviour
     void OnTriggerEnter2D(Collider2D other)
     {
         if (!other.CompareTag("Player")) return;
-        other.GetComponent<PlayerController>()?.Die();
+        var player = other.GetComponent<PlayerController>();
+        if (player != null && player.IsInvulnerableBodyActive) return;
+        player?.Die();
     }
 }

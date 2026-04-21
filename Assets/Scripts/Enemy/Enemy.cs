@@ -62,6 +62,18 @@ public class Enemy : MonoBehaviour, ISnapshotSaveable
         rb.freezeRotation = true;
     }
 
+    void OnEnable()
+    {
+        var player = FindObjectOfType<PlayerController>();
+        if (player != null && player.IsInvulnerableBodyActive)
+        {
+            var playerCol = player.GetComponent<Collider2D>();
+            var ownCol = GetComponent<Collider2D>();
+            if (playerCol != null && ownCol != null)
+                Physics2D.IgnoreCollision(playerCol, ownCol, true);
+        }
+    }
+
     void Start()
     {
         // Default points to current position if not set

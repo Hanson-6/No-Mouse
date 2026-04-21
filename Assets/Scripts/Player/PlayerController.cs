@@ -395,8 +395,21 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         isInvulnerableBodyActive = active;
         movementInputLocked = active;
 
+        UpdateEnemyCollisionIgnores(active);
+
         if (!active)
             moveInput = 0f;
+    }
+
+    private void UpdateEnemyCollisionIgnores(bool ignore)
+    {
+        if (ownCollider == null) return;
+        foreach (var enemy in FindObjectsOfType<Enemy>())
+        {
+            var col = enemy.GetComponent<Collider2D>();
+            if (col != null)
+                Physics2D.IgnoreCollision(ownCollider, col, ignore);
+        }
     }
 
     public void Die()
