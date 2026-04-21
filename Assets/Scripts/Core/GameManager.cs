@@ -136,6 +136,18 @@ public class GameManager : MonoBehaviour
             spiritHand.SetPlayer(player);
         }
 
+        var darkVision = FindObjectOfType<DarkVisionController>();
+        if (darkVision == null)
+        {
+            var go = new GameObject("DarkVisionController");
+            darkVision = go.AddComponent<DarkVisionController>();
+            darkVision.SetPlayer(player);
+        }
+        else
+        {
+            darkVision.SetPlayer(player);
+        }
+
         var panel = FindObjectOfType<GestureDisplayPanel>(true);
         if (panel != null && !panel.gameObject.activeSelf)
             panel.Show();
@@ -170,6 +182,7 @@ public class GameManager : MonoBehaviour
 
     public void RestartLevel()
     {
+        GameData.ClearDarkMode();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 

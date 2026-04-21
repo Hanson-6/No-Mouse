@@ -159,6 +159,7 @@ public static class SaveManager
     {
         EnsureSnapshotDirectory();
         DeleteSnapshotFileWithMeta(CheckpointSnapshotPath);
+        GameData.ClearDarkMode();
     }
 
     public static void SaveCurrentSessionLive()
@@ -258,6 +259,7 @@ public static class SaveManager
         PlayerPrefs.Save();
 
         GameData.ClearCheckpoint();
+        GameData.ClearDarkMode();
 
         pendingSnapshot = null;
         isLoadingSnapshotScene = false;
@@ -406,7 +408,8 @@ public static class SaveManager
                 hasCheckpoint = GameData.TryGetCheckpoint(scene.buildIndex, scene.path, out Vector3 checkpointPos),
                 checkpointX = checkpointPos.x,
                 checkpointY = checkpointPos.y,
-                checkpointZ = checkpointPos.z
+                checkpointZ = checkpointPos.z,
+                darkModeActive = GameData.IsDarkModeActive
             },
             componentStates = new List<ComponentSnapshotEntry>()
         };
@@ -498,6 +501,8 @@ public static class SaveManager
         AddTypedSnapshotEntries<SwitchDoor>(scene, entries);
         AddTypedSnapshotEntries<ButtonController>(scene, entries);
         AddTypedSnapshotEntries<Checkpoint>(scene, entries);
+        AddTypedSnapshotEntries<DarkCheckpoint>(scene, entries);
+        AddTypedSnapshotEntries<DarkVisionController>(scene, entries);
     }
 
     private static void AddTypedSnapshotEntries<T>(Scene scene, Dictionary<string, ComponentSnapshotEntry> entries)
@@ -766,6 +771,11 @@ public static class SaveManager
         {
             GameData.ClearCheckpoint(data.currentLevel, data.scenePath);
         }
+
+        if (data.darkModeActive)
+            GameData.ActivateDarkMode();
+        else
+            GameData.ClearDarkMode();
     }
 
     private static void EnsureSnapshotDirectory()
@@ -869,6 +879,7 @@ public static class SaveManager
         public float checkpointX;
         public float checkpointY;
         public float checkpointZ;
+        public bool darkModeActive;
     }
 
     [Serializable]

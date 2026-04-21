@@ -10,10 +10,24 @@ public static class GameData
     public static int Lives = 3;
     public static int Score = 0;
 
+    private static bool darkModeActive;
+
     private static bool hasCheckpoint;
     private static int checkpointLevel = -1;
     private static string checkpointScenePath = string.Empty;
     private static Vector3 checkpointPosition = Vector3.zero;
+
+    public static bool IsDarkModeActive => darkModeActive;
+
+    public static void ActivateDarkMode()
+    {
+        darkModeActive = true;
+    }
+
+    public static void ClearDarkMode()
+    {
+        darkModeActive = false;
+    }
 
     public static void SetCheckpoint(int levelIndex, Vector3 worldPosition)
     {
@@ -100,5 +114,6 @@ public static class GameData
         Lives = 3;
         Score = 0;
         ClearCheckpoint();
+        ClearDarkMode();
     }
 }
