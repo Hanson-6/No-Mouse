@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
     [SerializeField] private float jumpForce = 14f;
     [SerializeField] private float jumpBufferTime = 0.12f;
     [SerializeField] private float coyoteTime = 0.12f;
+    [SerializeField] private float jumpGroundResetLockTime = 0.08f;
     // Multiplies gravityScale while the player is falling — higher = snappier landing
     [SerializeField] private float fallGravityMultiplier = 3.5f;
 
@@ -55,7 +56,9 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
     private int jumpCount;
     private float jumpBufferTimer;
     private float coyoteTimer;
+    private float jumpGroundResetLockTimer;
     private bool isDead;
+    private bool wasGroundedLastFixed;
     private readonly int doubleJumpTriggerHash = Animator.StringToHash("DoubleJump");
     private bool hasDoubleJumpTrigger;
     private readonly RaycastHit2D[] groundRayHits = new RaycastHit2D[8];
@@ -90,6 +93,8 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         public int jumpCount;
         public float jumpBufferTimer;
         public float coyoteTimer;
+        public float jumpGroundResetLockTimer;
+        public bool wasGroundedLastFixed;
     }
 
     /// <summary>玩家当前是否面朝右。GestureInputBridge 用来判断面朝 Box 条件。</summary>
@@ -175,10 +180,18 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
             return;
         }
 
-        isGrounded = CheckGrounded();
-        if (isGrounded)
+        if (jumpGroundResetLockTimer > 0f)
+            jumpGroundResetLockTimer = Mathf.Max(0f, jumpGroundResetLockTimer - Time.fixedDeltaTime);
+
+        bool groundedNow = CheckGrounded();
+        isGrounded = groundedNow;
+
+        if (groundedNow)
         {
-            jumpCount = 0;
+            bool landedThisFrame = !wasGroundedLastFixed;
+            if (landedThisFrame && jumpGroundResetLockTimer <= 0f && rb.velocity.y <= 0.01f)
+                jumpCount = 0;
+
             coyoteTimer = coyoteTime;
         }
         else if (coyoteTimer > 0f)
@@ -186,7 +199,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
             coyoteTimer -= Time.fixedDeltaTime;
         }
 
-        TryConsumeBufferedJump();
+        bool jumpedThisFrame = TryConsumeBufferedJump();
 
         float horizontalVelocity = moveInput * moveSpeed;
         if (isGrounded && currentPlatform != null)
@@ -203,15 +216,17 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
             rb.gravityScale = defaultGravityScale * fallGravityMultiplier;
         else
             rb.gravityScale = defaultGravityScale;
+
+        wasGroundedLastFixed = jumpedThisFrame ? false : groundedNow;
     }
 
-    void TryConsumeBufferedJump()
+    bool TryConsumeBufferedJump()
     {
-        if (jumpBufferTimer <= 0f) return;
+        if (jumpBufferTimer <= 0f) return false;
 
         bool canGroundJump = (isGrounded || coyoteTimer > 0f) && jumpCount == 0;
         bool canAirJump = !canGroundJump && jumpCount < maxJumpCount;
-        if (!canGroundJump && !canAirJump) return;
+        if (!canGroundJump && !canAirJump) return false;
 
         bool isAirJump = !canGroundJump;
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
@@ -228,6 +243,8 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         jumpCount++;
         jumpBufferTimer = 0f;
         coyoteTimer = 0f;
+        jumpGroundResetLockTimer = jumpGroundResetLockTime;
+        return true;
     }
 
     void TryStepUp(Vector2 direction)
@@ -303,7 +320,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         if (!touchingGroundCandidate) return false;
 
         float halfWidth = probeSize.x * 0.45f;
-        Vector2 originBase = probeCenter + Vector2.up * 0.03f;
+        Vector2 originBase = probeCenter + Vector2.up * 0.05f;
         float rayDistance = Mathf.Max(groundCheckRadius + 0.12f, 0.18f);
 
         return HasGroundSupport(originBase, rayDistance)
@@ -319,6 +336,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         {
             RaycastHit2D hit = groundRayHits[i];
             if (hit.collider == null || hit.collider == ownCollider) continue;
+            if (hit.fraction <= 0f) continue;
             if (hit.normal.y < groundedNormalThreshold) continue;
 
             bool onGroundLayer = ((1 << hit.collider.gameObject.layer) & groundLayer.value) != 0;
@@ -461,7 +479,9 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
             autoWalkDirection = autoWalkDirection,
             jumpCount = jumpCount,
             jumpBufferTimer = jumpBufferTimer,
-            coyoteTimer = coyoteTimer
+            coyoteTimer = coyoteTimer,
+            jumpGroundResetLockTimer = jumpGroundResetLockTimer,
+            wasGroundedLastFixed = wasGroundedLastFixed
         };
 
         return JsonUtility.ToJson(snapshot);
@@ -492,6 +512,8 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         jumpCount = snapshot.jumpCount;
         jumpBufferTimer = snapshot.jumpBufferTimer;
         coyoteTimer = snapshot.coyoteTimer;
+        jumpGroundResetLockTimer = snapshot.jumpGroundResetLockTimer;
+        wasGroundedLastFixed = snapshot.wasGroundedLastFixed;
         SetInvulnerableBodyActive(false);
 
         currentPlatform = null;

@@ -20,6 +20,7 @@ public class CameraFollow : MonoBehaviour
 
     [Header("Mirror Zone View")]
     [SerializeField] private bool expandViewInMirrorZone = true;
+    [SerializeField] private bool lockFollowInMirrorZone = true;
     [SerializeField, Min(1f)] private float mirrorZoneViewMultiplier = 2f;
     [SerializeField, Min(0f)] private float viewSizeLerpSpeed = 8f;
 
@@ -39,8 +40,9 @@ public class CameraFollow : MonoBehaviour
 
         if (target == null) return;
 
-        float targetY = lockY ? fixedY : target.position.y + offset.y;
-        Vector3 desired = new Vector3(target.position.x + offset.x, targetY, transform.position.z);
+        Vector3 followAnchor = GetFollowAnchor();
+        float targetY = lockY ? fixedY : followAnchor.y + offset.y;
+        Vector3 desired = new Vector3(followAnchor.x + offset.x, targetY, transform.position.z);
 
         if (useBounds)
         {
@@ -59,8 +61,9 @@ public class CameraFollow : MonoBehaviour
 
         if (target == null) return;
 
-        float targetY = lockY ? fixedY : target.position.y + offset.y;
-        Vector3 desired = new Vector3(target.position.x + offset.x, targetY, transform.position.z);
+        Vector3 followAnchor = GetFollowAnchor();
+        float targetY = lockY ? fixedY : followAnchor.y + offset.y;
+        Vector3 desired = new Vector3(followAnchor.x + offset.x, targetY, transform.position.z);
 
         if (useBounds)
         {
@@ -102,6 +105,17 @@ public class CameraFollow : MonoBehaviour
         }
 
         cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, targetSize, viewSizeLerpSpeed * Time.deltaTime);
+    }
+
+    Vector3 GetFollowAnchor()
+    {
+        if (target == null)
+            return transform.position;
+
+        if (lockFollowInMirrorZone && MirrorController.TryGetMirrorFocusForPosition(target.position, out Vector3 mirrorFocus))
+            return mirrorFocus;
+
+        return target.position;
     }
 
     Vector3 SnapToPixelGrid(Vector3 worldPosition)

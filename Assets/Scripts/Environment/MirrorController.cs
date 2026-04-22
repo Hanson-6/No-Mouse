@@ -1,5 +1,6 @@
 using UnityEngine;
 using GestureRecognition.Core;
+using System.Collections.Generic;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(BoxCollider2D))]
@@ -16,42 +17,95 @@ public class MirrorController : MonoBehaviour
     [SerializeField] private float verticalRange = 0f;
     [SerializeField] private Color zoneTint = new Color(0.58f, 0.58f, 0.58f, 0.55f);
 
+    [Header("Mirror Barrier")]
+    [SerializeField] private bool enableInvisibleBarrier = true;
+    [SerializeField, Min(0f)] private float blockerThickness = 0f;
+    [SerializeField, Min(0f)] private float blockerVerticalRange = 0f;
+    [SerializeField] private string blockerObjectName = "MirrorBlocker";
+    [SerializeField] private PhysicsMaterial2D blockerMaterial;
+    [SerializeField] private BoxCollider2D blockerCollider;
+
     [Header("Mirror Clone")]
     [SerializeField] private Color cloneTint = new Color(0.6f, 0.6f, 0.6f, 1f);
     [SerializeField] private string cloneObjectName = "MirrorClone";
+
+    [Header("Switch Validation")]
+    [SerializeField] private bool cancelSwapIfBlocked = true;
+    [SerializeField] private LayerMask swapBlockerLayers;
+    [SerializeField, Min(0f)] private float swapValidationInset = 0.02f;
 
     private BoxCollider2D mirrorCollider;
     private Transform playerTransform;
     private PlayerController playerController;
     private Rigidbody2D playerRb;
     private SpriteRenderer playerSprite;
+    private Collider2D playerCollider;
 
     private GameObject cloneObject;
     private SpriteRenderer cloneSprite;
+    private readonly Collider2D[] swapOverlapHits = new Collider2D[8];
 
     private bool pendingSwap;
     private bool playerInsideZone;
 
+    private static readonly List<MirrorController> activeMirrors = new List<MirrorController>();
     private static int activeZoneCount;
     public static bool IsPlayerInAnyMirrorZone => activeZoneCount > 0;
+
+    public static bool TryGetMirrorFocusForPosition(Vector3 worldPosition, out Vector3 focusPosition)
+    {
+        focusPosition = Vector3.zero;
+        float bestScore = float.MaxValue;
+        bool found = false;
+
+        for (int i = 0; i < activeMirrors.Count; i++)
+        {
+            MirrorController mirror = activeMirrors[i];
+            if (mirror == null || !mirror.isActiveAndEnabled)
+                continue;
+
+            if (!mirror.ContainsPosition(worldPosition))
+                continue;
+
+            float score = Mathf.Abs(worldPosition.x - mirror.transform.position.x);
+            if (score < bestScore)
+            {
+                bestScore = score;
+                focusPosition = mirror.transform.position;
+                found = true;
+            }
+        }
+
+        return found;
+    }
 
     void Awake()
     {
         mirrorCollider = GetComponent<BoxCollider2D>();
         EnsureZoneReferences();
+        EnsureBlockerReference();
+        EnsureSwapBlockerLayers();
         RefreshZoneVisuals();
+        RefreshBlockerCollider();
     }
 
     void OnEnable()
     {
         mirrorCollider = GetComponent<BoxCollider2D>();
+        if (!activeMirrors.Contains(this))
+            activeMirrors.Add(this);
+
         GestureEvents.OnGestureChanged += OnGestureChanged;
         EnsureZoneReferences();
+        EnsureBlockerReference();
+        EnsureSwapBlockerLayers();
         RefreshZoneVisuals();
+        RefreshBlockerCollider();
     }
 
     void OnDisable()
     {
+        activeMirrors.Remove(this);
         GestureEvents.OnGestureChanged -= OnGestureChanged;
         pendingSwap = false;
         SetPlayerInZone(false);
@@ -60,6 +114,7 @@ public class MirrorController : MonoBehaviour
 
     void OnDestroy()
     {
+        activeMirrors.Remove(this);
         SetPlayerInZone(false);
     }
 
@@ -67,14 +122,22 @@ public class MirrorController : MonoBehaviour
     {
         horizontalRange = Mathf.Max(0.5f, horizontalRange);
         verticalRange = Mathf.Max(0f, verticalRange);
+        blockerThickness = Mathf.Max(0f, blockerThickness);
+        blockerVerticalRange = Mathf.Max(0f, blockerVerticalRange);
+        swapValidationInset = Mathf.Max(0f, swapValidationInset);
         EnsureZoneReferences();
+        EnsureBlockerReference();
+        EnsureSwapBlockerLayers();
         RefreshZoneVisuals();
+        RefreshBlockerCollider();
     }
 
     void LateUpdate()
     {
         EnsureZoneReferences();
+        EnsureBlockerReference();
         RefreshZoneVisuals();
+        RefreshBlockerCollider();
 
         TryBindPlayer();
         if (!HasValidPlayer())
@@ -96,12 +159,7 @@ public class MirrorController : MonoBehaviour
         Vector3 playerPos = playerTransform.position;
         float mirrorX = transform.position.x;
         float dx = playerPos.x - mirrorX;
-        float dy = Mathf.Abs(playerPos.y - transform.position.y);
-
-        float verticalHalfRange = GetActiveVerticalHalfRange();
-        bool inHorizontalRange = Mathf.Abs(dx) <= horizontalRange;
-        bool inVerticalRange = dy <= verticalHalfRange;
-        bool inMirrorZone = inHorizontalRange && inVerticalRange;
+        bool inMirrorZone = ContainsPosition(playerPos);
 
         if (!inMirrorZone)
         {
@@ -134,9 +192,16 @@ public class MirrorController : MonoBehaviour
 
         if (pendingSwap)
         {
-            SwapPlayerTo(mirroredPosition, dx);
+            TrySwapPlayerTo(mirroredPosition, dx);
             pendingSwap = false;
         }
+    }
+
+    private bool ContainsPosition(Vector3 worldPosition)
+    {
+        float dx = worldPosition.x - transform.position.x;
+        float dy = Mathf.Abs(worldPosition.y - transform.position.y);
+        return Mathf.Abs(dx) <= horizontalRange && dy <= GetActiveVerticalHalfRange();
     }
 
     private void OnGestureChanged(GestureResult result)
@@ -182,6 +247,52 @@ public class MirrorController : MonoBehaviour
         return renderer;
     }
 
+    private void EnsureBlockerReference()
+    {
+        if (string.IsNullOrWhiteSpace(blockerObjectName))
+            blockerObjectName = "MirrorBlocker";
+
+        if (blockerCollider == mirrorCollider)
+            blockerCollider = null;
+
+        if (blockerCollider == null)
+        {
+            Transform existing = transform.Find(blockerObjectName);
+            if (existing != null)
+                blockerCollider = existing.GetComponent<BoxCollider2D>();
+        }
+
+        if (blockerCollider == null && enableInvisibleBarrier)
+        {
+            GameObject blocker = new GameObject(blockerObjectName);
+            blocker.transform.SetParent(transform, false);
+            blockerCollider = blocker.AddComponent<BoxCollider2D>();
+        }
+
+        if (blockerCollider == null)
+            return;
+
+        blockerCollider.isTrigger = false;
+        blockerCollider.usedByEffector = false;
+        blockerCollider.sharedMaterial = blockerMaterial;
+        blockerCollider.enabled = enableInvisibleBarrier;
+
+        GameObject blockerObject = blockerCollider.gameObject;
+        if (blockerObject.layer != gameObject.layer)
+            blockerObject.layer = gameObject.layer;
+    }
+
+    private void EnsureSwapBlockerLayers()
+    {
+        if (swapBlockerLayers.value != 0)
+            return;
+
+        int groundMask = LayerMask.GetMask("Ground");
+        swapBlockerLayers = groundMask != 0
+            ? groundMask
+            : Physics2D.DefaultRaycastLayers;
+    }
+
     private void RefreshZoneVisuals()
     {
         if (leftZoneRenderer == null || rightZoneRenderer == null)
@@ -212,12 +323,60 @@ public class MirrorController : MonoBehaviour
         ApplyZoneScale(rightZoneRenderer, worldWidth, zoneHeight, parentScaleX, parentScaleY);
     }
 
+    private void RefreshBlockerCollider()
+    {
+        if (blockerCollider == null)
+            return;
+
+        blockerCollider.enabled = enableInvisibleBarrier;
+        if (!enableInvisibleBarrier)
+            return;
+
+        Transform blockerTransform = blockerCollider.transform;
+        blockerTransform.localPosition = Vector3.zero;
+        blockerTransform.localRotation = Quaternion.identity;
+        blockerTransform.localScale = Vector3.one;
+
+        float parentScaleX = Mathf.Abs(transform.lossyScale.x);
+        float parentScaleY = Mathf.Abs(transform.lossyScale.y);
+        if (parentScaleX < 0.0001f) parentScaleX = 1f;
+        if (parentScaleY < 0.0001f) parentScaleY = 1f;
+
+        float worldWidth = GetBlockerThicknessWorld();
+        float worldHeight = GetBlockerHeightWorld();
+
+        blockerCollider.offset = Vector2.zero;
+        blockerCollider.size = new Vector2(
+            Mathf.Max(0.01f, worldWidth / parentScaleX),
+            Mathf.Max(0.01f, worldHeight / parentScaleY));
+    }
+
     private float GetActiveVerticalHalfRange()
     {
         if (verticalRange > 0f)
             return verticalRange;
 
         return GetMirrorHeightWorld() * 0.5f;
+    }
+
+    private float GetBlockerHeightWorld()
+    {
+        float halfRange = blockerVerticalRange > 0f
+            ? blockerVerticalRange
+            : GetActiveVerticalHalfRange();
+
+        return Mathf.Max(GetMirrorHeightWorld(), halfRange * 2f);
+    }
+
+    private float GetBlockerThicknessWorld()
+    {
+        if (blockerThickness > 0f)
+            return blockerThickness;
+
+        if (mirrorCollider != null)
+            return Mathf.Max(0.05f, mirrorCollider.bounds.size.x);
+
+        return 0.1f;
     }
 
     private void ApplyZoneStyle(SpriteRenderer zoneRenderer)
@@ -282,6 +441,9 @@ public class MirrorController : MonoBehaviour
 
         if (playerSprite == null)
             playerSprite = playerTransform.GetComponent<SpriteRenderer>();
+
+        if (playerCollider == null)
+            playerCollider = playerTransform.GetComponent<Collider2D>();
     }
 
     private bool HasValidPlayer()
@@ -309,11 +471,76 @@ public class MirrorController : MonoBehaviour
         cloneObject.SetActive(false);
     }
 
-    private void SwapPlayerTo(Vector3 mirroredPosition, float dx)
+    private bool IsSwapDestinationBlocked(Vector3 destination)
+    {
+        if (!cancelSwapIfBlocked)
+            return false;
+
+        if (playerCollider == null)
+            return false;
+
+        if (swapBlockerLayers.value == 0)
+            return false;
+
+        Bounds bounds = playerCollider.bounds;
+        float width = Mathf.Max(0.05f, bounds.size.x - swapValidationInset * 2f);
+        float height = Mathf.Max(0.05f, bounds.size.y - swapValidationInset * 2f);
+
+        Vector2 centerOffset = playerTransform != null
+            ? (Vector2)(playerCollider.bounds.center - playerTransform.position)
+            : playerCollider.offset;
+        Vector2 checkCenter = new Vector2(destination.x + centerOffset.x, destination.y + centerOffset.y);
+        Vector2 checkSize = new Vector2(width, height);
+
+        ContactFilter2D overlapFilter = new ContactFilter2D();
+        overlapFilter.SetLayerMask(swapBlockerLayers);
+        overlapFilter.useTriggers = false;
+
+        int hitCount = Physics2D.OverlapBox(checkCenter, checkSize, 0f, overlapFilter, swapOverlapHits);
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider2D hit = swapOverlapHits[i];
+            if (hit == null)
+                continue;
+
+            if (ShouldIgnoreSwapBlocker(hit))
+                continue;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool ShouldIgnoreSwapBlocker(Collider2D candidate)
+    {
+        if (candidate == null)
+            return true;
+
+        if (candidate == mirrorCollider || candidate == blockerCollider)
+            return true;
+
+        if (playerCollider != null && candidate == playerCollider)
+            return true;
+
+        if (playerTransform != null && candidate.transform.IsChildOf(playerTransform))
+            return true;
+
+        if (candidate.transform.IsChildOf(transform))
+            return true;
+
+        if (cloneObject != null && candidate.transform.IsChildOf(cloneObject.transform))
+            return true;
+
+        return false;
+    }
+
+    private void TrySwapPlayerTo(Vector3 mirroredPosition, float dx)
     {
         if (playerTransform == null)
             return;
 
+        Vector3 swapDestination = mirroredPosition;
         float minDistance = GetMinimumSwapDistance();
         float absDx = Mathf.Abs(dx);
         if (absDx < minDistance)
@@ -322,18 +549,21 @@ public class MirrorController : MonoBehaviour
             if (Mathf.Approximately(sign, 0f))
                 sign = playerSprite != null && playerSprite.flipX ? -1f : 1f;
 
-            mirroredPosition.x = transform.position.x - sign * minDistance;
+            swapDestination.x = transform.position.x - sign * minDistance;
         }
+
+        if (IsSwapDestinationBlocked(swapDestination))
+            return;
 
         if (playerRb != null)
         {
             Vector2 oldVelocity = playerRb.velocity;
-            playerRb.position = new Vector2(mirroredPosition.x, mirroredPosition.y);
+            playerRb.position = new Vector2(swapDestination.x, swapDestination.y);
             playerRb.velocity = new Vector2(-oldVelocity.x, oldVelocity.y);
         }
         else
         {
-            playerTransform.position = mirroredPosition;
+            playerTransform.position = swapDestination;
         }
     }
 
@@ -350,6 +580,9 @@ public class MirrorController : MonoBehaviour
         float mirrorHalfWidth = 0.05f;
         if (mirrorCollider != null)
             mirrorHalfWidth = mirrorCollider.bounds.extents.x;
+
+        if (blockerCollider != null && blockerCollider.enabled)
+            mirrorHalfWidth = Mathf.Max(mirrorHalfWidth, blockerCollider.bounds.extents.x);
 
         return playerHalfWidth + mirrorHalfWidth + 0.01f;
     }
