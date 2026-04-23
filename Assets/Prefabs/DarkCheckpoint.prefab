@@ -76,7 +76,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 6
-  m_Sprite: {fileID: 21300000, guid: 6fc61935c855d754b89e737da51c907f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 68f54e5fc0fa326458d3e18bdccce704, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -241,10 +241,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   requireCameraOccluded: 1
-  inactiveSprite: {fileID: 21300000, guid: 6fc61935c855d754b89e737da51c907f, type: 3}
-  activeLoopSprite: {fileID: 21300000, guid: 6fc61935c855d754b89e737da51c907f, type: 3}
+  inactiveSprite: {fileID: 21300000, guid: 68f54e5fc0fa326458d3e18bdccce704, type: 3}
+  activeLoopSprite: {fileID: -8187355101989356663, guid: 27a107940057e8743a507269b18a691a, type: 3}
   activateFrames:
-  - {fileID: 21300000, guid: 6fc61935c855d754b89e737da51c907f, type: 3}
+  - {fileID: -4184586705055241392, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -8500414901909799154, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: 6600226083578749612, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -1756668925505998823, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -6967806255545003447, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: 7127308139407018228, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: 7200103426585487352, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -541522737943073818, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -6807852688622114252, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: 6265099083614238658, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: 5394087461009959248, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -5774344071365144885, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -3028704889039134381, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: 2155129991389349994, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -776465599013193395, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -4370090337520481786, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -1711207211420887195, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -5278763548615814542, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -8342746687626132780, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -8069447969666600582, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -4297091758800071936, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -2206044501344538863, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -991047635057653830, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: -5557025883363775598, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: 5095064189951559428, guid: 32726eef68207514bbede9c6509379b5, type: 3}
+  - {fileID: 6851063822677676398, guid: 32726eef68207514bbede9c6509379b5, type: 3}
   activateFps: 12
   activateSound: {fileID: 0}
   activateSoundVolume: 1

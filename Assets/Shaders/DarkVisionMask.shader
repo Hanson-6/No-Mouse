@@ -5,6 +5,9 @@ Shader "Hidden/DarkVisionMask"
         _CenterWorld ("Center World", Vector) = (0, 0, 0, 0)
         _RadiusWorld ("Radius World", Float) = 2
         _SoftnessWorld ("Softness World", Float) = 0.05
+        _LampCount ("Lamp Count", Float) = 0
+        _LampCentersWorld ("Lamp Centers", Vector) = (0,0,0,0)
+        _LampRadiiSoftness ("Lamp Radii Softness", Vector) = (0,0,0,0)
         _BlackColor ("BlackColor", Color) = (0, 0, 0, 1)
         _DarkFade ("DarkFade", Range(0, 1)) = 1
     }
@@ -22,11 +25,15 @@ Shader "Hidden/DarkVisionMask"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma target 3.0
             #include "UnityCG.cginc"
 
             float4 _CenterWorld;
             float _RadiusWorld;
             float _SoftnessWorld;
+            float _LampCount;
+            float4 _LampCentersWorld[16];
+            float4 _LampRadiiSoftness[16];
             float4 _BlackColor;
             float _DarkFade;
 
@@ -58,7 +65,23 @@ Shader "Hidden/DarkVisionMask"
                 float2 delta = i.worldPos - _CenterWorld.xy;
                 float dist = length(delta);
                 float radius = max(_RadiusWorld, 0.0001);
-                float outsideMask = step(radius, dist);
+                float softness = max(_SoftnessWorld, 0.0001);
+                float outsideMask = smoothstep(radius - softness, radius + softness, dist);
+
+                int lampCount = (int)clamp(_LampCount, 0.0, 16.0);
+                [loop]
+                for (int idx = 0; idx < 16; idx++)
+                {
+                    if (idx >= lampCount)
+                        break;
+
+                    float2 lampDelta = i.worldPos - _LampCentersWorld[idx].xy;
+                    float lampDist = length(lampDelta);
+                    float lampRadius = max(_LampRadiiSoftness[idx].x, 0.0001);
+                    float lampSoftness = max(_LampRadiiSoftness[idx].y, 0.0001);
+                    float lampOutside = smoothstep(lampRadius - lampSoftness, lampRadius + lampSoftness, lampDist);
+                    outsideMask *= lampOutside;
+                }
 
                 float alpha = saturate(_BlackColor.a * outsideMask * saturate(_DarkFade));
                 return fixed4(_BlackColor.rgb, alpha);

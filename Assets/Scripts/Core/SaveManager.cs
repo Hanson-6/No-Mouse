@@ -500,6 +500,8 @@ public static class SaveManager
         AddTypedSnapshotEntries<PushableBox>(scene, entries);
         AddTypedSnapshotEntries<SwitchDoor>(scene, entries);
         AddTypedSnapshotEntries<ButtonController>(scene, entries);
+        AddTypedSnapshotEntries<FallingBoulder>(scene, entries);
+        AddTypedSnapshotEntries<BreakableDoor>(scene, entries);
         AddTypedSnapshotEntries<Checkpoint>(scene, entries);
         AddTypedSnapshotEntries<DarkCheckpoint>(scene, entries);
         AddTypedSnapshotEntries<DarkVisionController>(scene, entries);

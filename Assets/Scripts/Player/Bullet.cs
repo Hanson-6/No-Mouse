@@ -6,6 +6,8 @@ using UnityEngine;
 ///
 /// 设计思路（方案 B — 黑名单）：
 ///   碰到 Enemy      → enemy.Die() + 销毁自身（一发一个，不穿透）
+///   碰到 BreakableDoor → 打碎门 + 销毁自身
+///   碰到 BulletPassThrough → 忽略（子弹继续飞）
 ///   碰到 Player     → 忽略（自己发射的子弹不应该伤害自己）
 ///   碰到另一个 Bullet → 忽略（多发子弹不互相抵消）
 ///   碰到其他任何东西  → 销毁自身（地面、墙壁、箱子、移动平台、锯子、门等）
@@ -214,8 +216,21 @@ public class Bullet : MonoBehaviour
         // 忽略其他 Bullet（多发子弹不互相抵消）
         if (other.GetComponent<Bullet>() != null) return;
 
+        // 可被子弹打碎的门：优先处理
+        BreakableDoor breakableDoor = GetComponentInSelfOrParent<BreakableDoor>(other);
+        if (breakableDoor != null)
+        {
+            breakableDoor.Break();
+            Destroy(gameObject);
+            return;
+        }
+
+        // 可被子弹射穿的物体：直接忽略碰撞
+        if (GetComponentInSelfOrParent<BulletPassThrough>(other) != null)
+            return;
+
         // 击中 Enemy → 杀死敌人 + 销毁自身
-        var enemy = other.GetComponent<Enemy>();
+        Enemy enemy = GetComponentInSelfOrParent<Enemy>(other);
         if (enemy != null)
         {
             enemy.Die();
@@ -225,5 +240,16 @@ public class Bullet : MonoBehaviour
 
         // 击中其他任何东西（地形、箱子、平台、锯子、门等）→ 销毁自身
         Destroy(gameObject);
+    }
+
+    static T GetComponentInSelfOrParent<T>(Collider2D other) where T : Component
+    {
+        if (other == null) return null;
+
+        T component = other.GetComponent<T>();
+        if (component != null)
+            return component;
+
+        return other.GetComponentInParent<T>();
     }
 }

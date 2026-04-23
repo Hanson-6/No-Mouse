@@ -1,9 +1,21 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 
 [DefaultExecutionOrder(100)]
 public class DarkVisionController : MonoBehaviour, ISnapshotSaveable
 {
+    private const int ShaderLampMax = 16;
+
+    private static readonly int CenterWorldId = Shader.PropertyToID("_CenterWorld");
+    private static readonly int RadiusWorldId = Shader.PropertyToID("_RadiusWorld");
+    private static readonly int SoftnessWorldId = Shader.PropertyToID("_SoftnessWorld");
+    private static readonly int BlackColorId = Shader.PropertyToID("_BlackColor");
+    private static readonly int DarkFadeId = Shader.PropertyToID("_DarkFade");
+    private static readonly int LampCountId = Shader.PropertyToID("_LampCount");
+    private static readonly int LampCentersWorldId = Shader.PropertyToID("_LampCentersWorld");
+    private static readonly int LampRadiiSoftnessId = Shader.PropertyToID("_LampRadiiSoftness");
+
     [Header("Runtime")]
     [SerializeField] private Transform player;
     [SerializeField] private Camera targetCamera;
@@ -19,6 +31,9 @@ public class DarkVisionController : MonoBehaviour, ISnapshotSaveable
     [SerializeField] private int sortingOrder = 5000;
     [SerializeField, Min(1f)] private float viewportOverscan = 1.04f;
 
+    [Header("Lamp Vision")]
+    [SerializeField, Range(0, ShaderLampMax)] private int maxLampCount = ShaderLampMax;
+
     private Material runtimeMaterial;
     private GameObject overlayRoot;
     private Transform overlayTransform;
@@ -27,6 +42,9 @@ public class DarkVisionController : MonoBehaviour, ISnapshotSaveable
 
     private float currentFade;
     private bool wantedDark;
+    private readonly Vector4[] lampCentersBuffer = new Vector4[ShaderLampMax];
+    private readonly Vector4[] lampRadiiSoftnessBuffer = new Vector4[ShaderLampMax];
+
     [System.Serializable]
     private class SnapshotState
     {
@@ -189,11 +207,38 @@ public class DarkVisionController : MonoBehaviour, ISnapshotSaveable
 
         Vector3 playerFocusWorld = GetPlayerFocusWorldPosition();
 
-        runtimeMaterial.SetVector("_CenterWorld", new Vector4(playerFocusWorld.x, playerFocusWorld.y, 0f, 0f));
-        runtimeMaterial.SetFloat("_RadiusWorld", Mathf.Max(0.01f, visibleRadius));
-        runtimeMaterial.SetFloat("_SoftnessWorld", Mathf.Max(0.0001f, edgeSoftness));
-        runtimeMaterial.SetColor("_BlackColor", blackoutColor);
-        runtimeMaterial.SetFloat("_DarkFade", Mathf.Clamp01(fade));
+        runtimeMaterial.SetVector(CenterWorldId, new Vector4(playerFocusWorld.x, playerFocusWorld.y, 0f, 0f));
+        runtimeMaterial.SetFloat(RadiusWorldId, Mathf.Max(0.01f, visibleRadius));
+        runtimeMaterial.SetFloat(SoftnessWorldId, Mathf.Max(0.0001f, edgeSoftness));
+        runtimeMaterial.SetColor(BlackColorId, blackoutColor);
+        runtimeMaterial.SetFloat(DarkFadeId, Mathf.Clamp01(fade));
+
+        ApplyLampProperties();
+    }
+
+    private void ApplyLampProperties()
+    {
+        int maxCount = Mathf.Clamp(maxLampCount, 0, ShaderLampMax);
+        int lampCount = 0;
+
+        IReadOnlyList<DarkVisionLamp> lamps = DarkVisionLamp.ActiveLamps;
+        int sourceCount = lamps.Count;
+
+        for (int i = 0; i < sourceCount && lampCount < maxCount; i++)
+        {
+            DarkVisionLamp lamp = lamps[i];
+            if (lamp == null || !lamp.isActiveAndEnabled)
+                continue;
+
+            Vector2 center = lamp.GetWorldCenter();
+            lampCentersBuffer[lampCount] = new Vector4(center.x, center.y, 0f, 0f);
+            lampRadiiSoftnessBuffer[lampCount] = new Vector4(lamp.VisibleRadius, lamp.EdgeSoftness, 0f, 0f);
+            lampCount++;
+        }
+
+        runtimeMaterial.SetFloat(LampCountId, lampCount);
+        runtimeMaterial.SetVectorArray(LampCentersWorldId, lampCentersBuffer);
+        runtimeMaterial.SetVectorArray(LampRadiiSoftnessId, lampRadiiSoftnessBuffer);
     }
 
     private static Sprite GetFullscreenSprite()
