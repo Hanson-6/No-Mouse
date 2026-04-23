@@ -13,8 +13,8 @@ public class DarkVisionController : MonoBehaviour, ISnapshotSaveable
     private static readonly int BlackColorId = Shader.PropertyToID("_BlackColor");
     private static readonly int DarkFadeId = Shader.PropertyToID("_DarkFade");
     private static readonly int LampCountId = Shader.PropertyToID("_LampCount");
-    private static readonly int LampCentersWorldId = Shader.PropertyToID("_LampCentersWorld");
-    private static readonly int LampRadiiSoftnessId = Shader.PropertyToID("_LampRadiiSoftness");
+    private static readonly int LampCentersWorldId = Shader.PropertyToID("_LampCentersWorldArr");
+    private static readonly int LampRadiiSoftnessId = Shader.PropertyToID("_LampRadiiSoftnessArr");
 
     [Header("Runtime")]
     [SerializeField] private Transform player;

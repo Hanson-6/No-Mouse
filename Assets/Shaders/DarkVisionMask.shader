@@ -6,8 +6,6 @@ Shader "Hidden/DarkVisionMask"
         _RadiusWorld ("Radius World", Float) = 2
         _SoftnessWorld ("Softness World", Float) = 0.05
         _LampCount ("Lamp Count", Float) = 0
-        _LampCentersWorld ("Lamp Centers", Vector) = (0,0,0,0)
-        _LampRadiiSoftness ("Lamp Radii Softness", Vector) = (0,0,0,0)
         _BlackColor ("BlackColor", Color) = (0, 0, 0, 1)
         _DarkFade ("DarkFade", Range(0, 1)) = 1
     }
@@ -32,8 +30,8 @@ Shader "Hidden/DarkVisionMask"
             float _RadiusWorld;
             float _SoftnessWorld;
             float _LampCount;
-            float4 _LampCentersWorld[16];
-            float4 _LampRadiiSoftness[16];
+            float4 _LampCentersWorldArr[16];
+            float4 _LampRadiiSoftnessArr[16];
             float4 _BlackColor;
             float _DarkFade;
 
@@ -75,10 +73,10 @@ Shader "Hidden/DarkVisionMask"
                     if (idx >= lampCount)
                         break;
 
-                    float2 lampDelta = i.worldPos - _LampCentersWorld[idx].xy;
+                    float2 lampDelta = i.worldPos - _LampCentersWorldArr[idx].xy;
                     float lampDist = length(lampDelta);
-                    float lampRadius = max(_LampRadiiSoftness[idx].x, 0.0001);
-                    float lampSoftness = max(_LampRadiiSoftness[idx].y, 0.0001);
+                    float lampRadius = max(_LampRadiiSoftnessArr[idx].x, 0.0001);
+                    float lampSoftness = max(_LampRadiiSoftnessArr[idx].y, 0.0001);
                     float lampOutside = smoothstep(lampRadius - lampSoftness, lampRadius + lampSoftness, lampDist);
                     outsideMask *= lampOutside;
                 }
