@@ -3,7 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(BoxCollider2D))]
 [RequireComponent(typeof(SpriteRenderer))]
-public sealed class FallingBoulder : MonoBehaviour, ISnapshotSaveable
+public sealed class FallingBoulder : MonoBehaviour, ISnapshotSaveable, IButtonActivatable
 {
     [Header("Movement")]
     [SerializeField, Min(0f)] private float gravityScale = 5f;
@@ -21,6 +21,7 @@ public sealed class FallingBoulder : MonoBehaviour, ISnapshotSaveable
     private float frameTimer;
     private int frameIndex;
     private bool wasMovingDownward;
+    private bool isReleased;
 
     [System.Serializable]
     private class SnapshotState
@@ -36,6 +37,7 @@ public sealed class FallingBoulder : MonoBehaviour, ISnapshotSaveable
         public int frameIndex;
         public float frameTimer;
         public bool wasMovingDownward;
+        public bool isReleased;
     }
 
     void Awake()
@@ -45,10 +47,12 @@ public sealed class FallingBoulder : MonoBehaviour, ISnapshotSaveable
         spriteRenderer = GetComponent<SpriteRenderer>();
 
         boxCollider.isTrigger = false;
-        rb.bodyType = RigidbodyType2D.Dynamic;
+        // Start as Kinematic so physics cannot move it at all until released
+        rb.bodyType = RigidbodyType2D.Kinematic;
         rb.gravityScale = gravityScale;
-        rb.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation;
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        isReleased = false;
     }
 
     void OnValidate()
@@ -66,10 +70,33 @@ public sealed class FallingBoulder : MonoBehaviour, ISnapshotSaveable
             Rigidbody2D body = GetComponent<Rigidbody2D>();
             if (body != null)
             {
-                body.bodyType = RigidbodyType2D.Dynamic;
+                body.bodyType = RigidbodyType2D.Kinematic;
                 body.gravityScale = gravityScale;
-                body.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation;
+                body.constraints = RigidbodyConstraints2D.FreezeRotation;
             }
+        }
+    }
+
+    // --- IButtonActivatable ---
+
+    /// <summary>Called by ButtonController when a PressureButton is pressed.</summary>
+    public void Activate() => Release();
+
+    /// <summary>ButtonController released — boulder keeps falling once released.</summary>
+    public void Deactivate() { /* intentionally no re-freeze */ }
+
+    // --- Release logic ---
+
+    /// <summary>Switch to Dynamic so gravity takes over.</summary>
+    private void Release()
+    {
+        if (isReleased) return;
+        isReleased = true;
+        if (rb != null)
+        {
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            rb.gravityScale = gravityScale;
+            rb.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation;
         }
     }
 
@@ -162,7 +189,8 @@ public sealed class FallingBoulder : MonoBehaviour, ISnapshotSaveable
             constraints = rb != null ? (int)rb.constraints : 0,
             frameIndex = frameIndex,
             frameTimer = frameTimer,
-            wasMovingDownward = wasMovingDownward
+            wasMovingDownward = wasMovingDownward,
+            isReleased = isReleased
         };
 
         return JsonUtility.ToJson(snapshot);
@@ -177,12 +205,16 @@ public sealed class FallingBoulder : MonoBehaviour, ISnapshotSaveable
         gameObject.SetActive(snapshot.activeSelf);
         transform.position = new Vector3(snapshot.positionX, snapshot.positionY, snapshot.positionZ);
 
+        isReleased = snapshot.isReleased;
+
         if (rb != null)
         {
             rb.velocity = new Vector2(snapshot.velocityX, snapshot.velocityY);
             rb.simulated = snapshot.simulated;
             rb.constraints = (RigidbodyConstraints2D)snapshot.constraints;
             rb.gravityScale = gravityScale;
+            // Restore body type based on whether it was released
+            rb.bodyType = isReleased ? RigidbodyType2D.Dynamic : RigidbodyType2D.Kinematic;
         }
 
         frameIndex = Mathf.Max(0, snapshot.frameIndex);
