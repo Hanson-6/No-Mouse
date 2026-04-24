@@ -12237,6 +12237,10 @@ PrefabInstance:
       value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 251437416421560504, guid: 3b61a0796161f9940b70669a95997c6c, type: 3}
+      propertyPath: switchCooldown
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 251437416421560504, guid: 3b61a0796161f9940b70669a95997c6c, type: 3}
       propertyPath: horizontalRange
       value: 20
       objectReference: {fileID: 0}

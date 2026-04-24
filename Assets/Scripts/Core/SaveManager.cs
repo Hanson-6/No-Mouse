@@ -405,6 +405,7 @@ public static class SaveManager
                 scenePath = scene.path,
                 lives = GameData.Lives,
                 score = GameData.Score,
+                timer = GameData.CurrentTimer,
                 hasCheckpoint = GameData.TryGetCheckpoint(scene.buildIndex, scene.path, out Vector3 checkpointPos),
                 checkpointX = checkpointPos.x,
                 checkpointY = checkpointPos.y,
@@ -761,6 +762,7 @@ public static class SaveManager
         GameData.CurrentLevel = data.currentLevel;
         GameData.Lives = data.lives;
         GameData.Score = data.score;
+        GameData.CurrentTimer = data.timer;
 
         if (data.hasCheckpoint)
         {
@@ -877,6 +879,7 @@ public static class SaveManager
         public string scenePath;
         public int lives;
         public int score;
+        public float timer;
         public bool hasCheckpoint;
         public float checkpointX;
         public float checkpointY;

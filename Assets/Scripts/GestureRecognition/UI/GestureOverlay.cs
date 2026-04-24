@@ -35,10 +35,6 @@ namespace GestureRecognition.UI
         [Tooltip("Size of each landmark dot in pixels.")]
         private float _dotSize = 8f;
 
-        [SerializeField]
-        [Tooltip("Show connection lines between landmarks.")]
-        private bool _showConnections = true;
-
         // -----------------------------------------------------------------
         // State
         // -----------------------------------------------------------------

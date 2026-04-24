@@ -34,6 +34,9 @@ public class MirrorController : MonoBehaviour
     [SerializeField] private LayerMask swapBlockerLayers;
     [SerializeField, Min(0f)] private float swapValidationInset = 0.02f;
 
+    [Header("Cooldown")]
+    [SerializeField, Min(0f)] private float switchCooldown = 2f;
+
     private BoxCollider2D mirrorCollider;
     private Transform playerTransform;
     private PlayerController playerController;
@@ -47,6 +50,7 @@ public class MirrorController : MonoBehaviour
 
     private bool pendingSwap;
     private bool playerInsideZone;
+    private float lastSwitchTime = -Mathf.Infinity;
 
     private static readonly List<MirrorController> activeMirrors = new List<MirrorController>();
     private static int activeZoneCount;
@@ -207,7 +211,13 @@ public class MirrorController : MonoBehaviour
     private void OnGestureChanged(GestureResult result)
     {
         if (result.Type == GestureType.Switch)
-            pendingSwap = true;
+        {
+            if (Time.time - lastSwitchTime >= switchCooldown)
+            {
+                pendingSwap = true;
+                lastSwitchTime = Time.time;
+            }
+        }
     }
 
     private void EnsureZoneReferences()

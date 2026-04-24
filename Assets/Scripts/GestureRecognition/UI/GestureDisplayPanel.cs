@@ -151,7 +151,7 @@ namespace GestureRecognition.UI
         private Text _scoreLabel;
 
         [SerializeField]
-        private Text _healthLabel;
+        private Text _timerLabel;
 
         // -----------------------------------------------------------------
         // State
@@ -182,16 +182,23 @@ namespace GestureRecognition.UI
         /// Updates the game statistics displayed in the bottom bar.
         /// (Placeholder interface for future protocol)
         /// </summary>
-        public void UpdateGameStats(string floorName, int score, int health)
+        public void UpdateGameStats(string floorName, int score, float timer)
         {
             if (_floorLabel != null)
-                _floorLabel.text = string.IsNullOrEmpty(floorName) ? "" : $"Floor: {floorName}";
+                _floorLabel.text = string.IsNullOrEmpty(floorName) ? string.Empty : $"STAGE  {floorName}";
             
             if (_scoreLabel != null)
-                _scoreLabel.text = $"Score: {score}";
+                _scoreLabel.text = $"SCORE  {score:N0}";
 
-            if (_healthLabel != null)
-                _healthLabel.text = $"HP: {health}";
+            if (_timerLabel != null)
+                _timerLabel.text = $"TIME  {FormatTime(timer)}";
+        }
+
+        private static string FormatTime(float timer)
+        {
+            int minutes = Mathf.FloorToInt(timer / 60f);
+            int seconds = Mathf.FloorToInt(timer % 60f);
+            return $"{minutes:00}:{seconds:00}";
         }
 
         /// <summary>Gets or sets the current display mode.</summary>
@@ -801,40 +808,45 @@ namespace GestureRecognition.UI
             _labelArea.sizeDelta = new Vector2(0f, _labelBarHeight);
 
             Image labelBg = GetOrAddComponent<Image>(_labelArea.gameObject);
-            labelBg.color = _panelFrameSprite != null ? Color.clear : new Color(0f, 0f, 0f, 0.6f);
+            labelBg.color = _panelFrameSprite != null ? Color.clear : new Color(0f, 0f, 0f, 0.72f);
+
+            // Disable legacy HealthLabel if present
+            Transform legacyHealth = _labelArea.Find("HealthLabel");
+            if (legacyHealth != null)
+                legacyHealth.gameObject.SetActive(false);
 
             EnsureBottomBarLabel(
                 ref _scoreLabel,
                 "ScoreLabel",
                 new Vector2(0f, 0.5f),
                 new Vector2(0.5f, 1f),
-                Vector2.zero,
-                Vector2.zero,
-                Color.yellow,
+                new Vector2(6f, -1f),
+                new Vector2(0f, 0f),
+                new Color(1f, 0.95f, 0.45f, 1f),
                 TextAnchor.MiddleLeft,
-                "Score: 0");
+                "SCORE  0");
 
             EnsureBottomBarLabel(
                 ref _floorLabel,
                 "FloorLabel",
                 new Vector2(0f, 0f),
                 new Vector2(0.5f, 0.5f),
-                Vector2.zero,
-                Vector2.zero,
-                Color.yellow,
+                new Vector2(6f, 0f),
+                new Vector2(0f, 1f),
+                new Color(0.84f, 0.97f, 1f, 1f),
                 TextAnchor.MiddleLeft,
-                "Floor: 1");
+                "STAGE  --");
 
             EnsureBottomBarLabel(
-                ref _healthLabel,
-                "HealthLabel",
+                ref _timerLabel,
+                "TimerLabel",
                 new Vector2(0.5f, 0f),
                 new Vector2(1f, 1f),
-                Vector2.zero,
-                Vector2.zero,
-                Color.green,
+                new Vector2(0f, 0f),
+                new Vector2(-6f, 0f),
+                new Color(0.45f, 1f, 0.62f, 1f),
                 TextAnchor.MiddleRight,
-                "HP: 100");
+                "TIME  00:00");
         }
 
         private void EnsureBottomBarLabel(
@@ -889,13 +901,14 @@ namespace GestureRecognition.UI
             text.alignment = alignment;
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.fontStyle = FontStyle.Bold;
         }
 
         private void ApplyBottomBarFontSize()
         {
             int fontSize = GetScaledLabelFontSize();
             ApplyLabelFontSize(_floorLabel, fontSize);
-            ApplyLabelFontSize(_healthLabel, fontSize);
+            ApplyLabelFontSize(_timerLabel, fontSize);
             ApplyLabelFontSize(_scoreLabel, fontSize);
 
             if (_labelArea != null)

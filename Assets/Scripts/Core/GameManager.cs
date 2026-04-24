@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour
 
     private Vector3 initialRespawnPosition;
     private bool hasInitialRespawnPosition;
+    private GestureDisplayPanel gesturePanel;
 
     void Awake()
     {
@@ -40,6 +41,12 @@ public class GameManager : MonoBehaviour
         EnsureGestureGameplayBindings();
     }
 
+    void Update()
+    {
+        GameData.CurrentTimer += Time.deltaTime;
+        UpdateGesturePanelStats();
+    }
+
     void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -52,10 +59,24 @@ public class GameManager : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        gesturePanel = null;
         CacheInitialRespawnPoint();
         ApplyCheckpointRespawnIfAvailable();
         MovePlayerToRespawnIfNeeded();
         EnsureGestureGameplayBindings();
+    }
+
+    private void UpdateGesturePanelStats()
+    {
+        if (gesturePanel == null)
+            gesturePanel = FindObjectOfType<GestureDisplayPanel>(true);
+
+        if (gesturePanel == null)
+            return;
+
+        Scene activeScene = SceneManager.GetActiveScene();
+        string floorName = activeScene.IsValid() ? activeScene.name : string.Empty;
+        gesturePanel.UpdateGameStats(floorName, GameData.Score, GameData.CurrentTimer);
     }
 
     private void CacheInitialRespawnPoint()
@@ -149,8 +170,13 @@ public class GameManager : MonoBehaviour
         }
 
         var panel = FindObjectOfType<GestureDisplayPanel>(true);
-        if (panel != null && !panel.gameObject.activeSelf)
-            panel.Show();
+        if (panel != null)
+        {
+            gesturePanel = panel;
+            if (!panel.gameObject.activeSelf)
+                panel.Show();
+            UpdateGesturePanelStats();
+        }
     }
 
     public Vector3 GetRespawnPoint()
@@ -188,6 +214,8 @@ public class GameManager : MonoBehaviour
 
     public void LoadNextLevel()
     {
+        GameData.CurrentTimer = 0f;
+        UpdateGesturePanelStats();
         int next = SceneManager.GetActiveScene().buildIndex + 1;
         if (next < SceneManager.sceneCountInBuildSettings)
             SceneManager.LoadScene(next);
