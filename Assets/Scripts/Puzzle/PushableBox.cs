@@ -90,6 +90,8 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     private float carryHorizontalVelocity;
     private bool carryVelocityPending;
     private float stepUpCooldownTimer;
+    // Blocks re-attaching to a platform immediately after being stopped by a wall.
+    private float wallBlockedTimer;
 
     [System.Serializable]
     private class SnapshotState
@@ -137,6 +139,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
         carryHorizontalVelocity = 0f;
         carryVelocityPending = false;
         stepUpCooldownTimer = 0f;
+        wallBlockedTimer = 0f;
     }
 
     void OnEnable()  => _allBoxes.Add(this);
@@ -236,6 +239,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     /// </summary>
     public void SetCurrentPlatform(MovingPlatform platform)
     {
+        if (wallBlockedTimer > 0f) return;
         currentPlatform = platform;
     }
 
@@ -263,6 +267,8 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
     {
         if (stepUpCooldownTimer > 0f)
             stepUpCooldownTimer -= Time.fixedDeltaTime;
+        if (wallBlockedTimer > 0f)
+            wallBlockedTimer -= Time.fixedDeltaTime;
 
         if (isLinked && playerRb != null)
         {
@@ -345,6 +351,12 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
         else
         {
             // ── 未连接状态 ────────────────────────────────────────────────
+            // Physics query to detect platform BEFORE collision callbacks fire.
+            // OnCollisionStay2D runs after FixedUpdate, so on the first frame
+            // currentPlatform is always null via the event path alone.
+            if (currentPlatform == null && wallBlockedTimer <= 0f)
+                currentPlatform = DetectPlatformBelow();
+
             if (currentPlatform != null)
             {
                 // 在 MovingPlatform 上：切换为 Kinematic
@@ -356,17 +368,31 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
                     rb.velocity = Vector2.zero;
                     rb.bodyType = RigidbodyType2D.Kinematic;
                     // Must enable full kinematic contacts so that
-                    // OnCollisionExit2D still fires between this
-                    // Kinematic box and the Static platform collider
-                    // (MovingPlatform has no Rigidbody2D).
+                    // OnCollisionExit2D still fires reliably while
+                    // this box follows a moving platform.
                     rb.useFullKinematicContacts = true;
+                    rb.constraints = RigidbodyConstraints2D.FreezeRotation;
                 }
 
                 Vector2 platformDelta = currentPlatform.CurrentVelocity * Time.fixedDeltaTime;
-                rb.MovePosition(rb.position + platformDelta);
 
-                carryHorizontalVelocity = currentPlatform.CurrentVelocityX;
-                carryVelocityPending = true;
+                if (IsBlockedByWall(platformDelta.x))
+                {
+                    // Wall contact: stop following platform and fall freely.
+                    wallBlockedTimer = 0.3f;
+                    currentPlatform = null;
+                    rb.bodyType = RigidbodyType2D.Dynamic;
+                    rb.useFullKinematicContacts = false;
+                    rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+                    rb.velocity = Vector2.zero;
+                    carryVelocityPending = false;
+                }
+                else
+                {
+                    rb.MovePosition(rb.position + platformDelta);
+                    carryHorizontalVelocity = currentPlatform.CurrentVelocityX;
+                    carryVelocityPending = true;
+                }
             }
             else
             {
@@ -403,6 +429,66 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
                 }
             }
         }
+    }
+
+    private bool IsBlockedByWall(float moveX)
+    {
+        if (Mathf.Abs(moveX) < 0.001f || boxCollider == null || groundLayer == 0)
+            return false;
+
+        Bounds bounds = boxCollider.bounds;
+        Vector2 dir = new Vector2(Mathf.Sign(moveX), 0f);
+        float castDist = Mathf.Abs(moveX) + 0.05f;
+        float inset = 0.04f;
+
+        // Cast from the leading edge at three heights (top / mid / bottom).
+        float edgeX = dir.x > 0f ? bounds.max.x + 0.01f : bounds.min.x - 0.01f;
+        Vector2[] origins = {
+            new Vector2(edgeX, bounds.max.y - inset),
+            new Vector2(edgeX, bounds.center.y),
+            new Vector2(edgeX, bounds.min.y + inset),
+        };
+
+        foreach (var origin in origins)
+        {
+            RaycastHit2D[] hits = Physics2D.RaycastAll(origin, dir, castDist, groundLayer);
+            foreach (var hit in hits)
+            {
+                if (hit.collider == boxCollider) continue;
+                if (currentPlatform != null &&
+                    hit.collider.gameObject == currentPlatform.gameObject) continue;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private MovingPlatform DetectPlatformBelow()
+    {
+        if (boxCollider == null) return null;
+
+        Bounds bounds = boxCollider.bounds;
+        float probeY    = bounds.min.y + 0.01f;
+        float probeLen  = 0.12f;
+        float inset     = 0.05f;
+
+        Vector2[] origins = {
+            new Vector2(bounds.min.x + inset,  probeY),
+            new Vector2(bounds.center.x,        probeY),
+            new Vector2(bounds.max.x - inset,   probeY),
+        };
+
+        foreach (var origin in origins)
+        {
+            RaycastHit2D[] hits = Physics2D.RaycastAll(origin, Vector2.down, probeLen);
+            foreach (var hit in hits)
+            {
+                if (hit.collider == boxCollider) continue;
+                MovingPlatform mp = hit.collider.GetComponent<MovingPlatform>();
+                if (mp != null) return mp;
+            }
+        }
+        return null;
     }
 
     private bool IsGroundedForConstraint()
@@ -536,6 +622,7 @@ public class PushableBox : MonoBehaviour, ISnapshotSaveable
 
         // Clear platform reference — will be re-established by collision events
         currentPlatform = null;
+        wallBlockedTimer = 0f;
 
         carryHorizontalVelocity = snapshot.velocityX;
         carryVelocityPending = false;

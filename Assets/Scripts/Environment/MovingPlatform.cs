@@ -32,7 +32,7 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
     private PatrolState state;
     private bool goingToB;   // only used during Patrolling
     private float waitTimer;
-    private Vector3 lastPosition;
+    private Rigidbody2D rb;
     private bool activated;  // used only in buttonControlled mode
 
     public Vector2 CurrentVelocity { get; private set; }
@@ -51,6 +51,21 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         public bool activated;
     }
 
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        if (rb == null)
+            rb = gameObject.AddComponent<Rigidbody2D>();
+
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.simulated = true;
+        rb.gravityScale = 0f;
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        rb.useFullKinematicContacts = true;
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+    }
+
     void Start()
     {
         // Default points if not set in Inspector
@@ -63,7 +78,7 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         if (buttonControlled)
         {
             // Button-controlled mode: start at pointA, wait for Activate()
-            transform.position = new Vector3(pointA.x, pointA.y, transform.position.z);
+            SetPlatformPositionImmediate(pointA);
             state = PatrolState.Patrolling;
             goingToB = false;
             activated = false;
@@ -72,12 +87,12 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         else
         {
             Vector2 startPoint = startAtPointB ? pointB : pointA;
-            float distToStart = Vector2.Distance(transform.position, startPoint);
+            float distToStart = Vector2.Distance(GetPlatformPosition(), startPoint);
 
             if (distToStart < 0.05f)
             {
                 // Already at the start point — go straight into patrol
-                transform.position = new Vector3(startPoint.x, startPoint.y, transform.position.z);
+                SetPlatformPositionImmediate(startPoint);
                 state = PatrolState.Patrolling;
                 goingToB = !startAtPointB; // from A→go to B, from B→go to A
                 waitTimer = waitTime;      // initial pause
@@ -90,33 +105,34 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
             }
         }
 
-        lastPosition = transform.position;
         CurrentVelocity = Vector2.zero;
     }
 
-    void Update()
+    void FixedUpdate()
     {
+        float dt = Time.fixedDeltaTime;
+        Vector2 currentPosition = GetPlatformPosition();
+        Vector2 nextPosition;
+
         if (buttonControlled)
         {
-            UpdateButtonControlled();
+            nextPosition = UpdateButtonControlled(currentPosition, dt);
         }
         else
         {
-            UpdatePatrol();
+            nextPosition = UpdatePatrol(currentPosition, dt);
         }
 
-        float dt = Time.deltaTime;
         if (dt > 0f)
         {
-            Vector3 delta = transform.position - lastPosition;
-            CurrentVelocity = new Vector2(delta.x / dt, delta.y / dt);
+            CurrentVelocity = (nextPosition - currentPosition) / dt;
         }
         else
         {
             CurrentVelocity = Vector2.zero;
         }
 
-        lastPosition = transform.position;
+        MovePlatformTo(nextPosition);
     }
 
     // --- IButtonActivatable ---
@@ -133,50 +149,75 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         activated = false;
     }
 
-    private void UpdateButtonControlled()
+    private Vector2 UpdateButtonControlled(Vector2 currentPosition, float dt)
     {
         Vector2 target = activated ? pointB : pointA;
-        if (Vector2.Distance(transform.position, target) < 0.01f)
+        if (Vector2.Distance(currentPosition, target) < 0.01f)
         {
-            transform.position = new Vector3(target.x, target.y, transform.position.z);
-            return;
+            return target;
         }
-        transform.position = Vector2.MoveTowards(transform.position, target, speed * Time.deltaTime);
+
+        return Vector2.MoveTowards(currentPosition, target, speed * dt);
     }
 
-    private void UpdatePatrol()
+    private Vector2 UpdatePatrol(Vector2 currentPosition, float dt)
     {
         if (waitTimer > 0f)
         {
-            waitTimer -= Time.deltaTime;
-            return;
+            waitTimer -= dt;
+            return currentPosition;
         }
 
         if (state == PatrolState.MovingToStart)
         {
             Vector2 startPoint = startAtPointB ? pointB : pointA;
-            transform.position = Vector2.MoveTowards(transform.position, startPoint, speed * Time.deltaTime);
+            Vector2 nextPosition = Vector2.MoveTowards(currentPosition, startPoint, speed * dt);
 
-            if (Vector2.Distance(transform.position, startPoint) < 0.05f)
+            if (Vector2.Distance(nextPosition, startPoint) < 0.05f)
             {
-                transform.position = new Vector3(startPoint.x, startPoint.y, transform.position.z);
+                nextPosition = startPoint;
                 state = PatrolState.Patrolling;
                 goingToB = !startAtPointB;
                 waitTimer = waitTime;
             }
+
+            return nextPosition;
         }
         else // Patrolling
         {
             Vector2 target = goingToB ? pointB : pointA;
-            transform.position = Vector2.MoveTowards(transform.position, target, speed * Time.deltaTime);
+            Vector2 nextPosition = Vector2.MoveTowards(currentPosition, target, speed * dt);
 
-            if (Vector2.Distance(transform.position, target) < 0.05f)
+            if (Vector2.Distance(nextPosition, target) < 0.05f)
             {
-                transform.position = new Vector3(target.x, target.y, transform.position.z);
+                nextPosition = target;
                 goingToB = !goingToB;
                 waitTimer = waitTime;
             }
+
+            return nextPosition;
         }
+    }
+
+    private Vector2 GetPlatformPosition()
+    {
+        return rb != null ? rb.position : (Vector2)transform.position;
+    }
+
+    private void MovePlatformTo(Vector2 position)
+    {
+        if (rb != null)
+            rb.MovePosition(position);
+        else
+            transform.position = new Vector3(position.x, position.y, transform.position.z);
+    }
+
+    private void SetPlatformPositionImmediate(Vector2 position)
+    {
+        if (rb != null)
+            rb.position = position;
+
+        transform.position = new Vector3(position.x, position.y, transform.position.z);
     }
 
     void OnCollisionEnter2D(Collision2D col)
@@ -236,10 +277,11 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
 
     public string CaptureSnapshotState()
     {
+        Vector2 platformPosition = GetPlatformPosition();
         var snapshot = new SnapshotState
         {
-            positionX = transform.position.x,
-            positionY = transform.position.y,
+            positionX = platformPosition.x,
+            positionY = platformPosition.y,
             positionZ = transform.position.z,
             patrolState = (int)state,
             patrolToB = goingToB,
@@ -255,6 +297,7 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         if (string.IsNullOrEmpty(stateJson)) return;
 
         SnapshotState data = JsonUtility.FromJson<SnapshotState>(stateJson);
+        SetPlatformPositionImmediate(new Vector2(data.positionX, data.positionY));
         transform.position = new Vector3(data.positionX, data.positionY, data.positionZ);
 
         int maxEnumValue = (int)PatrolState.Patrolling;
@@ -264,7 +307,6 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         waitTimer = Mathf.Max(0f, data.waitTimer);
         activated = data.activated;
 
-        lastPosition = transform.position;
         CurrentVelocity = Vector2.zero;
     }
 }
