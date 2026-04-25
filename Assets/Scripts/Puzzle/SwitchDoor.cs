@@ -21,6 +21,9 @@ public class SwitchDoor : MonoBehaviour, ISnapshotSaveable, IButtonActivatable
     private AudioSource audioSource;
     private bool isOpen;
 
+    /// <summary>Returns true when the door has been fully opened (Activate called).</summary>
+    public bool IsOpen => isOpen;
+
     [System.Serializable]
     private class SnapshotState
     {

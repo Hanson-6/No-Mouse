@@ -24,6 +24,9 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
     [Tooltip("If true, platform stays at pointA and only moves to pointB when activated by a ButtonController")]
     public bool buttonControlled = false;
 
+    [Tooltip("Optional: if assigned, the platform will not move toward pointB while this door is closed.")]
+    [SerializeField] private SwitchDoor doorBlocker;
+
     [Header("Pause")]
     [Tooltip("How long the platform pauses at each endpoint (seconds)")]
     public float waitTime = 1f;
@@ -151,7 +154,10 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
 
     private Vector2 UpdateButtonControlled(Vector2 currentPosition, float dt)
     {
-        Vector2 target = activated ? pointB : pointA;
+        // If a door is blocking the path and it is not yet open, keep the platform at pointA.
+        bool blockedByDoor = doorBlocker != null && !doorBlocker.IsOpen;
+
+        Vector2 target = (activated && !blockedByDoor) ? pointB : pointA;
         if (Vector2.Distance(currentPosition, target) < 0.01f)
         {
             return target;
