@@ -194,7 +194,10 @@ public class PauseMenu : MonoBehaviour
         // 监听 Esc 键
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (TutorialHintTrigger.IsAnyHintPanelOpen || TutorialHintTrigger.DidConsumeEscapeThisFrame)
+            if (TutorialHintTrigger.IsAnyHintPanelOpen
+                || TutorialHintTrigger.DidConsumeEscapeThisFrame
+                || DarkCheckpoint.IsAnyHintPanelOpen
+                || DarkCheckpoint.DidConsumeEscapeThisFrame)
                 return;
 
             TogglePause();
