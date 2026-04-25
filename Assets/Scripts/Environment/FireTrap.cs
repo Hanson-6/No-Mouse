@@ -23,8 +23,15 @@ public class FireTrap : MonoBehaviour
     [SerializeField] private Sprite[] hitFrames;
     [SerializeField, Min(1f)] private float hitFps = 12f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip warningSound;
+    [SerializeField, Min(0f)] private float warningSoundVolume = 1f;
+    [SerializeField] private AudioClip hitSound;
+    [SerializeField, Min(0f)] private float hitSoundVolume = 1f;
+
     private SpriteRenderer spriteRenderer;
     private BoxCollider2D triggerCollider;
+    private AudioSource audioSource;
     private Phase phase;
     private float phaseTimer;
     private float frameTimer;
@@ -36,6 +43,7 @@ public class FireTrap : MonoBehaviour
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         triggerCollider = GetComponent<BoxCollider2D>();
+        audioSource = GetComponent<AudioSource>();
         triggerCollider.isTrigger = true;
     }
 
@@ -46,6 +54,8 @@ public class FireTrap : MonoBehaviour
         hitDuration = Mathf.Max(0f, hitDuration);
         onFps = Mathf.Max(1f, onFps);
         hitFps = Mathf.Max(1f, hitFps);
+        warningSoundVolume = Mathf.Max(0f, warningSoundVolume);
+        hitSoundVolume = Mathf.Max(0f, hitSoundVolume);
 
         if (!Application.isPlaying)
         {
@@ -121,6 +131,29 @@ public class FireTrap : MonoBehaviour
         frameTimer = 0f;
         frameIndex = 0;
         ApplyPhaseFirstFrame();
+        PlayPhaseSound(nextPhase);
+    }
+
+    private void PlayPhaseSound(Phase enteredPhase)
+    {
+        if (audioSource == null)
+            return;
+
+        switch (enteredPhase)
+        {
+            case Phase.Off:
+                if (audioSource.isPlaying)
+                    audioSource.Stop();
+                break;
+            case Phase.Warning:
+                if (warningSound != null)
+                    audioSource.PlayOneShot(warningSound, warningSoundVolume);
+                break;
+            case Phase.Hit:
+                if (hitSound != null)
+                    audioSource.PlayOneShot(hitSound, hitSoundVolume);
+                break;
+        }
     }
 
     private void ApplyPhaseFirstFrame()

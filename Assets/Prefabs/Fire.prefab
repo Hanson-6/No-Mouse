@@ -158,3 +158,7 @@ MonoBehaviour:
   - {fileID: -5447121974800146096, guid: 573c22279c1eb734696548dfba41d021, type: 3}
   - {fileID: -4098814092678880333, guid: 573c22279c1eb734696548dfba41d021, type: 3}
   hitFps: 12
+  warningSound: {fileID: 0}
+  warningSoundVolume: 10
+  hitSound: {fileID: 8300000, guid: dbc51d13114a60b40beda7349b358702, type: 3}
+  hitSoundVolume: 1

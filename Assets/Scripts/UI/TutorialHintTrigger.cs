@@ -9,6 +9,10 @@ using UnityEngine.UI;
 [RequireComponent(typeof(BoxCollider2D))]
 public class TutorialHintTrigger : MonoBehaviour
 {
+    private const string SharedHintCanvasName = "HintCanvas";
+    private const string RuntimeHintCanvasName = "TutorialHintCanvas";
+    private const string HintPanelName = "HintPanel";
+
     [Header("Sprites")]
     [SerializeField] private Sprite unpressedSprite;
     [SerializeField] private Sprite pressedSprite;
@@ -59,41 +63,10 @@ public class TutorialHintTrigger : MonoBehaviour
         if (sr != null && unpressedSprite != null)
             sr.sprite = unpressedSprite;
 
-        // 自动查找场景中的 HintPanel
-        var canvas = GameObject.Find("HintCanvas");
-        if (canvas != null)
-        {
-            var hintRootTf = canvas.transform.Find("HintPanel");
-            if (hintRootTf != null)
-            {
-                hintPanel = hintRootTf.gameObject;
-                hintPanelRect = hintPanel.GetComponent<RectTransform>();
-
-                foreach (var img in hintPanel.GetComponentsInChildren<Image>(true))
-                {
-                    if (img.gameObject.name == "HintImage") { hintImage = img; break; }
-                }
-                foreach (var txt in hintPanel.GetComponentsInChildren<Text>(true))
-                {
-                    if (txt.gameObject.name == "TipText") { tipLabel = txt; break; }
-                    if (txt.gameObject.name == "Text" && txt.transform.parent != null && txt.transform.parent.name == "TipText")
-                    {
-                        tipLabel = txt;
-                        break;
-                    }
-                }
-
-                if (tipLabel == null)
-                {
-                    var tipRoot = hintPanel.transform.Find("ContentPanel/TipText");
-                    if (tipRoot != null)
-                        tipLabel = tipRoot.GetComponentInChildren<Text>(true);
-                }
-            }
-        }
+        EnsureHintPanelBound();
 
         if (hintPanel == null)
-            Debug.LogWarning("[TutorialHintTrigger] 找不到 HintPanel，请先运行 Tools/Tutoring/1. Setup Tutoring UI。");
+            Debug.LogWarning("[TutorialHintTrigger] 找不到 HintPanel，且运行时创建失败。请检查 Canvas/UI 组件是否可用。");
 
         if (hintPanel != null)
         {
@@ -101,7 +74,159 @@ public class TutorialHintTrigger : MonoBehaviour
             // 初始 pivot 设在左边，从左向右展开
             if (hintPanelRect != null)
                 hintPanelRect.pivot = new Vector2(0f, 0.5f);
+
+            hintPanel.transform.localScale = new Vector3(0f, 1f, 1f);
         }
+    }
+
+    private bool EnsureHintPanelBound()
+    {
+        if (hintPanel != null && hintPanelRect != null)
+            return true;
+
+        Transform panelTransform = TryFindSharedHintPanel();
+        if (panelTransform == null)
+        {
+            GameObject runtimeCanvas = GameObject.Find(RuntimeHintCanvasName);
+            if (runtimeCanvas == null)
+                runtimeCanvas = CreateRuntimeHintCanvas();
+
+            if (runtimeCanvas != null)
+                panelTransform = runtimeCanvas.transform.Find(HintPanelName);
+
+            if (panelTransform == null && runtimeCanvas != null)
+                panelTransform = CreateRuntimeHintPanel(runtimeCanvas.transform);
+        }
+
+        if (panelTransform == null)
+            return false;
+
+        return BindHintPanel(panelTransform);
+    }
+
+    private static Transform TryFindSharedHintPanel()
+    {
+        GameObject sharedCanvas = GameObject.Find(SharedHintCanvasName);
+        if (sharedCanvas == null)
+            return null;
+
+        return sharedCanvas.transform.Find(HintPanelName);
+    }
+
+    private bool BindHintPanel(Transform panelTransform)
+    {
+        hintPanel = panelTransform.gameObject;
+        hintPanelRect = hintPanel.GetComponent<RectTransform>();
+        hintImage = null;
+        tipLabel = null;
+
+        foreach (Image img in hintPanel.GetComponentsInChildren<Image>(true))
+        {
+            if (img.gameObject.name == "HintImage")
+            {
+                hintImage = img;
+                break;
+            }
+        }
+
+        foreach (Text txt in hintPanel.GetComponentsInChildren<Text>(true))
+        {
+            if (txt.gameObject.name == "TipText")
+            {
+                tipLabel = txt;
+                break;
+            }
+
+            if (txt.gameObject.name == "Text"
+                && txt.transform.parent != null
+                && txt.transform.parent.name == "TipText")
+            {
+                tipLabel = txt;
+                break;
+            }
+        }
+
+        if (tipLabel == null)
+        {
+            Transform tipRoot = hintPanel.transform.Find("ContentPanel/TipText");
+            if (tipRoot != null)
+                tipLabel = tipRoot.GetComponentInChildren<Text>(true);
+        }
+
+        if (hintPanelRect != null)
+            hintPanelRect.pivot = new Vector2(0f, 0.5f);
+
+        return true;
+    }
+
+    private static GameObject CreateRuntimeHintCanvas()
+    {
+        GameObject canvasRoot = new GameObject(RuntimeHintCanvasName);
+        Canvas canvas = canvasRoot.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 100;
+
+        canvasRoot.AddComponent<CanvasScaler>();
+        canvasRoot.AddComponent<GraphicRaycaster>();
+        return canvasRoot;
+    }
+
+    private static Transform CreateRuntimeHintPanel(Transform canvasTransform)
+    {
+        GameObject hintRoot = new GameObject(HintPanelName);
+        hintRoot.transform.SetParent(canvasTransform, false);
+
+        RectTransform hintRootRect = hintRoot.AddComponent<RectTransform>();
+        SetFullStretch(hintRootRect);
+
+        GameObject overlay = new GameObject("FullscreenOverlay");
+        overlay.transform.SetParent(hintRoot.transform, false);
+        RectTransform overlayRect = overlay.AddComponent<RectTransform>();
+        SetFullStretch(overlayRect);
+        overlay.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.55f);
+
+        GameObject contentPanel = new GameObject("ContentPanel");
+        contentPanel.transform.SetParent(hintRoot.transform, false);
+        RectTransform contentRect = contentPanel.AddComponent<RectTransform>();
+        SetFullStretch(contentRect);
+        contentPanel.AddComponent<Image>().color = new Color(0.08f, 0.08f, 0.12f, 0.96f);
+
+        GameObject hintImageGO = new GameObject("HintImage");
+        hintImageGO.transform.SetParent(contentPanel.transform, false);
+        RectTransform hintImageRect = hintImageGO.AddComponent<RectTransform>();
+        SetFullStretch(hintImageRect);
+        Image image = hintImageGO.AddComponent<Image>();
+        image.preserveAspect = false;
+
+        GameObject tipTextGO = new GameObject("TipText");
+        tipTextGO.transform.SetParent(contentPanel.transform, false);
+        RectTransform tipTextRect = tipTextGO.AddComponent<RectTransform>();
+        tipTextRect.anchorMin = new Vector2(0f, 0f);
+        tipTextRect.anchorMax = new Vector2(1f, 0f);
+        tipTextRect.pivot = new Vector2(0.5f, 0f);
+        tipTextRect.offsetMin = new Vector2(0f, 12f);
+        tipTextRect.offsetMax = new Vector2(0f, 48f);
+
+        Text text = tipTextGO.AddComponent<Text>();
+        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        text.fontSize = 30;
+        text.alignment = TextAnchor.MiddleCenter;
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
+        text.verticalOverflow = VerticalWrapMode.Overflow;
+        text.color = new Color(1f, 0.85f, 0.35f, 1f);
+        text.text = string.Empty;
+
+        hintRoot.SetActive(false);
+        hintRoot.transform.localScale = new Vector3(0f, 1f, 1f);
+        return hintRoot.transform;
+    }
+
+    private static void SetFullStretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
     }
 
     void Update()

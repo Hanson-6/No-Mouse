@@ -17,6 +17,12 @@ public class StoneTrap : MonoBehaviour
     [SerializeField, Min(0f)] private float snapToGroundOffset = 0.005f;
     [SerializeField, Min(0.5f)] private float fallbackDropDistance = 8f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip fallStartSound;
+    [SerializeField, Min(0f)] private float fallStartSoundVolume = 1f;
+    [SerializeField] private AudioClip hitGroundSound;
+    [SerializeField, Min(0f)] private float hitGroundSoundVolume = 1f;
+
     private enum State
     {
         WaitingTop,
@@ -28,6 +34,7 @@ public class StoneTrap : MonoBehaviour
     private const float ArriveThreshold = 0.0001f;
 
     private BoxCollider2D triggerCollider;
+    private AudioSource audioSource;
     private State state;
     private float stateTimer;
     private Vector3 topPosition;
@@ -36,6 +43,7 @@ public class StoneTrap : MonoBehaviour
     void Awake()
     {
         triggerCollider = GetComponent<BoxCollider2D>();
+        audioSource = GetComponent<AudioSource>();
         triggerCollider.isTrigger = true;
     }
 
@@ -48,6 +56,8 @@ public class StoneTrap : MonoBehaviour
         castInset = Mathf.Max(0f, castInset);
         snapToGroundOffset = Mathf.Max(0f, snapToGroundOffset);
         fallbackDropDistance = Mathf.Max(0.5f, fallbackDropDistance);
+        fallStartSoundVolume = Mathf.Max(0f, fallStartSoundVolume);
+        hitGroundSoundVolume = Mathf.Max(0f, hitGroundSoundVolume);
 
         if (groundLayerMask == 0)
         {
@@ -175,8 +185,29 @@ public class StoneTrap : MonoBehaviour
 
     private void EnterState(State nextState)
     {
+        State previousState = state;
         state = nextState;
         stateTimer = 0f;
+        PlayStateTransitionSound(previousState, nextState);
+    }
+
+    private void PlayStateTransitionSound(State fromState, State toState)
+    {
+        if (audioSource == null)
+            return;
+
+        if (toState == State.Falling && fromState != State.Falling)
+        {
+            if (fallStartSound != null)
+                audioSource.PlayOneShot(fallStartSound, fallStartSoundVolume);
+            return;
+        }
+
+        if (toState == State.WaitingOnGround && fromState == State.Falling)
+        {
+            if (hitGroundSound != null)
+                audioSource.PlayOneShot(hitGroundSound, hitGroundSoundVolume);
+        }
     }
 
     void OnDrawGizmosSelected()
