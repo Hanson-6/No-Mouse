@@ -181,25 +181,39 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
 
     void OnCollisionEnter2D(Collision2D col)
     {
-        if (col.gameObject.CompareTag("Player"))
-        {
-            col.gameObject.GetComponent<PlayerController>()?.SetCurrentPlatform(this);
-        }
-        else if (col.gameObject.CompareTag("Box"))
-        {
-            col.gameObject.GetComponent<PushableBox>()?.SetCurrentPlatform(this);
-        }
+        UpdatePlatformContact(col, true);
+    }
+
+    void OnCollisionStay2D(Collision2D col)
+    {
+        // Important: objects can start the scene already touching the platform.
+        // In that case OnCollisionEnter2D can be skipped, so we refresh contact
+        // continuously here to keep Player/Box bound to this platform.
+        UpdatePlatformContact(col, true);
     }
 
     void OnCollisionExit2D(Collision2D col)
     {
-        if (col.gameObject.CompareTag("Player"))
+        UpdatePlatformContact(col, false);
+    }
+
+    private void UpdatePlatformContact(Collision2D col, bool touching)
+    {
+        if (col == null)
+            return;
+
+        GameObject other = col.gameObject;
+        if (other.CompareTag("Player"))
         {
-            col.gameObject.GetComponent<PlayerController>()?.ClearCurrentPlatform(this);
+            PlayerController player = other.GetComponent<PlayerController>();
+            if (touching) player?.SetCurrentPlatform(this);
+            else player?.ClearCurrentPlatform(this);
         }
-        else if (col.gameObject.CompareTag("Box"))
+        else if (other.CompareTag("Box"))
         {
-            col.gameObject.GetComponent<PushableBox>()?.ClearCurrentPlatform(this);
+            PushableBox box = other.GetComponent<PushableBox>();
+            if (touching) box?.SetCurrentPlatform(this);
+            else box?.ClearCurrentPlatform(this);
         }
     }
 
