@@ -131,6 +131,30 @@ namespace GestureRecognition.UI
         [Tooltip("Shortcut key to toggle display mode (Camera/Sprite/Overlay)")]
         private KeyCode _toggleModeKey = KeyCode.C;
 
+        [Header("Occlusion Avoidance")]
+        [SerializeField]
+        [Tooltip("Fade the panel when it covers the player's on-screen position.")]
+        private bool _avoidCoveringPlayer = true;
+
+        [SerializeField]
+        [Range(0.05f, 1f)]
+        [Tooltip("Panel alpha while player is behind it on screen.")]
+        private float _coveredPlayerAlpha = 0.2f;
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("Extra overlap detection padding in pixels.")]
+        private float _coverDetectionPadding = 20f;
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("How fast alpha transitions between normal and faded states.")]
+        private float _alphaTransitionSpeed = 8f;
+
+        [SerializeField]
+        [Tooltip("World-space offset from player position used for overlap checks.")]
+        private Vector3 _playerProbeOffset = new Vector3(0f, 0.6f, 0f);
+
         [Header("UI References (auto-created if null)")]
         [SerializeField]
         private RawImage _cameraImage;
@@ -172,6 +196,9 @@ namespace GestureRecognition.UI
         private Button _closeButton;
         private Font _defaultFont;
         private Sprite _roundedMaskSprite;
+        private Transform _playerTransform;
+        private Camera _worldCamera;
+        private Canvas _rootCanvas;
 
         // -----------------------------------------------------------------
         // Public API
@@ -290,17 +317,29 @@ namespace GestureRecognition.UI
                 _panelFrameSprite = Resources.Load<Sprite>("GestureDisplayPanel/PanelBorder_narrow");
             }
 
+            _rootCanvas = GetComponentInParent<Canvas>();
+            _canvasGroup.alpha = 1f;
+            _canvasGroup.interactable = true;
+            _canvasGroup.blocksRaycasts = true;
+
             BuildUI();
         }
 
         private void OnEnable()
         {
             GestureEvents.OnGestureUpdated += HandleGestureUpdated;
+            RefreshOcclusionReferences();
         }
 
         private void OnDisable()
         {
             GestureEvents.OnGestureUpdated -= HandleGestureUpdated;
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.alpha = 1f;
+                _canvasGroup.interactable = true;
+                _canvasGroup.blocksRaycasts = true;
+            }
         }
 
         private void OnRectTransformDimensionsChange()
@@ -338,20 +377,102 @@ namespace GestureRecognition.UI
                     : DisplayMode.CartoonSprite;
             }
 
-            if (_cameraImage == null)
-                return;
-
-            if (_displayMode != DisplayMode.CameraWithOverlay && _displayMode != DisplayMode.CameraFeed)
-                return;
-
-            if (GestureService.Instance == null || GestureService.Instance.Camera == null)
-                return;
-
-            Texture cameraTexture = GestureService.Instance.Camera.CameraTexture;
-            if (cameraTexture != null && _cameraImage.texture != cameraTexture)
+            if (_cameraImage != null &&
+                (_displayMode == DisplayMode.CameraWithOverlay || _displayMode == DisplayMode.CameraFeed) &&
+                GestureService.Instance != null &&
+                GestureService.Instance.Camera != null)
             {
-                _cameraImage.texture = cameraTexture;
+                Texture cameraTexture = GestureService.Instance.Camera.CameraTexture;
+                if (cameraTexture != null && _cameraImage.texture != cameraTexture)
+                {
+                    _cameraImage.texture = cameraTexture;
+                }
             }
+
+            UpdateOcclusionAvoidance();
+        }
+
+        private void RefreshOcclusionReferences()
+        {
+            if (_playerTransform == null)
+            {
+                GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
+                if (playerObject != null)
+                    _playerTransform = playerObject.transform;
+            }
+
+            if (_worldCamera == null || !_worldCamera.isActiveAndEnabled)
+            {
+                _worldCamera = Camera.main;
+                if (_worldCamera == null)
+                {
+                    Camera[] cameras = FindObjectsOfType<Camera>();
+                    for (int i = 0; i < cameras.Length; i++)
+                    {
+                        if (!cameras[i].isActiveAndEnabled)
+                            continue;
+
+                        _worldCamera = cameras[i];
+                        break;
+                    }
+                }
+            }
+
+            if (_rootCanvas == null)
+                _rootCanvas = GetComponentInParent<Canvas>();
+        }
+
+        private void UpdateOcclusionAvoidance()
+        {
+            if (_canvasGroup == null)
+                return;
+
+            if (!_avoidCoveringPlayer)
+            {
+                _canvasGroup.alpha = Mathf.MoveTowards(_canvasGroup.alpha, 1f, _alphaTransitionSpeed * Time.unscaledDeltaTime);
+                return;
+            }
+
+            RefreshOcclusionReferences();
+
+            bool isCoveringPlayer = false;
+            if (_playerTransform != null && _worldCamera != null && _rectTransform != null)
+            {
+                Vector3 playerScreen = _worldCamera.WorldToScreenPoint(_playerTransform.position + _playerProbeOffset);
+                if (playerScreen.z > 0f)
+                {
+                    isCoveringPlayer = IsScreenPointInsidePanel(playerScreen);
+                }
+            }
+
+            float targetAlpha = isCoveringPlayer ? Mathf.Clamp01(_coveredPlayerAlpha) : 1f;
+            float alphaStep = Mathf.Max(0f, _alphaTransitionSpeed) * Time.unscaledDeltaTime;
+            if (alphaStep <= 0f)
+            {
+                _canvasGroup.alpha = targetAlpha;
+            }
+            else
+            {
+                _canvasGroup.alpha = Mathf.MoveTowards(_canvasGroup.alpha, targetAlpha, alphaStep);
+            }
+        }
+
+        private bool IsScreenPointInsidePanel(Vector2 screenPoint)
+        {
+            Camera uiCamera = null;
+            if (_rootCanvas != null && _rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                uiCamera = _rootCanvas.worldCamera;
+
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_rectTransform, screenPoint, uiCamera, out Vector2 localPoint))
+                return false;
+
+            Rect rect = _rectTransform.rect;
+            float padding = Mathf.Max(0f, _coverDetectionPadding);
+            rect.xMin -= padding;
+            rect.xMax += padding;
+            rect.yMin -= padding;
+            rect.yMax += padding;
+            return rect.Contains(localPoint);
         }
 
         // -----------------------------------------------------------------

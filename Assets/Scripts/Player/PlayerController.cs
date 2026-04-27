@@ -67,6 +67,9 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
     private MovingPlatform currentPlatform;
     private bool isInvulnerableBodyActive;
     private bool movementInputLocked;
+    private bool cameraTransitionInputLocked;
+    private bool hasCachedCameraTransitionConstraints;
+    private RigidbodyConstraints2D cachedCameraTransitionConstraints;
     private Color defaultSpriteColor;
     // ── 手势系统控制字段 ──────────────────────────────────────────────────
     // facingLocked: Pull 时锁定面朝方向，防止 sprite 翻转
@@ -132,7 +135,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
 
         if (isDead) return;
 
-        if (movementInputLocked)
+        if (movementInputLocked || cameraTransitionInputLocked)
         {
             moveInput = 0f;
             jumpBufferTimer = 0f;
@@ -386,6 +389,41 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         animator.SetFloat("Speed", 0f);
     }
 
+    public void SetCameraTransitionInputLock(bool active)
+    {
+        if (cameraTransitionInputLocked == active)
+            return;
+
+        cameraTransitionInputLocked = active;
+
+        if (active)
+        {
+            moveInput = 0f;
+            jumpBufferTimer = 0f;
+
+            if (rb != null)
+            {
+                cachedCameraTransitionConstraints = rb.constraints;
+                hasCachedCameraTransitionConstraints = true;
+                rb.constraints = RigidbodyConstraints2D.FreezePositionX
+                               | RigidbodyConstraints2D.FreezePositionY
+                               | RigidbodyConstraints2D.FreezeRotation;
+                rb.velocity = Vector2.zero;
+                rb.angularVelocity = 0f;
+            }
+
+            if (animator != null)
+                animator.SetFloat("Speed", 0f);
+
+            return;
+        }
+
+        if (rb != null && hasCachedCameraTransitionConstraints)
+            rb.constraints = cachedCameraTransitionConstraints;
+
+        hasCachedCameraTransitionConstraints = false;
+    }
+
     public bool CanActivateInvulnerableBody(float stationaryVelocityThreshold = 0.08f)
     {
         if (isDead || rb == null)
@@ -515,6 +553,7 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
         jumpGroundResetLockTimer = snapshot.jumpGroundResetLockTimer;
         wasGroundedLastFixed = snapshot.wasGroundedLastFixed;
         SetInvulnerableBodyActive(false);
+        SetCameraTransitionInputLock(false);
 
         currentPlatform = null;
     }

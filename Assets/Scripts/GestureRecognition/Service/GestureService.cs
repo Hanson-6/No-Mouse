@@ -95,6 +95,10 @@ namespace GestureRecognition.Service
         [SerializeField]
         private Vector2 _defaultPanelSize = new Vector2(320f, 280f);
 
+        [Tooltip("Default panel offset from top-left in pixels (x=left margin, y=distance from top).")]
+        [SerializeField]
+        private Vector2 _defaultPanelTopLeftOffset = new Vector2(16f, 16f);
+
         [Header("Camera Settings")]
         [Tooltip("Camera device name. Leave empty to use the default camera.")]
         [SerializeField]
@@ -516,11 +520,13 @@ namespace GestureRecognition.Service
             panelGO.transform.SetParent(canvasGO.transform, false);
 
             RectTransform panelRect = panelGO.AddComponent<RectTransform>();
-            // 左上角
+            // 左上角，默认使用更小尺寸降低遮挡
             panelRect.anchorMin = new Vector2(0f, 1f);
             panelRect.anchorMax = new Vector2(0f, 1f);
             panelRect.pivot = new Vector2(0f, 1f);
-            panelRect.anchoredPosition = new Vector2(16f, -16f);
+            float leftMargin = Mathf.Max(0f, _defaultPanelTopLeftOffset.x);
+            float topOffset = Mathf.Max(0f, _defaultPanelTopLeftOffset.y);
+            panelRect.anchoredPosition = new Vector2(leftMargin, -topOffset);
             panelRect.sizeDelta = _defaultPanelSize;
 
             _displayPanel = panelGO.AddComponent<GestureDisplayPanel>();

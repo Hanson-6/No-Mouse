@@ -26,13 +26,27 @@ public class CameraFollow : MonoBehaviour
 
     [Header("Mirror Zone Entry Focus")]
     [SerializeField] private bool enableMirrorEntryFocus = true;
+    [SerializeField] private bool triggerMirrorEntryTransitionOnlyOnce = true;
     [SerializeField, Min(0f)] private float mirrorEntryFocusHoldTime = 0.25f;
     [SerializeField, Min(0f)] private float mirrorEntryBlendDuration = 0.8f;
     [SerializeField] private AnimationCurve mirrorEntryBlendCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+    [Header("Mirror Zone Entry Zoom")]
+    [SerializeField] private bool enableMirrorEntryZoom = true;
+    [SerializeField, Min(1f)] private float mirrorEntryStartZoomMultiplier = 1.5f;
+    [SerializeField, Min(0.1f)] private float mirrorEntryEndZoomMultiplier = 1f;
+    [SerializeField] private bool keepMirrorZoneExpandedViewAfterEntry = false;
+
+    [Header("Mirror Zone Bounds")]
+    [SerializeField] private bool lockMirrorZoneLeftEdge = false;
+    [SerializeField] private float mirrorZoneMinLeftEdgeX = -300f;
+
     private Camera cam;
+    private PlayerController playerController;
+    private bool inputLockedForMirrorTransition;
     private float baseOrthographicSize;
     private bool wasInMirrorZone;
+    private bool hasTriggeredMirrorEntryTransition;
     private float mirrorEntryFocusTimer;
     private float mirrorEntryBlendTimer;
 
@@ -50,10 +64,15 @@ public class CameraFollow : MonoBehaviour
         cam = GetComponent<Camera>();
         if (cam != null)
             baseOrthographicSize = Mathf.Max(0.01f, cam.orthographicSize);
+
+        if (target != null)
+            playerController = target.GetComponent<PlayerController>();
     }
 
     void Start()
     {
+        EnsurePlayerController();
+
         bool inMirrorZone = TryGetCurrentMirrorFocus(out _);
         UpdateCameraViewSize(inMirrorZone);
         wasInMirrorZone = inMirrorZone;
@@ -64,11 +83,7 @@ public class CameraFollow : MonoBehaviour
         float targetY = lockY ? fixedY : followAnchor.y + offset.y;
         Vector3 desired = new Vector3(followAnchor.x + offset.x, targetY, transform.position.z);
 
-        if (useBounds)
-        {
-            desired.x = Mathf.Clamp(desired.x, minX, maxX);
-            desired.y = Mathf.Clamp(desired.y, minY, maxY);
-        }
+        desired = ApplyBounds(desired, inMirrorZone);
 
         desired = SnapToPixelGrid(desired);
 
@@ -77,22 +92,26 @@ public class CameraFollow : MonoBehaviour
 
     void LateUpdate()
     {
+        EnsurePlayerController();
+
         bool inMirrorZone = TryGetCurrentMirrorFocus(out _);
         UpdateMirrorEntryFocusState(inMirrorZone);
-        UpdateCameraViewSize(inMirrorZone);
+        UpdateMirrorEntryInputLock();
 
-        if (target == null) return;
+        if (target == null)
+        {
+            UpdateCameraViewSize(inMirrorZone);
+            return;
+        }
 
         Vector3 followAnchor = GetFollowAnchor(inMirrorZone);
         followAnchor = ApplyMirrorEntryFocusOverride(followAnchor, inMirrorZone);
+        UpdateCameraViewSize(inMirrorZone);
+
         float targetY = lockY ? fixedY : followAnchor.y + offset.y;
         Vector3 desired = new Vector3(followAnchor.x + offset.x, targetY, transform.position.z);
 
-        if (useBounds)
-        {
-            desired.x = Mathf.Clamp(desired.x, minX, maxX);
-            desired.y = Mathf.Clamp(desired.y, minY, maxY);
-        }
+        desired = ApplyBounds(desired, inMirrorZone);
 
         Vector3 smoothed = Vector3.Lerp(transform.position, desired, smoothSpeed * Time.deltaTime);
         transform.position = SnapToPixelGrid(smoothed);
@@ -112,8 +131,61 @@ public class CameraFollow : MonoBehaviour
         viewSizeLerpSpeed = Mathf.Max(0f, viewSizeLerpSpeed);
         mirrorEntryFocusHoldTime = Mathf.Max(0f, mirrorEntryFocusHoldTime);
         mirrorEntryBlendDuration = Mathf.Max(0f, mirrorEntryBlendDuration);
+        mirrorEntryStartZoomMultiplier = Mathf.Max(1f, mirrorEntryStartZoomMultiplier);
+        mirrorEntryEndZoomMultiplier = Mathf.Max(0.1f, mirrorEntryEndZoomMultiplier);
         if (mirrorEntryBlendCurve == null || mirrorEntryBlendCurve.length == 0)
             mirrorEntryBlendCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    }
+
+    void OnDisable()
+    {
+        ReleaseMirrorEntryInputLock();
+    }
+
+    private void EnsurePlayerController()
+    {
+        if (playerController != null)
+            return;
+
+        if (target != null)
+            playerController = target.GetComponent<PlayerController>();
+    }
+
+    private void UpdateMirrorEntryInputLock()
+    {
+        if (!enableMirrorEntryFocus)
+        {
+            ReleaseMirrorEntryInputLock();
+            return;
+        }
+
+        bool shouldLock = mirrorEntryFocusState == MirrorEntryFocusState.HoldPlayer
+            || mirrorEntryFocusState == MirrorEntryFocusState.BlendToMirrorZone;
+
+        if (shouldLock == inputLockedForMirrorTransition)
+            return;
+
+        if (shouldLock)
+        {
+            if (playerController != null)
+                playerController.SetCameraTransitionInputLock(true);
+            inputLockedForMirrorTransition = true;
+        }
+        else
+        {
+            ReleaseMirrorEntryInputLock();
+        }
+    }
+
+    private void ReleaseMirrorEntryInputLock()
+    {
+        if (!inputLockedForMirrorTransition)
+            return;
+
+        if (playerController != null)
+            playerController.SetCameraTransitionInputLock(false);
+
+        inputLockedForMirrorTransition = false;
     }
 
     void UpdateCameraViewSize(bool inMirrorZone)
@@ -122,8 +194,14 @@ public class CameraFollow : MonoBehaviour
             return;
 
         float targetSize = baseOrthographicSize;
-        if (expandViewInMirrorZone && inMirrorZone)
+        if (expandViewInMirrorZone && inMirrorZone && keepMirrorZoneExpandedViewAfterEntry)
             targetSize = baseOrthographicSize * mirrorZoneViewMultiplier;
+
+        if (enableMirrorEntryZoom && inMirrorZone && IsMirrorEntryTransitionActive())
+        {
+            float zoomMultiplier = EvaluateMirrorEntryZoomMultiplier();
+            targetSize = baseOrthographicSize / Mathf.Max(0.1f, zoomMultiplier);
+        }
 
         if (viewSizeLerpSpeed <= 0f)
         {
@@ -165,11 +243,21 @@ public class CameraFollow : MonoBehaviour
 
         if (inMirrorZone && !wasInMirrorZone)
         {
+            if (triggerMirrorEntryTransitionOnlyOnce && hasTriggeredMirrorEntryTransition)
+            {
+                mirrorEntryFocusState = MirrorEntryFocusState.None;
+                mirrorEntryFocusTimer = 0f;
+                mirrorEntryBlendTimer = 0f;
+                wasInMirrorZone = inMirrorZone;
+                return;
+            }
+
             mirrorEntryFocusTimer = mirrorEntryFocusHoldTime;
             mirrorEntryBlendTimer = 0f;
             mirrorEntryFocusState = mirrorEntryFocusTimer > 0f
                 ? MirrorEntryFocusState.HoldPlayer
                 : MirrorEntryFocusState.BlendToMirrorZone;
+            hasTriggeredMirrorEntryTransition = true;
         }
         else if (!inMirrorZone)
         {
@@ -218,6 +306,54 @@ public class CameraFollow : MonoBehaviour
         }
 
         return anchor;
+    }
+
+    bool IsMirrorEntryTransitionActive()
+    {
+        return mirrorEntryFocusState == MirrorEntryFocusState.HoldPlayer
+            || mirrorEntryFocusState == MirrorEntryFocusState.BlendToMirrorZone;
+    }
+
+    float EvaluateMirrorEntryZoomMultiplier()
+    {
+        float startMultiplier = Mathf.Max(1f, mirrorEntryStartZoomMultiplier);
+        float endMultiplier = Mathf.Max(0.1f, mirrorEntryEndZoomMultiplier);
+
+        if (mirrorEntryFocusState == MirrorEntryFocusState.HoldPlayer)
+            return startMultiplier;
+
+        if (mirrorEntryFocusState != MirrorEntryFocusState.BlendToMirrorZone)
+            return endMultiplier;
+
+        if (mirrorEntryBlendDuration <= 0f)
+            return endMultiplier;
+
+        float t = Mathf.Clamp01(mirrorEntryBlendTimer / mirrorEntryBlendDuration);
+        float curveT = mirrorEntryBlendCurve != null
+            ? Mathf.Clamp01(mirrorEntryBlendCurve.Evaluate(t))
+            : t;
+
+        return Mathf.Lerp(startMultiplier, endMultiplier, curveT);
+    }
+
+    Vector3 ApplyBounds(Vector3 desired, bool inMirrorZone)
+    {
+        if (useBounds)
+        {
+            desired.x = Mathf.Clamp(desired.x, minX, maxX);
+            desired.y = Mathf.Clamp(desired.y, minY, maxY);
+        }
+
+        if (lockMirrorZoneLeftEdge && inMirrorZone)
+        {
+            float minCenterX = mirrorZoneMinLeftEdgeX;
+            if (cam != null && cam.orthographic)
+                minCenterX += cam.orthographicSize * Mathf.Max(0.0001f, cam.aspect);
+
+            desired.x = Mathf.Max(desired.x, minCenterX);
+        }
+
+        return desired;
     }
 
     Vector3 SnapToPixelGrid(Vector3 worldPosition)
