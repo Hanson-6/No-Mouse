@@ -16,6 +16,7 @@ public class MirrorEntryTrigger : MonoBehaviour
     private const string DefaultLdtkEnemyIid = "7f0f75f0-21a0-11f1-8579-f735b60fe489";
 #if UNITY_EDITOR
     private const string VideoAssetPath = "Assets/Textures/Videos/switch_to_mirror.mp4";
+    private const string LeftWallPrefabPath = "Assets/Prefabs/LeftWall.prefab";
 #endif
 
     [Header("Video")]
@@ -35,10 +36,15 @@ public class MirrorEntryTrigger : MonoBehaviour
     [Header("Trigger")]
     [SerializeField] private bool triggerOnlyOnce = true;
 
+    [Header("Left Wall Lock")]
+    [SerializeField] private GameObject leftWallPrefab;
+    [SerializeField, Min(0f)] private float leftWallRightPadding = 0.05f;
+
     private bool hasTriggered;
     private bool isPlaying;
     private bool missingSourceWarned;
     private Coroutine playbackCoroutine;
+    private BoxCollider2D triggerCollider;
 
     private Transform playerTransform;
     private Rigidbody2D playerRb;
@@ -52,17 +58,19 @@ public class MirrorEntryTrigger : MonoBehaviour
 
     private Vector3 cachedLdtkTargetPos;
     private bool hasCachedLdtkTargetPos;
+    private GameObject spawnedLeftWall;
 
     void Awake()
     {
-        BoxCollider2D col = GetComponent<BoxCollider2D>();
-        col.isTrigger = true;
+        triggerCollider = GetComponent<BoxCollider2D>();
+        triggerCollider.isTrigger = true;
         CacheLdtkTargetPosition();
     }
 
     void OnEnable()
     {
         TryAutoAssignClipInEditor();
+        TryAutoAssignLeftWallPrefabInEditor();
     }
 
     void OnDisable()
@@ -77,7 +85,9 @@ public class MirrorEntryTrigger : MonoBehaviour
         if (string.IsNullOrWhiteSpace(ldtkEnemyIid))
             ldtkEnemyIid = DefaultLdtkEnemyIid;
         safeDistancePadding = Mathf.Max(0f, safeDistancePadding);
+        leftWallRightPadding = Mathf.Max(0f, leftWallRightPadding);
         TryAutoAssignClipInEditor();
+        TryAutoAssignLeftWallPrefabInEditor();
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -210,9 +220,59 @@ public class MirrorEntryTrigger : MonoBehaviour
         ReleasePlayerLock();
 
         TeleportPlayer();
+        PlaceLeftWallAtTriggerRightEdge();
 
         isPlaying = false;
         playbackCoroutine = null;
+    }
+
+    private void PlaceLeftWallAtTriggerRightEdge()
+    {
+        if (leftWallPrefab == null)
+        {
+            Debug.LogWarning($"[MirrorEntryTrigger] LeftWall prefab not assigned on '{name}'.");
+            return;
+        }
+
+        if (triggerCollider == null)
+            triggerCollider = GetComponent<BoxCollider2D>();
+        if (triggerCollider == null)
+            return;
+
+        if (spawnedLeftWall == null)
+        {
+            spawnedLeftWall = Instantiate(leftWallPrefab);
+            spawnedLeftWall.name = leftWallPrefab.name;
+        }
+
+        if (!spawnedLeftWall.activeSelf)
+            spawnedLeftWall.SetActive(true);
+
+        Bounds triggerBounds = triggerCollider.bounds;
+        float centerOffsetX = 0f;
+        float centerOffsetY = 0f;
+        float halfWidth = 0.05f;
+
+        BoxCollider2D wallCollider = spawnedLeftWall.GetComponent<BoxCollider2D>();
+        if (wallCollider != null)
+        {
+            Vector3 lossyScale = spawnedLeftWall.transform.lossyScale;
+            float scaleX = Mathf.Abs(lossyScale.x);
+            float scaleY = Mathf.Abs(lossyScale.y);
+            if (scaleX < 0.0001f) scaleX = 1f;
+            if (scaleY < 0.0001f) scaleY = 1f;
+
+            centerOffsetX = wallCollider.offset.x * lossyScale.x;
+            centerOffsetY = wallCollider.offset.y * lossyScale.y;
+            halfWidth = Mathf.Max(0.005f, wallCollider.size.x * scaleX * 0.5f);
+            wallCollider.enabled = true;
+            wallCollider.isTrigger = false;
+        }
+
+        Vector3 wallPos = spawnedLeftWall.transform.position;
+        wallPos.x = triggerBounds.max.x + leftWallRightPadding + halfWidth - centerOffsetX;
+        wallPos.y = triggerBounds.center.y - centerOffsetY;
+        spawnedLeftWall.transform.position = wallPos;
     }
 
     private void TeleportPlayer()
@@ -456,6 +516,18 @@ public class MirrorEntryTrigger : MonoBehaviour
         VideoClip clip = AssetDatabase.LoadAssetAtPath<VideoClip>(VideoAssetPath);
         if (clip != null)
             entryTransitionClip = clip;
+#endif
+    }
+
+    private void TryAutoAssignLeftWallPrefabInEditor()
+    {
+#if UNITY_EDITOR
+        if (leftWallPrefab != null)
+            return;
+
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(LeftWallPrefabPath);
+        if (prefab != null)
+            leftWallPrefab = prefab;
 #endif
     }
 }

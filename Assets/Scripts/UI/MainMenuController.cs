@@ -51,7 +51,15 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Optional status text to display camera-gate diagnostics.")]
     [SerializeField] private Text cameraStatusText;
 
+    [Header("Background Music")]
+    [Tooltip("Looped BGM clip that starts in Main Menu and persists across scenes.")]
+    [SerializeField] private AudioClip bgmClip;
+
+    [SerializeField, Range(0f, 1f)] private float bgmVolume = 0.1f;
+
     private CameraGateUI _cameraGate;
+    private static AudioSource _persistentBgmSource;
+    private static bool _bgmSceneHookRegistered;
 
     void Awake()
     {
@@ -109,6 +117,8 @@ public class MainMenuController : MonoBehaviour
             quitButton.onClick.RemoveAllListeners();
             quitButton.onClick.AddListener(QuitGame);
         }
+
+        EnsurePersistentBgm();
     }
 
     static Button FindButtonByName(string buttonName)
@@ -294,6 +304,68 @@ public class MainMenuController : MonoBehaviour
         }
 
         return true;
+    }
+
+    private void EnsurePersistentBgm()
+    {
+        RegisterBgmSceneHookIfNeeded();
+
+        if (_persistentBgmSource == null)
+        {
+            GameObject bgmObject = new GameObject("PersistentBGM");
+            DontDestroyOnLoad(bgmObject);
+
+            _persistentBgmSource = bgmObject.AddComponent<AudioSource>();
+            _persistentBgmSource.playOnAwake = false;
+            _persistentBgmSource.loop = true;
+            _persistentBgmSource.spatialBlend = 0f;
+        }
+
+        if (bgmClip != null && _persistentBgmSource.clip != bgmClip)
+            _persistentBgmSource.clip = bgmClip;
+
+        _persistentBgmSource.volume = Mathf.Clamp01(bgmVolume);
+
+        if (_persistentBgmSource.clip != null && !_persistentBgmSource.isPlaying)
+            _persistentBgmSource.Play();
+
+        DisableDuplicateSceneBgmSources();
+    }
+
+    private static void RegisterBgmSceneHookIfNeeded()
+    {
+        if (_bgmSceneHookRegistered)
+            return;
+
+        SceneManager.sceneLoaded += OnSceneLoadedForBgm;
+        _bgmSceneHookRegistered = true;
+    }
+
+    private static void OnSceneLoadedForBgm(Scene scene, LoadSceneMode mode)
+    {
+        DisableDuplicateSceneBgmSources();
+    }
+
+    private static void DisableDuplicateSceneBgmSources()
+    {
+        if (_persistentBgmSource == null || _persistentBgmSource.clip == null)
+            return;
+
+        AudioSource[] allSources = FindObjectsOfType<AudioSource>(true);
+        for (int i =  0; i < allSources.Length; i++)
+        {
+            AudioSource source = allSources[i];
+            if (source == null || source == _persistentBgmSource)
+                continue;
+
+            bool sameClip = source.clip != null && source.clip == _persistentBgmSource.clip;
+            bool legacyBgmObject = string.Equals(source.gameObject.name, "BGM", System.StringComparison.OrdinalIgnoreCase);
+            if (!sameClip && !legacyBgmObject)
+                continue;
+
+            source.Stop();
+            source.enabled = false;
+        }
     }
 
     private static void EnsureMenuCanvasScale()

@@ -456,6 +456,8 @@ MonoBehaviour:
   startButton: {fileID: 0}
   requireCameraReady: 1
   cameraStatusText: {fileID: 0}
+  bgmClip: {fileID: 8300000, guid: 85dc566e02d35fa48bf979e10f8ba07f, type: 3}
+  bgmVolume: 0.1
 --- !u!1 &1202591989
 GameObject:
   m_ObjectHideFlags: 0
