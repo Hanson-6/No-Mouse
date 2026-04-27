@@ -159,7 +159,11 @@ public class MainMenuController : MonoBehaviour
 
         GameObject selected = es.currentSelectedGameObject;
         if (selected == null)
+        {
+            if (_menuButtons.Length > 0 && _menuButtons[_selectedIndex] != null)
+                es.SetSelectedGameObject(_menuButtons[_selectedIndex].gameObject);
             return;
+        }
 
         for (int i = 0; i < _menuButtons.Length; i++)
         {
@@ -233,6 +237,7 @@ public class MainMenuController : MonoBehaviour
         if (requireCameraReady && !CanStartGameplay())
             return;
 
+        GameData.Reset();
         Time.timeScale = 1f;
 
         int index = SceneUtility.GetBuildIndexByScenePath(TutorialScenePath);

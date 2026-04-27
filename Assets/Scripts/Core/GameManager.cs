@@ -43,8 +43,17 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        GameData.CurrentTimer += Time.deltaTime;
+        if (ShouldCountTimer())
+            GameData.CurrentTimer += Time.deltaTime;
         UpdateGesturePanelStats();
+    }
+
+    private static bool ShouldCountTimer()
+    {
+        Scene active = SceneManager.GetActiveScene();
+        if (!active.IsValid()) return false;
+        string name = active.name;
+        return name != "MainMenu" && name != "LevelComplete";
     }
 
     void OnEnable()
