@@ -15,8 +15,8 @@ public static class MainMenuSetup
 
     private const string ScenePath = "Assets/Scenes/MainMenu.unity";
 
-    private const float BtnHeight = 90f;
-    private const float BtnWidth = 400f;
+    private const float BtnHeight = 100f;
+    private const float BtnWidth = 380f;
     private const float BtnGap = 30f;
     private const float LogoToBtnGap = 50f;
 
@@ -123,11 +123,10 @@ public static class MainMenuSetup
         logoImg.preserveAspect = true;
         logoImg.raycastTarget = false;
 
-        // ── Buttons (4 buttons, equal 30px gaps, 90px height) ───────────────
+        // ── Buttons (4 buttons, equal 30px gaps, 100px height) ───────────────
         // Logo bottom = 220 - 120 = 100
-        // Tutorial top = y1 + 45;  gap = 100 - (y1+45) = 50  →  y1 = 5
-        // Use y1 = 10 for slightly more breathing room
-        float y = 10f;                  // Tutorial center
+        // Tutorial top = y1 + 50;  gap = 100 - (y1+50) = 45  →  y1 = 5
+        float y = 5f;
         CreateMenuButton(canvasGO, "TutorialButton", tutSprite, y); y -= BtnHeight + BtnGap;
         CreateMenuButton(canvasGO, "NewGameButton", newSprite, y); y -= BtnHeight + BtnGap;
         CreateMenuButton(canvasGO, "ContinueButton", contSprite, y); y -= BtnHeight + BtnGap;
@@ -173,7 +172,7 @@ public static class MainMenuSetup
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
 
-        Debug.Log("[MainMenuSetup] Done. Tutorial + NewGame + Continue + Quit. 30px gaps, 90px height.");
+        Debug.Log("[MainMenuSetup] Done. Tutorial + NewGame + Continue + Quit. 30px gaps, 100px height.");
     }
 
     static void CreateMenuButton(GameObject canvas, string name, Sprite sprite, float centerY)
