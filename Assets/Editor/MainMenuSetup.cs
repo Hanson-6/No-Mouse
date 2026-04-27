@@ -1,44 +1,25 @@
-using System.Collections.Generic;
-using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Tools/Setup Main Menu Scene
-///
-/// What this script does:
-///  1. Processes button images (removes white background via BFS flood-fill).
-///  2. Wires up the MainMenu scene with three buttons:
-///       - NewGameButton   → 新游戏（删除存档，从头开始）
-///       - ContinueButton  → 继续游戏（读取存档，有存档时才显示）
-///       - QuitButton      → 退出游戏
-///  3. Replaces TitleText with a logo Image (GameTile_processed.png).
-///  4. Attaches MainMenuController to MenuManager.
-///  5. Configures CanvasScaler for 1920×1080.
-///  6. Saves the scene.
-///
-/// 如果场景中有旧的 StartButton，会被删除并替换为 NewGameButton。
-/// </summary>
 public static class MainMenuSetup
 {
-    // 旧版原始图片路径（用于 BFS 处理）
-    private const string SrcStart    = "Assets/Textures/Buttons/StartButton.png";
-    private const string SrcQuit     = "Assets/Textures/Buttons/QuitButton.png";
-    private const string SrcLogo     = "Assets/Textures/GameTile.png";
-    private const string OutStart    = "Assets/Textures/StartButton_processed.png";
-    private const string OutQuit     = "Assets/Textures/QuitButton_processed.png";
-    private const string OutLogo     = "Assets/Textures/GameTile_processed.png";
+    private const string TexLogo = "Assets/Textures/GameTile.png";
+    private const string TexBg = "Assets/Textures/background_new.png";
+    private const string TexTutorial = "Assets/Textures/Buttons/TutorialButton.png";
+    private const string TexNewGame = "Assets/Textures/Buttons/NewGameButton.png";
+    private const string TexContinue = "Assets/Textures/Buttons/ContinueButton.png";
+    private const string TexContinueDisabled = "Assets/Textures/Buttons/ContinueButtonDisable.png";
+    private const string TexQuit = "Assets/Textures/Buttons/QuitButton.png";
 
-    // 新版按钮图片路径（Buttons 子目录）
-    private const string TexNewGame    = "Assets/Textures/Buttons/NewGameButton.png";
-    private const string TexContinue   = "Assets/Textures/Buttons/ContinueButton.png";
-    private const string TexQuitBtn    = "Assets/Textures/Buttons/QuitButton.png";
+    private const string ScenePath = "Assets/Scenes/MainMenu.unity";
 
-    private const string ScenePath   = "Assets/Scenes/MainMenu.unity";
+    private const float BtnHeight = 90f;
+    private const float BtnWidth = 400f;
+    private const float BtnGap = 30f;
+    private const float LogoToBtnGap = 50f;
 
-    // ──────────────────────────────────────────────────────────────────────────
     [MenuItem("Tools/Fix Background Order")]
     public static void FixBackgroundOrder()
     {
@@ -55,404 +36,218 @@ public static class MainMenuSetup
     [MenuItem("Tools/Setup Main Menu Scene")]
     public static void Run()
     {
-        // ── 1. Process logo sprite (BFS background removal) ─────────────────
-        Sprite logoSprite  = BuildTransparentSprite(SrcLogo,  OutLogo);
-
-        if (logoSprite == null)
-        {
-            Debug.LogError("[MainMenuSetup] Logo sprite could not be processed. Aborting.");
-            return;
-        }
-
-        // ── 1b. Configure new button sprites (Point filter, etc.) ───────────
+        ConfigureSpriteImport(TexBg);
+        ConfigureSpriteImport(TexLogo);
+        ConfigureSpriteImport(TexTutorial);
         ConfigureSpriteImport(TexNewGame);
         ConfigureSpriteImport(TexContinue);
-        ConfigureSpriteImport(TexQuitBtn);
+        ConfigureSpriteImport(TexContinueDisabled);
+        ConfigureSpriteImport(TexQuit);
 
-        Sprite newGameSprite  = AssetDatabase.LoadAssetAtPath<Sprite>(TexNewGame);
-        Sprite continueSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexContinue);
-        Sprite quitSprite     = AssetDatabase.LoadAssetAtPath<Sprite>(TexQuitBtn);
+        Sprite logoSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexLogo);
+        Sprite bgSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexBg);
+        Sprite tutSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexTutorial);
+        Sprite newSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexNewGame);
+        Sprite contSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexContinue);
+        Sprite contDisSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexContinueDisabled);
+        Sprite quitSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexQuit);
 
-        if (newGameSprite == null)
-        {
-            // 回退：尝试使用旧版 BFS 处理过的 StartButton
-            Debug.LogWarning("[MainMenuSetup] NewGameButton.png not found, falling back to StartButton_processed.png");
-            newGameSprite = BuildTransparentSprite(SrcStart, OutStart);
-        }
-        if (quitSprite == null)
-        {
-            Debug.LogWarning("[MainMenuSetup] QuitButton.png (Textures) not found, falling back to processed version");
-            quitSprite = BuildTransparentSprite(SrcQuit, OutQuit);
-        }
+        if (logoSprite == null) { Debug.LogError("[MainMenuSetup] Logo missing."); return; }
+        if (bgSprite == null) { Debug.LogError("[MainMenuSetup] Background missing."); return; }
+        if (tutSprite == null) { Debug.LogError("[MainMenuSetup] TutorialButton missing."); return; }
+        if (newSprite == null) { Debug.LogError("[MainMenuSetup] NewGameButton missing."); return; }
+        if (contSprite == null) { Debug.LogError("[MainMenuSetup] ContinueButton missing."); return; }
+        if (contDisSprite == null) { Debug.LogWarning("[MainMenuSetup] ContinueButtonDisable missing (optional)."); }
+        if (quitSprite == null) { Debug.LogError("[MainMenuSetup] QuitButton missing."); return; }
 
-        if (newGameSprite == null || quitSprite == null)
-        {
-            Debug.LogError("[MainMenuSetup] Required button sprites missing. Aborting.");
-            return;
-        }
-
-        // ── 2. Load the scene ───────────────────────────────────────────────
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
-        // ── 3. Find / validate root objects ─────────────────────────────────
-        GameObject canvasGO  = GameObject.Find("MenuCanvas");
+        GameObject canvasGO = GameObject.Find("MenuCanvas");
         GameObject managerGO = GameObject.Find("MenuManager");
 
         if (canvasGO == null)
         {
-            Debug.LogError("[MainMenuSetup] 'MenuCanvas' not found in the scene.");
+            Debug.LogError("[MainMenuSetup] 'MenuCanvas' not found.");
             return;
         }
         if (managerGO == null)
         {
-            Debug.LogError("[MainMenuSetup] 'MenuManager' not found in the scene.");
+            Debug.LogError("[MainMenuSetup] 'MenuManager' not found.");
             return;
         }
 
-        // ── 4. Configure CanvasScaler for 1920×1080 ─────────────────────────
-        var scaler = canvasGO.GetComponent<CanvasScaler>();
-        if (scaler != null)
-        {
-            scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution  = new Vector2(1920, 1080);
-            scaler.screenMatchMode      = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight   = 0.5f;
-        }
+        CanvasScaler scaler = canvasGO.GetComponent<CanvasScaler>();
+        if (scaler == null) scaler = canvasGO.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
 
-        // ── 5. Replace TitleText / Logo ──────────────────────────────────────
-        // 删除旧的 TitleText 或 Logo
-        Transform titleTextTf = canvasGO.transform.Find("TitleText");
-        if (titleTextTf != null) Object.DestroyImmediate(titleTextTf.gameObject);
-        Transform oldLogoTf = canvasGO.transform.Find("Logo");
-        if (oldLogoTf != null) Object.DestroyImmediate(oldLogoTf.gameObject);
+        canvasGO.transform.localScale = Vector3.one;
 
+        // ── Clear existing UI ───────────────────────────────────────────────
+        DestroyChild(canvasGO.transform, "Background");
+        DestroyChild(canvasGO.transform, "Logo");
+        DestroyChild(canvasGO.transform, "TutorialButton");
+        DestroyChild(canvasGO.transform, "NewGameButton");
+        DestroyChild(canvasGO.transform, "ContinueButton");
+        DestroyChild(canvasGO.transform, "QuitButton");
+        DestroyChild(canvasGO.transform, "TitleText");
+        DestroyChild(canvasGO.transform, "StartButton");
+
+        // ── Background (fullscreen, behind all) ─────────────────────────────
+        GameObject bgGO = new GameObject("Background");
+        bgGO.transform.SetParent(canvasGO.transform, false);
+        bgGO.transform.SetSiblingIndex(0);
+        RectTransform bgRT = bgGO.AddComponent<RectTransform>();
+        bgRT.anchorMin = Vector2.zero;
+        bgRT.anchorMax = Vector2.one;
+        bgRT.sizeDelta = Vector2.zero;
+        bgRT.anchoredPosition = Vector2.zero;
+        Image bgImg = bgGO.AddComponent<Image>();
+        bgImg.sprite = bgSprite;
+        bgImg.type = Image.Type.Simple;
+        bgImg.raycastTarget = false;
+        bgImg.preserveAspect = false;
+
+        // ── Logo ────────────────────────────────────────────────────────────
         GameObject logoGO = new GameObject("Logo");
         logoGO.transform.SetParent(canvasGO.transform, false);
-        logoGO.transform.SetSiblingIndex(0);
+        RectTransform logoRT = logoGO.AddComponent<RectTransform>();
+        logoRT.anchorMin = new Vector2(0.5f, 0.5f);
+        logoRT.anchorMax = new Vector2(0.5f, 0.5f);
+        logoRT.anchoredPosition = new Vector2(0f, 220f);
+        logoRT.sizeDelta = new Vector2(800f, 240f);
+        Image logoImg = logoGO.AddComponent<Image>();
+        logoImg.sprite = logoSprite;
+        logoImg.preserveAspect = true;
+        logoImg.raycastTarget = false;
 
-        var logoRect = logoGO.AddComponent<RectTransform>();
-        logoRect.anchorMin        = new Vector2(0.5f, 0.5f);
-        logoRect.anchorMax        = new Vector2(0.5f, 0.5f);
-        logoRect.anchoredPosition = new Vector2(0f, 250f);
-        logoRect.sizeDelta        = new Vector2(600f, 200f);
+        // ── Buttons (4 buttons, equal 30px gaps, 90px height) ───────────────
+        // Logo bottom = 220 - 120 = 100
+        // Tutorial top = y1 + 45;  gap = 100 - (y1+45) = 50  →  y1 = 5
+        // Use y1 = 10 for slightly more breathing room
+        float y = 10f;                  // Tutorial center
+        CreateMenuButton(canvasGO, "TutorialButton", tutSprite, y); y -= BtnHeight + BtnGap;
+        CreateMenuButton(canvasGO, "NewGameButton", newSprite, y); y -= BtnHeight + BtnGap;
+        CreateMenuButton(canvasGO, "ContinueButton", contSprite, y); y -= BtnHeight + BtnGap;
+        CreateMenuButton(canvasGO, "QuitButton", quitSprite, y);
 
-        var logoImg = logoGO.AddComponent<Image>();
-        logoImg.sprite             = logoSprite;
-        logoImg.preserveAspect     = true;
-        logoImg.raycastTarget      = false;
-
-        // ── 6. Remove old StartButton, create new buttons ───────────────────
-        // 删除旧的 StartButton（如果存在）
-        Transform oldStartBtn = canvasGO.transform.Find("StartButton");
-        if (oldStartBtn != null) Object.DestroyImmediate(oldStartBtn.gameObject);
-
-        // 删除旧的 NewGameButton / ContinueButton（如果已存在，用于重复运行）
-        Transform oldNewGame = canvasGO.transform.Find("NewGameButton");
-        if (oldNewGame != null) Object.DestroyImmediate(oldNewGame.gameObject);
-        Transform oldContinue = canvasGO.transform.Find("ContinueButton");
-        if (oldContinue != null) Object.DestroyImmediate(oldContinue.gameObject);
-        Transform oldQuit = canvasGO.transform.Find("QuitButton");
-        if (oldQuit != null) Object.DestroyImmediate(oldQuit.gameObject);
-
-        // 三个按钮的垂直布局（屏幕中心偏下）
-        float btnHeight = 100f;
-        float spacing   = 20f;
-
-        // 如果有继续按钮图片，创建三个按钮；否则只创建两个
-        bool hasContinue = (continueSprite != null);
-
-        Vector2 newGameSize  = GetButtonSize(newGameSprite, btnHeight, 280f, 620f);
-        Vector2 continueSize = hasContinue ? GetButtonSize(continueSprite, btnHeight, 280f, 620f) : Vector2.zero;
-        Vector2 quitSize     = GetButtonSize(quitSprite, btnHeight, 280f, 620f);
-
-        // 按钮组整体垂直偏移（负数 = 往下移）
-        float groupOffsetY = -100f;
-
-        float topY, midY, botY;
-        if (hasContinue)
-        {
-            // 三个按钮：新游戏 / 继续游戏 / 退出
-            topY = (btnHeight + spacing)  + groupOffsetY;   // 新游戏
-            midY = 0f                     + groupOffsetY;   // 继续游戏
-            botY = -(btnHeight + spacing) + groupOffsetY;   // 退出
-        }
-        else
-        {
-            // 两个按钮：新游戏 / 退出
-            topY = (btnHeight + spacing) * 0.5f  + groupOffsetY;
-            midY = 0f; // unused
-            botY = -(btnHeight + spacing) * 0.5f + groupOffsetY;
-        }
-
-        // 新游戏按钮
-        CreateMenuButton(canvasGO, "NewGameButton", newGameSprite, newGameSize,
-                         new Vector2(0f, topY));
-
-        // 继续游戏按钮
-        if (hasContinue)
-        {
-            CreateMenuButton(canvasGO, "ContinueButton", continueSprite, continueSize,
-                             new Vector2(0f, midY));
-        }
-
-        // 退出按钮
-        CreateMenuButton(canvasGO, "QuitButton", quitSprite, quitSize,
-                         new Vector2(0f, botY));
-
-        // ── 7. Attach MainMenuController ─────────────────────────────────────
+        // ── Controller ──────────────────────────────────────────────────────
         var oldMenu = managerGO.GetComponent<MainMenu>();
         if (oldMenu != null) Object.DestroyImmediate(oldMenu);
 
-        var controller = managerGO.GetComponent<MainMenuController>()
-                      ?? managerGO.AddComponent<MainMenuController>();
+        var ctrl = managerGO.GetComponent<MainMenuController>()
+                ?? managerGO.AddComponent<MainMenuController>();
 
-        // ── 8. Wire onClick events ───────────────────────────────────────────
-        WireButton(canvasGO, "NewGameButton",  controller, nameof(MainMenuController.NewGame));
-        if (hasContinue)
-            WireButton(canvasGO, "ContinueButton", controller, nameof(MainMenuController.ContinueGame));
-        WireButton(canvasGO, "QuitButton",     controller, nameof(MainMenuController.QuitGame));
+        SerializedObject so = new SerializedObject(ctrl);
+        so.FindProperty("tutorialButton").objectReferenceValue =
+            canvasGO.transform.Find("TutorialButton")?.GetComponent<Button>();
+        so.FindProperty("newGameButton").objectReferenceValue =
+            canvasGO.transform.Find("NewGameButton")?.GetComponent<Button>();
+        so.FindProperty("continueButton").objectReferenceValue =
+            canvasGO.transform.Find("ContinueButton")?.GetComponent<Button>();
+        so.FindProperty("quitButton").objectReferenceValue =
+            canvasGO.transform.Find("QuitButton")?.GetComponent<Button>();
 
-        // ── 9. Ensure EventSystem exists ─────────────────────────────────────
+        if (contDisSprite != null)
+            so.FindProperty("continueDisabledSprite").objectReferenceValue = contDisSprite;
+
+        so.ApplyModifiedPropertiesWithoutUndo();
+
+        // ── Wire onClick ────────────────────────────────────────────────────
+        WireButton(canvasGO, "TutorialButton", ctrl, nameof(MainMenuController.Tutorial));
+        WireButton(canvasGO, "NewGameButton", ctrl, nameof(MainMenuController.NewGame));
+        WireButton(canvasGO, "ContinueButton", ctrl, nameof(MainMenuController.ContinueGame));
+        WireButton(canvasGO, "QuitButton", ctrl, nameof(MainMenuController.QuitGame));
+
+        // ── EventSystem ─────────────────────────────────────────────────────
         if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {
-            var es = new GameObject("EventSystem");
-            es.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            var esGO = new GameObject("EventSystem");
+            esGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            esGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
         }
 
-        // ── 10. Save ─────────────────────────────────────────────────────────
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
 
-        Debug.Log("[MainMenuSetup] 主菜单场景设置完成！按钮: NewGame" +
-                  (hasContinue ? " + Continue" : "") + " + Quit");
+        Debug.Log("[MainMenuSetup] Done. Tutorial + NewGame + Continue + Quit. 30px gaps, 90px height.");
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Button creation helper
-    // ──────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 在 Canvas 下创建一个带 Image + Button 的菜单按钮。
-    /// </summary>
-    static void CreateMenuButton(GameObject canvas, string name, Sprite sprite,
-                                  Vector2 size, Vector2 anchoredPos)
+    static void CreateMenuButton(GameObject canvas, string name, Sprite sprite, float centerY)
     {
-        GameObject btnGO = new GameObject(name);
-        btnGO.transform.SetParent(canvas.transform, false);
+        GameObject go = new GameObject(name);
+        go.transform.SetParent(canvas.transform, false);
 
-        var rt = btnGO.AddComponent<RectTransform>();
-        rt.anchorMin        = new Vector2(0.5f, 0.5f);
-        rt.anchorMax        = new Vector2(0.5f, 0.5f);
-        rt.pivot            = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = anchoredPos;
-        rt.sizeDelta        = size;
+        RectTransform rt = go.AddComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = new Vector2(0f, centerY);
+        rt.sizeDelta = new Vector2(BtnWidth, BtnHeight);
 
-        var img = btnGO.AddComponent<Image>();
-        img.sprite         = sprite;
-        img.type           = Image.Type.Simple;
-        img.preserveAspect = true;
-        img.color          = Color.white;
-        img.raycastTarget  = true;
+        Image img = go.AddComponent<Image>();
+        img.sprite = sprite;
+        img.type = Image.Type.Simple;
+        img.preserveAspect = false;
+        img.color = Color.white;
+        img.raycastTarget = true;
 
-        var btn = btnGO.AddComponent<Button>();
+        Button btn = go.AddComponent<Button>();
         btn.transition = Selectable.Transition.ColorTint;
-        var colors = btn.colors;
-        colors.normalColor      = Color.white;
-        colors.highlightedColor = new Color(0.84f, 0.84f, 0.84f, 1f);
-        colors.pressedColor     = new Color(0.7f, 0.7f, 0.7f, 1f);
-        colors.selectedColor    = Color.white;
-        btn.colors = colors;
+        ColorBlock cb = btn.colors;
+        cb.normalColor = Color.white;
+        cb.highlightedColor = new Color(0.84f, 0.84f, 0.84f, 1f);
+        cb.pressedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+        cb.selectedColor = Color.white;
+        btn.colors = cb;
     }
 
-    static Vector2 GetButtonSize(Sprite sprite, float targetHeight, float minWidth, float maxWidth)
+    static void DestroyChild(Transform parent, string name)
     {
-        float aspect = 1f;
-        if (sprite != null && sprite.rect.height > 0f)
-            aspect = sprite.rect.width / sprite.rect.height;
-
-        float width = Mathf.Clamp(targetHeight * aspect, minWidth, maxWidth);
-        return new Vector2(width, targetHeight);
+        Transform child = parent.Find(name);
+        if (child != null) Object.DestroyImmediate(child.gameObject);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Sprite import helper
-    // ──────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 确保图片以正确的 Sprite 设置导入（Point 过滤、无压缩、透明度）。
-    /// </summary>
     static void ConfigureSpriteImport(string assetPath)
     {
-        var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
-        if (importer == null) return;
+        TextureImporter imp = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+        if (imp == null) return;
 
-        bool needsReimport = false;
+        bool dirty = false;
+        if (imp.textureType != TextureImporterType.Sprite) { imp.textureType = TextureImporterType.Sprite; dirty = true; }
+        if (imp.spriteImportMode != SpriteImportMode.Single) { imp.spriteImportMode = SpriteImportMode.Single; dirty = true; }
+        if (imp.filterMode != FilterMode.Point) { imp.filterMode = FilterMode.Point; dirty = true; }
+        if (!imp.alphaIsTransparency) { imp.alphaIsTransparency = true; dirty = true; }
+        if (imp.mipmapEnabled) { imp.mipmapEnabled = false; dirty = true; }
+        if (imp.textureCompression != TextureImporterCompression.Uncompressed) { imp.textureCompression = TextureImporterCompression.Uncompressed; dirty = true; }
 
-        if (importer.textureType != TextureImporterType.Sprite)
-        { importer.textureType = TextureImporterType.Sprite; needsReimport = true; }
-        if (importer.spriteImportMode != SpriteImportMode.Single)
-        { importer.spriteImportMode = SpriteImportMode.Single; needsReimport = true; }
-        if (importer.filterMode != FilterMode.Point)
-        { importer.filterMode = FilterMode.Point; needsReimport = true; }
-        if (!importer.alphaIsTransparency)
-        { importer.alphaIsTransparency = true; needsReimport = true; }
-        if (importer.mipmapEnabled)
-        { importer.mipmapEnabled = false; needsReimport = true; }
-        if (importer.textureCompression != TextureImporterCompression.Uncompressed)
-        { importer.textureCompression = TextureImporterCompression.Uncompressed; needsReimport = true; }
-
-        if (needsReimport)
-            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+        if (dirty) AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Sprite processing helpers (BFS background removal)
-    // ──────────────────────────────────────────────────────────────────────────
-
-    static Sprite BuildTransparentSprite(string srcPath, string outPath)
+    static void WireButton(GameObject canvas, string name, MainMenuController ctrl, string method)
     {
-        var imp = AssetImporter.GetAtPath(srcPath) as TextureImporter;
-        if (imp == null)
-        {
-            Debug.LogError($"[MainMenuSetup] Cannot find importer for {srcPath}");
-            return null;
-        }
-
-        imp.textureType      = TextureImporterType.Default;
-        imp.isReadable       = true;
-        imp.filterMode       = FilterMode.Point;
-        imp.alphaSource      = TextureImporterAlphaSource.FromInput;
-        imp.alphaIsTransparency = true;
-        imp.mipmapEnabled    = false;
-        AssetDatabase.ImportAsset(srcPath, ImportAssetOptions.ForceUpdate);
-
-        var srcTex = AssetDatabase.LoadAssetAtPath<Texture2D>(srcPath);
-        if (srcTex == null)
-        {
-            Debug.LogError($"[MainMenuSetup] Failed to load texture: {srcPath}");
-            return null;
-        }
-
-        Texture2D processed = RemoveWhiteBackground(srcTex);
-
-        File.WriteAllBytes(Path.Combine(Directory.GetCurrentDirectory(), outPath),
-                           processed.EncodeToPNG());
-        Object.DestroyImmediate(processed);
-
-        imp.textureType = TextureImporterType.Sprite;
-        imp.isReadable  = false;
-        AssetDatabase.ImportAsset(srcPath, ImportAssetOptions.ForceUpdate);
-
-        AssetDatabase.Refresh();
-        var outImp = AssetImporter.GetAtPath(outPath) as TextureImporter;
-        if (outImp == null)
-        {
-            Debug.LogError($"[MainMenuSetup] Cannot find importer for processed file: {outPath}");
-            return null;
-        }
-
-        outImp.textureType         = TextureImporterType.Sprite;
-        outImp.spriteImportMode    = SpriteImportMode.Single;
-        outImp.filterMode          = FilterMode.Point;
-        outImp.alphaIsTransparency = true;
-        outImp.alphaSource         = TextureImporterAlphaSource.FromInput;
-        outImp.isReadable          = false;
-        outImp.mipmapEnabled       = false;
-        AssetDatabase.ImportAsset(outPath, ImportAssetOptions.ForceUpdate);
-
-        return AssetDatabase.LoadAssetAtPath<Sprite>(outPath);
-    }
-
-    static Texture2D RemoveWhiteBackground(Texture2D src, byte threshold = 220)
-    {
-        int w = src.width;
-        int h = src.height;
-        Color32[] px = src.GetPixels32();
-        bool[] visited = new bool[w * h];
-        var queue = new Queue<int>();
-
-        for (int x = 0; x < w; x++)
-        {
-            TryEnqueue(queue, visited, px, x, 0,     w, threshold);
-            TryEnqueue(queue, visited, px, x, h - 1, w, threshold);
-        }
-        for (int y = 1; y < h - 1; y++)
-        {
-            TryEnqueue(queue, visited, px, 0,     y, w, threshold);
-            TryEnqueue(queue, visited, px, w - 1, y, w, threshold);
-        }
-
-        while (queue.Count > 0)
-        {
-            int idx = queue.Dequeue();
-            int x   = idx % w;
-            int y   = idx / w;
-            px[idx].a = 0;
-
-            if (x > 0)     TryEnqueue(queue, visited, px, x - 1, y,     w, threshold);
-            if (x < w - 1) TryEnqueue(queue, visited, px, x + 1, y,     w, threshold);
-            if (y > 0)     TryEnqueue(queue, visited, px, x,     y - 1, w, threshold);
-            if (y < h - 1) TryEnqueue(queue, visited, px, x,     y + 1, w, threshold);
-        }
-
-        var result = new Texture2D(w, h, TextureFormat.RGBA32, false);
-        result.SetPixels32(px);
-        result.Apply();
-        return result;
-    }
-
-    static void TryEnqueue(Queue<int> q, bool[] visited, Color32[] px,
-                           int x, int y, int w, byte threshold)
-    {
-        int idx = y * w + x;
-        if (visited[idx]) return;
-        Color32 c = px[idx];
-        if (c.r >= threshold && c.g >= threshold && c.b >= threshold)
-        {
-            visited[idx] = true;
-            q.Enqueue(idx);
-        }
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Scene-wiring helpers
-    // ──────────────────────────────────────────────────────────────────────────
-
-    static void WireButton(GameObject canvas, string buttonName,
-                           MainMenuController controller, string methodName)
-    {
-        Transform tf = canvas.transform.Find(buttonName);
+        Transform tf = canvas.transform.Find(name);
         if (tf == null) return;
-
-        var btn = tf.GetComponent<Button>();
+        Button btn = tf.GetComponent<Button>();
         if (btn == null) return;
-
         btn.onClick.RemoveAllListeners();
 
-        // 根据方法名选择正确的委托
-        UnityEngine.Events.UnityAction action = null;
-        switch (methodName)
+        UnityEngine.Events.UnityAction action = method switch
         {
-            case nameof(MainMenuController.NewGame):
-                action = controller.NewGame;
-                break;
-            case nameof(MainMenuController.ContinueGame):
-                action = controller.ContinueGame;
-                break;
-            case nameof(MainMenuController.QuitGame):
-                action = controller.QuitGame;
-                break;
-            case "StartGame": // 兼容旧版
-                action = controller.StartGame;
-                break;
-            default:
-                Debug.LogWarning($"[MainMenuSetup] Unknown method: {methodName}");
-                return;
-        }
+            nameof(MainMenuController.Tutorial) => ctrl.Tutorial,
+            nameof(MainMenuController.NewGame) => ctrl.NewGame,
+            nameof(MainMenuController.ContinueGame) => ctrl.ContinueGame,
+            nameof(MainMenuController.QuitGame) => ctrl.QuitGame,
+            "StartGame" => ctrl.StartGame,
+            _ => null
+        };
 
-        UnityEditor.Events.UnityEventTools.AddPersistentListener(btn.onClick, action);
-        EditorUtility.SetDirty(btn);
+        if (action != null)
+            UnityEditor.Events.UnityEventTools.AddPersistentListener(btn.onClick, action);
+        else
+            Debug.LogWarning($"[MainMenuSetup] Unknown method: {method}");
     }
 }
