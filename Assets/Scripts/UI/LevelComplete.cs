@@ -7,7 +7,16 @@ public class LevelComplete : MonoBehaviour
     void Start()
     {
         Time.timeScale = 1f;
-        EnsureCanvasScale();
+        EnsureCanvasScales();
+
+        bool hasSettlementCanvas = GameObject.Find("SettlementCanvas") != null;
+
+        if (hasSettlementCanvas)
+        {
+            SetActiveIfExists("NextLevelButton", false);
+            SetActiveIfExists("MainMenuButton", false);
+            return;
+        }
 
         var nextBtn = GameObject.Find("NextLevelButton")?.GetComponent<Button>();
         if (nextBtn != null) nextBtn.onClick.AddListener(NextLevel);
@@ -30,17 +39,24 @@ public class LevelComplete : MonoBehaviour
         SceneManager.LoadScene(0);
     }
 
-    private static void EnsureCanvasScale()
+    private static void EnsureCanvasScales()
     {
-        GameObject canvas = GameObject.Find("Canvas");
-        if (canvas == null)
-            return;
-
-        Vector3 scale = canvas.transform.localScale;
-        if (Mathf.Abs(scale.x) < 0.001f && Mathf.Abs(scale.y) < 0.001f)
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        foreach (Canvas canvas in canvases)
         {
-            canvas.transform.localScale = Vector3.one;
-            Debug.Log("[LevelComplete][Diag] Canvas scale was zero; restored to (1,1,1).");
+            Vector3 scale = canvas.transform.localScale;
+            if (Mathf.Abs(scale.x) < 0.001f && Mathf.Abs(scale.y) < 0.001f)
+            {
+                canvas.transform.localScale = Vector3.one;
+                Debug.Log($"[LevelComplete][Diag] {canvas.gameObject.name} scale was zero; restored to (1,1,1).");
+            }
         }
+    }
+
+    private static void SetActiveIfExists(string objectName, bool active)
+    {
+        GameObject go = GameObject.Find(objectName);
+        if (go != null)
+            go.SetActive(active);
     }
 }

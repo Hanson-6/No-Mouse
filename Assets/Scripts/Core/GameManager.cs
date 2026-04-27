@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections;
 using GestureRecognition.Service;
 using GestureRecognition.UI;
 
@@ -40,17 +39,7 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         EnsureGestureGameplayBindings();
-
-        if (SceneManager.GetActiveScene().name == "MainMenu")
-            StartCoroutine(HideGesturePanelAfterFrame());
-    }
-
-    private IEnumerator HideGesturePanelAfterFrame()
-    {
-        yield return null;
-        var panel = FindObjectOfType<GestureDisplayPanel>(true);
-        if (panel != null)
-            panel.gameObject.SetActive(false);
+        UpdateGesturePanelVisibilityForScene(SceneManager.GetActiveScene());
     }
 
     void Update()
@@ -66,6 +55,20 @@ public class GameManager : MonoBehaviour
         if (!active.IsValid()) return false;
         string name = active.name;
         return name != "MainMenu" && name != "LevelComplete";
+    }
+
+    private static bool ShouldHideGesturePanelInScene(string sceneName)
+    {
+        return sceneName == "MainMenu" || sceneName == "LevelComplete";
+    }
+
+    private void UpdateGesturePanelVisibilityForScene(Scene scene)
+    {
+        if (GestureService.Instance == null)
+            return;
+
+        bool shouldShow = !ShouldHideGesturePanelInScene(scene.name);
+        GestureService.Instance.SetDisplayPanelVisibility(shouldShow, shouldShow);
     }
 
     void OnEnable()
@@ -85,13 +88,7 @@ public class GameManager : MonoBehaviour
         ApplyCheckpointRespawnIfAvailable();
         MovePlayerToRespawnIfNeeded();
         EnsureGestureGameplayBindings();
-
-        if (scene.name == "MainMenu")
-        {
-            var panel = FindObjectOfType<GestureDisplayPanel>(true);
-            if (panel != null)
-                panel.gameObject.SetActive(false);
-        }
+        UpdateGesturePanelVisibilityForScene(scene);
     }
 
     private void UpdateGesturePanelStats()
@@ -198,13 +195,14 @@ public class GameManager : MonoBehaviour
         }
 
         var panel = FindObjectOfType<GestureDisplayPanel>(true);
-        if (panel != null)
-        {
-            gesturePanel = panel;
-            if (!panel.gameObject.activeSelf)
-                panel.Show();
-            UpdateGesturePanelStats();
-        }
+        if (panel == null)
+            return;
+
+        gesturePanel = panel;
+        string sceneName = SceneManager.GetActiveScene().name;
+        if (!ShouldHideGesturePanelInScene(sceneName) && !panel.gameObject.activeSelf)
+            GestureService.Instance?.SetDisplayPanelVisibility(true, true);
+        UpdateGesturePanelStats();
     }
 
     public Vector3 GetRespawnPoint()

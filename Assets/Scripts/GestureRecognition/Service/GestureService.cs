@@ -84,7 +84,7 @@ namespace GestureRecognition.Service
 
         [Tooltip("Automatically create and show the gesture display panel on start.")]
         [SerializeField]
-        private bool _autoShowPanel = true;
+        private bool _autoShowPanel = false;
 
         [Tooltip("Default display mode for the auto-created panel.")]
         [SerializeField]
@@ -425,6 +425,27 @@ namespace GestureRecognition.Service
             {
                 Debug.Log($"[GestureService] Scene '{scene.name}' loaded — Update() loop continues automatically.");
             }
+
+            bool hidePanel = scene.name == "MainMenu" || scene.name == "LevelComplete";
+            SetDisplayPanelVisibility(!hidePanel, !hidePanel);
+        }
+
+        /// <summary>
+        /// Controls the floating gesture display panel visibility.
+        /// When visible is true and createIfMissing is true, a panel is created if needed.
+        /// </summary>
+        public void SetDisplayPanelVisibility(bool visible, bool createIfMissing)
+        {
+            if (visible && createIfMissing && _displayPanel == null)
+                EnsureDisplayPanel();
+
+            if (_displayPanel == null)
+                return;
+
+            if (visible)
+                _displayPanel.Show();
+            else
+                _displayPanel.Hide();
         }
 
         private void Start()
