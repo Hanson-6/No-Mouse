@@ -502,6 +502,7 @@ public static class SaveManager
         AddTypedSnapshotEntries<SwitchDoor>(scene, entries);
         AddTypedSnapshotEntries<ButtonController>(scene, entries);
         AddTypedSnapshotEntries<FallingBoulder>(scene, entries);
+        AddTypedSnapshotEntries<DisappearPlatform>(scene, entries);
         AddTypedSnapshotEntries<BreakableDoor>(scene, entries);
         AddTypedSnapshotEntries<Checkpoint>(scene, entries);
         AddTypedSnapshotEntries<DarkCheckpoint>(scene, entries);

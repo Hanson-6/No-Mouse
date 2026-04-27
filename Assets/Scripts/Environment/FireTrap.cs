@@ -45,6 +45,7 @@ public class FireTrap : MonoBehaviour
         triggerCollider = GetComponent<BoxCollider2D>();
         audioSource = GetComponent<AudioSource>();
         triggerCollider.isTrigger = true;
+        triggerCollider.enabled = false;
     }
 
     void OnValidate()
@@ -130,8 +131,18 @@ public class FireTrap : MonoBehaviour
         phaseTimer = 0f;
         frameTimer = 0f;
         frameIndex = 0;
+        SetHitColliderActive(nextPhase == Phase.Hit);
         ApplyPhaseFirstFrame();
         PlayPhaseSound(nextPhase);
+    }
+
+    private void SetHitColliderActive(bool active)
+    {
+        if (triggerCollider == null)
+            return;
+
+        if (triggerCollider.enabled != active)
+            triggerCollider.enabled = active;
     }
 
     private void PlayPhaseSound(Phase enteredPhase)
