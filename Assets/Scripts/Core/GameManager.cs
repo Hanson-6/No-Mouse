@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 using GestureRecognition.Service;
 using GestureRecognition.UI;
 
@@ -39,6 +40,17 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         EnsureGestureGameplayBindings();
+
+        if (SceneManager.GetActiveScene().name == "MainMenu")
+            StartCoroutine(HideGesturePanelAfterFrame());
+    }
+
+    private IEnumerator HideGesturePanelAfterFrame()
+    {
+        yield return null;
+        var panel = FindObjectOfType<GestureDisplayPanel>(true);
+        if (panel != null)
+            panel.gameObject.SetActive(false);
     }
 
     void Update()
