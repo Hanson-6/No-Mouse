@@ -185,20 +185,21 @@ namespace GestureRecognition.UI
         public void UpdateGameStats(string floorName, int score, float timer)
         {
             if (_floorLabel != null)
-                _floorLabel.text = string.IsNullOrEmpty(floorName) ? string.Empty : $"STAGE  {floorName}";
-            
+                _floorLabel.gameObject.SetActive(false);
+
             if (_scoreLabel != null)
-                _scoreLabel.text = $"SCORE  {score:N0}";
+                _scoreLabel.gameObject.SetActive(false);
 
             if (_timerLabel != null)
-                _timerLabel.text = $"TIME  {FormatTime(timer)}";
+                _timerLabel.text = FormatTime(timer);
         }
 
         private static string FormatTime(float timer)
         {
-            int minutes = Mathf.FloorToInt(timer / 60f);
+            int hours = Mathf.FloorToInt(timer / 3600f);
+            int minutes = Mathf.FloorToInt((timer % 3600f) / 60f);
             int seconds = Mathf.FloorToInt(timer % 60f);
-            return $"{minutes:00}:{seconds:00}";
+            return $"{hours:D2}:{minutes:D2}:{seconds:D2}";
         }
 
         /// <summary>Gets or sets the current display mode.</summary>
@@ -840,13 +841,13 @@ namespace GestureRecognition.UI
             EnsureBottomBarLabel(
                 ref _timerLabel,
                 "TimerLabel",
-                new Vector2(0.5f, 0f),
+                new Vector2(0f, 0f),
                 new Vector2(1f, 1f),
                 new Vector2(0f, 0f),
-                new Vector2(-6f, 0f),
-                new Color(0.45f, 1f, 0.62f, 1f),
-                TextAnchor.MiddleRight,
-                "TIME  00:00");
+                new Vector2(0f, 0f),
+                new Color(1f, 1f, 1f, 0.95f),
+                TextAnchor.MiddleCenter,
+                "00:00:00");
         }
 
         private void EnsureBottomBarLabel(
@@ -908,8 +909,8 @@ namespace GestureRecognition.UI
         {
             int fontSize = GetScaledLabelFontSize();
             ApplyLabelFontSize(_floorLabel, fontSize);
-            ApplyLabelFontSize(_timerLabel, fontSize);
             ApplyLabelFontSize(_scoreLabel, fontSize);
+            ApplyLabelFontSize(_timerLabel, Mathf.RoundToInt(fontSize * 1.25f));
 
             if (_labelArea != null)
             {
