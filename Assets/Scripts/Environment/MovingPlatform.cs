@@ -24,7 +24,7 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
     [Tooltip("If true, platform stays at pointA and only moves to pointB when activated by a ButtonController")]
     public bool buttonControlled = false;
 
-    [Tooltip("Optional: if assigned, the platform will not move toward pointB while this door is closed.")]
+    [Tooltip("Optional: in patrol mode the platform reverses direction when blocked by this door's collider. In button-controlled mode the platform stays at pointA while the door is closed.")]
     [SerializeField] private SwitchDoor doorBlocker;
 
     [Header("Pause")]
@@ -37,6 +37,8 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
     private float waitTimer;
     private Rigidbody2D rb;
     private bool activated;  // used only in buttonControlled mode
+    private bool isBlockedByDoor;
+    private bool wasBlockedByDoor;
 
     public Vector2 CurrentVelocity { get; private set; }
     public float CurrentVelocityX => CurrentVelocity.x;
@@ -123,6 +125,14 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         }
         else
         {
+            // Physics-based door blocking: if the door collider just now
+            // blocked the platform, reverse patrol direction.
+            if (isBlockedByDoor && !wasBlockedByDoor)
+            {
+                goingToB = !goingToB;
+                waitTimer = 0f;
+            }
+            wasBlockedByDoor = isBlockedByDoor;
             nextPosition = UpdatePatrol(currentPosition, dt);
         }
 
@@ -229,6 +239,7 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
     void OnCollisionEnter2D(Collision2D col)
     {
         UpdatePlatformContact(col, true);
+        CheckDoorCollision(col, true);
     }
 
     void OnCollisionStay2D(Collision2D col)
@@ -237,11 +248,22 @@ public class MovingPlatform : MonoBehaviour, ISnapshotSaveable, IButtonActivatab
         // In that case OnCollisionEnter2D can be skipped, so we refresh contact
         // continuously here to keep Player/Box bound to this platform.
         UpdatePlatformContact(col, true);
+        CheckDoorCollision(col, true);
     }
 
     void OnCollisionExit2D(Collision2D col)
     {
         UpdatePlatformContact(col, false);
+        CheckDoorCollision(col, false);
+    }
+
+    private void CheckDoorCollision(Collision2D col, bool touching)
+    {
+        if (doorBlocker == null) return;
+        if (col.gameObject == doorBlocker.gameObject)
+        {
+            isBlockedByDoor = touching;
+        }
     }
 
     private void UpdatePlatformContact(Collision2D col, bool touching)
