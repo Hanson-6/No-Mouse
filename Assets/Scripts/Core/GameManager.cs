@@ -73,6 +73,13 @@ public class GameManager : MonoBehaviour
         ApplyCheckpointRespawnIfAvailable();
         MovePlayerToRespawnIfNeeded();
         EnsureGestureGameplayBindings();
+
+        if (scene.name == "MainMenu")
+        {
+            var panel = FindObjectOfType<GestureDisplayPanel>(true);
+            if (panel != null)
+                panel.gameObject.SetActive(false);
+        }
     }
 
     private void UpdateGesturePanelStats()
