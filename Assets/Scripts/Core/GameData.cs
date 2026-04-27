@@ -10,6 +10,7 @@ public static class GameData
     public static int Lives = 3;
     public static int Score = 0;
     public static float CurrentTimer = 0f;
+    public static float FinalTime = 0f;
 
     private static bool darkModeActive;
 
@@ -115,6 +116,7 @@ public static class GameData
         Lives = 3;
         Score = 0;
         CurrentTimer = 0f;
+        FinalTime = 0f;
         ClearCheckpoint();
         ClearDarkMode();
     }

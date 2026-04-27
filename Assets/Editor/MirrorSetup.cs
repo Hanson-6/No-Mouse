@@ -78,6 +78,49 @@ public static class MirrorSetup
         Debug.Log("[MirrorSetup] Mirror placed in current scene.");
     }
 
+    [MenuItem("Tools/Mirror/3. Place Mirror Entry Trigger")]
+    public static void PlaceMirrorEntryTrigger()
+    {
+        Scene scene = EditorSceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            Debug.LogError("[MirrorSetup] Open a scene first.");
+            return;
+        }
+
+        MirrorController existingMirror = Object.FindObjectOfType<MirrorController>();
+        if (existingMirror == null)
+        {
+            Debug.LogError("[MirrorSetup] No MirrorController found in the active scene. Place a Mirror first.");
+            return;
+        }
+
+        GameObject triggerObj = new GameObject("MirrorEntryTrigger");
+        BoxCollider2D col = triggerObj.AddComponent<BoxCollider2D>();
+        col.isTrigger = true;
+        col.size = new Vector2(8f, 20f);
+
+        MirrorEntryTrigger trigger = triggerObj.AddComponent<MirrorEntryTrigger>();
+        SerializedObject so = new SerializedObject(trigger);
+        so.FindProperty("targetMirror").objectReferenceValue = existingMirror;
+        so.FindProperty("mirrorToMirroredSide").boolValue = true;
+        so.FindProperty("triggerOnlyOnce").boolValue = true;
+        so.ApplyModifiedPropertiesWithoutUndo();
+
+        triggerObj.transform.position = new Vector3(
+            existingMirror.transform.position.x - 18f,
+            existingMirror.transform.position.y,
+            0f);
+
+        string uniqueName = GetUniqueRootName(scene, "MirrorEntryTrigger");
+        triggerObj.name = uniqueName;
+
+        Selection.activeGameObject = triggerObj;
+        EditorSceneManager.MarkSceneDirty(scene);
+
+        Debug.Log("[MirrorSetup] Mirror Entry Trigger placed. Adjust BoxCollider2D size/position in Inspector.");
+    }
+
     private static GameObject CreateMirrorObject(Sprite mirrorSprite, Sprite shadowSprite)
     {
         GameObject root = new GameObject("Mirror");

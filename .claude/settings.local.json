@@ -16,7 +16,10 @@
       "mcp__coplay-mcp__get_unity_editor_state",
       "mcp__coplay-mcp__list_game_objects_in_hierarchy",
       "mcp__coplay-mcp__set_unity_project_root",
-      "mcp__UnityMCP__manage_camera"
+      "mcp__UnityMCP__manage_camera",
+      "Bash(git fetch *)",
+      "Bash(git stash *)",
+      "Bash(xargs grep *)"
     ]
   }
 }

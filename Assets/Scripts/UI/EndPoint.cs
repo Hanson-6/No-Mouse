@@ -20,6 +20,7 @@ public class EndPoint : MonoBehaviour
         if (!other.CompareTag("Player")) return;
 
         triggered = true;
+        GameData.FinalTime = GameData.CurrentTimer;
         GameData.CurrentLevel = SceneManager.GetActiveScene().buildIndex;
 
         if (GameManager.Instance != null)
