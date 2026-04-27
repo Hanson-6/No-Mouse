@@ -19,13 +19,18 @@ using GestureRecognition.Service;
 /// </summary>
 public class MainMenuController : MonoBehaviour
 {
-    private const string PreferredFirstLevelScenePath = "Assets/Scenes/Tutoring.unity";
-    private const string SecondaryFirstLevelScenePath = "Assets/Scenes/Tutorial.unity";
+    private const string PreferredFirstLevelScenePath = "Assets/Scenes/Level2.unity";
+    private const string SecondaryFirstLevelScenePath = "Assets/Scenes/Tutoring.unity";
+    private const string TutorialScenePath = "Assets/Scenes/Tutoring.unity";
 
     [Header("Button References (auto-found if left empty)")]
     public Button newGameButton;
     public Button continueButton;
     public Button quitButton;
+    public Button tutorialButton;
+
+    [Header("Continue Disabled")]
+    [SerializeField] private Sprite continueDisabledSprite;
 
     // 保留旧字段名以兼容 Inspector 中可能已有的序列化引用
     [HideInInspector]
@@ -67,7 +72,16 @@ public class MainMenuController : MonoBehaviour
         if (quitButton == null)
             quitButton = FindButtonByName("QuitButton");
 
+        if (tutorialButton == null)
+            tutorialButton = FindButtonByName("TutorialButton");
+
         // 连接按钮事件
+        if (tutorialButton != null)
+        {
+            tutorialButton.onClick.RemoveAllListeners();
+            tutorialButton.onClick.AddListener(Tutorial);
+        }
+
         if (newGameButton != null)
         {
             newGameButton.onClick.RemoveAllListeners();
@@ -79,10 +93,14 @@ public class MainMenuController : MonoBehaviour
             continueButton.onClick.RemoveAllListeners();
             continueButton.onClick.AddListener(ContinueGame);
 
-            // 如果没有存档，隐藏/禁用"继续游戏"按钮
             if (!SaveManager.HasSave())
             {
-                continueButton.gameObject.SetActive(false);
+                continueButton.interactable = false;
+                if (continueDisabledSprite != null)
+                {
+                    Image img = continueButton.targetGraphic as Image;
+                    if (img != null) img.sprite = continueDisabledSprite;
+                }
             }
         }
 
@@ -107,11 +125,11 @@ public class MainMenuController : MonoBehaviour
         // 初始化可以被键盘选择的有效按钮数组
         var btnList = new System.Collections.Generic.List<Button>();
         
-        // 只有处于激活状态的按钮才加入键盘导航（例如无存档时不会加入继续游戏）
-        // 大厅排版：需与游戏画面内按钮上下排列的顺序严格一致
-        if (newGameButton != null && newGameButton.gameObject.activeInHierarchy) btnList.Add(newGameButton);
-        if (continueButton != null && continueButton.gameObject.activeInHierarchy) btnList.Add(continueButton);
-        if (quitButton != null && quitButton.gameObject.activeInHierarchy) btnList.Add(quitButton);
+        // 只有处于激活状态且可交互的按钮才加入键盘导航
+        if (tutorialButton != null && tutorialButton.gameObject.activeInHierarchy && tutorialButton.interactable) btnList.Add(tutorialButton);
+        if (newGameButton != null && newGameButton.gameObject.activeInHierarchy && newGameButton.interactable) btnList.Add(newGameButton);
+        if (continueButton != null && continueButton.gameObject.activeInHierarchy && continueButton.interactable) btnList.Add(continueButton);
+        if (quitButton != null && quitButton.gameObject.activeInHierarchy && quitButton.interactable) btnList.Add(quitButton);
 
         _menuButtons = btnList.ToArray();
 
@@ -128,24 +146,6 @@ public class MainMenuController : MonoBehaviour
     {
         if (_menuButtons == null || _menuButtons.Length == 0)
             return;
-
-        if (Input.GetKeyDown(KeyCode.W))
-        {
-            _selectedIndex--;
-            if (_selectedIndex < 0) _selectedIndex = _menuButtons.Length - 1;
-            EventSystem.current?.SetSelectedGameObject(_menuButtons[_selectedIndex].gameObject);
-            UpdateSelectionVisuals();
-        }
-        else if (Input.GetKeyDown(KeyCode.S))
-        {
-            _selectedIndex = (_selectedIndex + 1) % _menuButtons.Length;
-            EventSystem.current?.SetSelectedGameObject(_menuButtons[_selectedIndex].gameObject);
-            UpdateSelectionVisuals();
-        }
-        else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
-        {
-            _menuButtons[_selectedIndex].onClick.Invoke();
-        }
 
         SyncSelectionFromEventSystem();
         UpdateSelectionVisuals();
@@ -210,9 +210,6 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void ContinueGame()
     {
-        if (requireCameraReady && !CanStartGameplay())
-            return;
-
         ContinueGameInternal();
     }
 
@@ -226,6 +223,26 @@ public class MainMenuController : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+
+    /// <summary>
+    /// 教程：加载 Tutoring 场景。
+    /// </summary>
+    public void Tutorial()
+    {
+        if (requireCameraReady && !CanStartGameplay())
+            return;
+
+        Time.timeScale = 1f;
+
+        int index = SceneUtility.GetBuildIndexByScenePath(TutorialScenePath);
+        if (index >= 0)
+        {
+            SceneManager.LoadScene(index);
+            return;
+        }
+
+        SceneManager.LoadScene(TutorialScenePath);
     }
 
     // ── 保留旧方法名以兼容可能存在的持久化 onClick 引用 ──────────────────
@@ -250,7 +267,7 @@ public class MainMenuController : MonoBehaviour
             Debug.Log("[MainMenuController][Diag] CameraGateUI attached automatically.");
         }
 
-        _cameraGate.Configure(cameraStatusText, newGameButton, continueButton);
+        _cameraGate.Configure(cameraStatusText, tutorialButton, newGameButton);
     }
 
     private bool CanStartGameplay()
@@ -291,6 +308,12 @@ public class MainMenuController : MonoBehaviour
     private static void ContinueGameInternal()
     {
         Time.timeScale = 1f;
+
+        if (!SaveManager.HasSave())
+        {
+            Debug.LogWarning("[MainMenuController] Continue 失败：没有存档。");
+            return;
+        }
 
         if (!SaveManager.ContinueFromLatestSnapshot())
             Debug.LogWarning("[MainMenuController] Continue 失败：未找到可恢复的 session/checkpoint 存档。");
