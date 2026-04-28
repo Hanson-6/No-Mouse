@@ -116,11 +116,11 @@ public class SettlementPanel : MonoBehaviour
 
     public void OnQuit()
     {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+        const string mainMenuSceneName = "MainMenu";
+        if (Application.CanStreamedLevelBeLoaded(mainMenuSceneName))
+            SceneManager.LoadScene(mainMenuSceneName);
+        else
+            SceneManager.LoadScene(0);
     }
 
     void ConfigureKeyboardNavigation()
