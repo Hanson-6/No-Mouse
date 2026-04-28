@@ -191,9 +191,13 @@ public class PlayerController : MonoBehaviour, ISnapshotSaveable
 
         if (groundedNow)
         {
-            bool landedThisFrame = !wasGroundedLastFixed;
-            if (landedThisFrame && jumpGroundResetLockTimer <= 0f && rb.velocity.y <= 0.01f)
-                jumpCount = 0;
+            if (jumpGroundResetLockTimer <= 0f)
+            {
+                float supportVelocityY = currentPlatform != null ? currentPlatform.CurrentVelocityY : 0f;
+                float relativeVelocityY = rb.velocity.y - supportVelocityY;
+                if (Mathf.Abs(relativeVelocityY) <= 0.15f)
+                    jumpCount = 0;
+            }
 
             coyoteTimer = coyoteTime;
         }
