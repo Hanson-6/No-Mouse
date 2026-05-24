@@ -5,13 +5,11 @@
   <i>Built with Unity + MediaPipe Real-time Gesture Recognition</i>
 </p>
 
-
 <p align="center">
   <img src="Assets/Textures/SpiritHands/push.png" width="60" alt="Push"/>
   <img src="Assets/Textures/SpiritHands/pull.png" width="60" alt="Pull"/>
   <img src="Assets/Textures/SpiritHands/shoot.png" width="60" alt="Shoot"/>
 </p>
-
 
 ---
 
@@ -22,8 +20,6 @@
 No mouse needed—just your hands and a webcam!
 
 ---
-
-
 
 ## <font color="red">⚠️ Important Notice</font>
 
@@ -37,20 +33,21 @@ No mouse needed—just your hands and a webcam!
 > - <font color="red">Camera permissions are granted when prompted by the OS or browser</font>
 > - <font color="red">No other application is exclusively occupying the webcam</font>
 
-![image-20260503203007684](C:\Users\caiji\AppData\Roaming\Typora\typora-user-images\image-20260503203007684.png)
+<p align="center">
+  <img src="Docs/special.png" alt="Movement Guide" width="800"/>
+</p>
 
 ## 🎯 Key Features
 
 ### 🤚 Gesture-Based Gameplay
-
 Control the entire game with natural hand gestures:
 
-| Gesture                    | Icon                                                         | Action                            |
-| -------------------------- | ------------------------------------------------------------ | --------------------------------- |
-| **Open Palm**              | <img src="Assets/Textures/SpiritHands/push.png" width="40"/> | Push boxes                        |
-| **Fist**                   | <img src="Assets/Textures/SpiritHands/pull.png" width="40"/> | Pull boxes                        |
-| **Finger Gun**             | <img src="Assets/Textures/SpiritHands/shoot.png" width="40"/> | Shoot projectiles at enemies      |
-| **Dual-hand: Push + Fist** | <img src="Assets/Textures/SpiritHands/switch.png" width="40"/> | Mirror teleport (Switch)          |
+| Gesture | Icon | Action |
+|---------|------|--------|
+| **Open Palm** | <img src="Assets/Textures/SpiritHands/push.png" width="40"/> | Push boxes |
+| **Fist** | <img src="Assets/Textures/SpiritHands/pull.png" width="40"/> | Pull boxes |
+| **Finger Gun** | <img src="Assets/Textures/SpiritHands/shoot.png" width="40"/> | Shoot projectiles at enemies |
+| **Dual-hand: Push + Fist** | <img src="Assets/Textures/SpiritHands/switch.png" width="40"/> | Mirror teleport (Switch) |
 | **Dual-hand: Double Fist** | <img src="Assets/Textures/SpiritHands/FistIcon.png" width="40"/> | Invulnerable body (Golden Shield) |
 
 ---
@@ -60,9 +57,8 @@ Control the entire game with natural hand gestures:
 ### Basic Controls
 
 <p align="center">
-  <img src="Assets/moving_rule_v2.png" alt="Movement Guide" width="650"/>
+  <img src="Assets/Textures/Hints/moving_rule_v2.png" alt="Movement Guide" width="650"/>
 </p>
-
 
 - **A / D** — Move left / right
 - **SPACE** — Jump (press again in mid-air for **Double Jump**)
@@ -71,21 +67,18 @@ Control the entire game with natural hand gestures:
 ### Combat System
 
 <p align="center">
-  <img src="Assets/enemy_rule.png" alt="Combat Guide" width="650"/>
+  <img src="Assets/Textures/Hints/enemy_rule.png" alt="Combat Guide" width="650"/>
 </p>
 
-
 Enemies (rats) can be defeated in two ways:
-
 1. **Stomp** — Jump on their heads from above
 2. **Shoot** — Use the Finger Gun gesture to fire projectiles
 
 ### Checkpoint System
 
 <p align="center">
-  <img src="Assets/checkpoint_rule.png" alt="Checkpoint Guide" width="650"/>
+  <img src="Assets/Textures/Hints/checkpoint_rule.png" alt="Checkpoint Guide" width="650"/>
 </p>
-
 
 Golden checkpoints save your progress. The game features a robust **snapshot save system** that captures the entire game state—including enemy positions, box locations, and player status—to JSON files.
 
@@ -110,7 +103,6 @@ Webcam → MediaPipe (21 hand landmarks)
 ### 💾 Snapshot Save Architecture
 
 The game uses a sophisticated serialization system:
-
 - **ISnapshotSaveable** interface for any component that needs saving
 - **Automatic rigidbody state capture** (position, velocity, rotation)
 - **Component-level JSON serialization**
@@ -121,37 +113,36 @@ The game uses a sophisticated serialization system:
 
 Over **15 custom Editor tools** streamline level design:
 
-| Tool                       | Purpose                                 |
-| -------------------------- | --------------------------------------- |
+| Tool | Purpose |
+|------|---------|
 | `Setup PinkMan Animations` | Auto-build animation clips & controller |
-| `Setup Level Scene`        | Wire player, camera, GameManager refs   |
-| `Build Terrain Visuals`    | Rebuild ground from tile sprites        |
-| `Setup Cave Tilemap`       | Create grid + tilemap + colliders       |
-| `Rebuild Cave Ground`      | 20×30 tile grid with cave sprites       |
-| `Setup Background`         | Parallax mountain background prefab     |
-| `Setup Phase3 Objects`     | Place spikes, saws, platforms, enemies  |
+| `Setup Level2 from Level1` | Wire player, camera, GameManager refs |
+| `Setup Cave Tilemap Prefab` | Create grid + tilemap + colliders |
+| `Rebuild Cave Ground` | 20x30 tile grid with cave sprites |
+| `Setup Background` | Parallax mountain background prefab |
+| `Setup Phase3 Objects` | Place spikes, saws, platforms, enemies |
+| `Terrain Painter` | Interactive tile painting in Scene View |
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer                   | Technology                                      |
-| ----------------------- | ----------------------------------------------- |
-| **Engine**              | Unity 2022.3.62f3 (Built-in Render Pipeline)    |
-| **Language**            | C#                                              |
-| **Gesture Recognition** | MediaPipe (homuler Unity Plugin)                |
-| **Asset Packs**         | Pixel Adventure 1, Cave Assets                  |
-| **Graphics**            | Sprite-based 2D, Custom Shader (DarkVisionMask) |
-| **Physics**             | Unity 2D Physics (Rigidbody2D)                  |
-| **Serialization**       | Unity JsonUtility + Custom Snapshot System      |
-| **Testing**             | Unity Test Runner (EditMode + PlayMode)         |
+| Layer | Technology |
+|-------|-----------|
+| **Engine** | Unity 2022.3.62f3 (Built-in Render Pipeline) |
+| **Language** | C# |
+| **Gesture Recognition** | MediaPipe (homuler Unity Plugin) |
+| **Asset Packs** | Pixel Adventure 1, Cave Assets |
+| **Graphics** | Sprite-based 2D, Custom Shader (DarkVisionMask) |
+| **Physics** | Unity 2D Physics (Rigidbody2D) |
+| **Serialization** | Unity JsonUtility + Custom Snapshot System |
+| **Testing** | Unity Test Runner (EditMode + PlayMode) |
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
 - Unity 2022.3.62f3 or later
 - Webcam (for gesture recognition)
 - Windows / macOS / Linux
@@ -159,56 +150,60 @@ Over **15 custom Editor tools** streamline level design:
 ### Setup
 
 1. **Clone the repository**
-
-    ```bash
-    git clone https://github.com/Hanson-6/COMP3329.git
-    cd COMP3329
-    ```
+   ```bash
+    git clone https://github.com/Hanson-6/No-Mouse.git
+    cd No-Mouse
+   ```
 
 2. **Install MediaPipe package**
-
-    ```powershell
-    ./setup-mediapipe.ps1
-    ```
-
-    This downloads `com.github.homuler.mediapipe-0.16.3.tgz` to `Packages/`.
+   ```powershell
+   ./setup-mediapipe.ps1
+   ```
+   This downloads `com.github.homuler.mediapipe-0.16.3.tgz` to `Packages/`.
 
 3. **Open in Unity**
-
-    - Open Unity Hub
-    - Add project from the cloned folder
-    - Open with Unity 2022.3.62f3
+   - Open Unity Hub
+   - Add project from the cloned folder
+   - Open with Unity 2022.3.62f3
 
 4. **Run the game**
-
-    - Open `Assets/Scenes/MainMenu.unity`
-    - Press Play
-    - Allow webcam access when prompted
+   - Open `Assets/Scenes/MainMenu.unity`
+   - Press Play
+   - Allow webcam access when prompted
 
 ### Scene Build Order
 
-| Index | Scene           | Description                               |
-| ----- | --------------- | ----------------------------------------- |
-| 0     | `MainMenu`      | Title screen with Start / Continue / Quit |
-| 1     | `Tutorial`      | Gesture tutorial and practice area        |
-| 2     | `Level 2`       | Main game area                            |
-| 2     | `LevelComplete` | Level completion screen                   |
+| Index | Scene | Description |
+|-------|-------|-------------|
+| 0 | `MainMenu` | Title screen with Start / Continue / Quit |
+| 1 | `Level 2` | Main game area |
+| 2 | `Tutoring` | Gesture tutorial and practice area |
+| 3 | `LevelComplete` | Level completion screen |
 
 ---
 
 ## 📁 Project Structure
 
 ```
-COMP3329/
+No-Mouse/
 ├── Assets/
-│   ├── Animations/           # Player animation clips
+│   ├── Animations/           # Player animation clips & controllers
+│   ├── Audio/                # Sound effects & music
+│   │   ├── SFX/              # Laser, PowerUp, Jump, UI, etc.
+│   │   ├── Music/            # Background music
+│   │   └── Environment/      # Fire, ambient sounds
 │   ├── CaveAssets/           # Cave tilesets & sprites
-│   ├── Editor/               # Custom Editor tools (15+)
+│   ├── Editor/               # Custom Editor tools (24 scripts)
+│   ├── IDTK/                 # LDtk level definitions
+│   ├── Materials/            # Shared materials
+│   ├── Physics/              # Physics materials
 │   ├── Pixel Adventure 1/    # Main character & environment sprites
 │   ├── Prefabs/              # Reusable game objects
-│   ├── Resources/            # Gesture config & sprites
+│   ├── Resources/            # Gesture config & runtime sprites
 │   ├── Scenes/               # Game scenes
 │   │   ├── MainMenu.unity
+│   │   ├── Level2.unity
+│   │   ├── Tutoring.unity
 │   │   ├── Tutorial.unity
 │   │   └── LevelComplete.unity
 │   ├── Scripts/
@@ -222,13 +217,25 @@ COMP3329/
 │   │   │   └── UI/           # GestureDisplayPanel, GestureOverlay
 │   │   ├── Input/            # GestureInputBridge, InvulnerableBodyController
 │   │   ├── Player/           # PlayerController, SpiritHandDisplay, ShootingController
-│   │   └── UI/               # PauseMenu, DarkVisionController, EndPoint
+│   │   ├── Puzzle/           # SwitchDoor, PushableBox, ButtonController
+│   │   └── UI/               # PauseMenu, SettlementPanel, EndPoint
 │   ├── Shaders/              # Custom DarkVisionMask shader
 │   ├── Snapshots/            # Runtime save files (ignored by git)
-│   └── Textures/             # UI buttons, Spirit Hand icons
+│   ├── StreamingAssets/      # MediaPipe hand landmarker model
+│   ├── Tests/                # EditMode & PlayMode tests
+│   ├── Textures/             # Organized by category
+│   │   ├── Buttons/          # UI button sprites
+│   │   ├── Backgrounds/      # Parallax backgrounds
+│   │   ├── Hints/            # Tutorial hint images
+│   │   ├── Particles/        # Particle textures
+│   │   ├── SpiritHands/      # Hand gesture icons
+│   │   ├── Tiles/            # Game tile images
+│   │   └── UI/               # General UI textures
+│   └── Videos/               # Transition video clips
 ├── Docs/
 │   ├── MEDIAPIPE_TEAM_SETUP.md
-│   └── CLAUDE.md             # Architecture documentation
+│   ├── GESTURE_SERVICE_SOP.md
+│   └── SPIRITHAND_SETUP.md
 ├── Packages/
 │   └── manifest.json         # Dependencies (includes MediaPipe)
 └── ProjectSettings/          # Unity project configuration
@@ -241,10 +248,10 @@ COMP3329/
 The project includes comprehensive tests using Unity Test Runner:
 
 - **EditMode Tests** (`Assets/Tests/EditMode/`)
-    - `GestureClassifierTests` — Pure math tests for gesture classification
-
+  - `GestureClassifierTests` — Pure math tests for gesture classification
+  
 - **PlayMode Tests** (`Assets/Tests/PlayMode/`)
-    - `GestureIntegrationTests` — End-to-end gesture pipeline tests
+  - `GestureIntegrationTests` — End-to-end gesture pipeline tests
 
 Run tests via **Window > General > Test Runner** in Unity Editor.
 
@@ -273,7 +280,6 @@ git push origin main
 This project is developed for educational purposes as part of the COMP3329 course at The University of Hong Kong.
 
 Asset packs used:
-
 - **Pixel Adventure 1** — by Pixel Frog ( itch.io )
 - **Cave Assets** — Custom / Third-party pixel art assets
 
@@ -294,8 +300,6 @@ Asset packs used:
 </p>
 
 
-
 <p align="center">
-  <img src="Assets/rat_sprite_transparent_v2.png" width="80" alt="Rat Enemy"/>
+  <img src="Assets/Textures/rat_sprite_transparent_v2.png" width="80" alt="Rat Enemy"/>
 </p>
-
