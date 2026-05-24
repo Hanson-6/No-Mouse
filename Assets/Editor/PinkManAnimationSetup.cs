@@ -8,7 +8,7 @@ public class PinkManAnimationSetup : EditorWindow
     [MenuItem("Tools/Setup PinkMan Animations")]
     public static void SetupAnimations()
     {
-        string charPath = "Assets/Pixel Adventure 1/Assets/Main Characters/Pink Man";
+        string charPath = "Assets/Textures/Characters/PinkMan";
         string animPath = "Assets/Animations";
 
         // Ensure Animations folder exists

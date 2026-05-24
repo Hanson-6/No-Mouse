@@ -9,7 +9,7 @@ using System.Linq;
 /// </summary>
 public class RebuildCaveGround : Editor
 {
-    const string TERRAIN_PATH = "Assets/Pixel Adventure 1/Assets/Terrain/Terrain Sliced (16x16).png";
+    const string TERRAIN_PATH = "Assets/Textures/Terrain/Terrain Sliced (16x16).png";
     const int COLS = 20;
     const int DEPTH = 30;  // number of tile rows (height of the ground)
     const float TILE = 0.16f;

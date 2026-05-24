@@ -132,7 +132,7 @@ Over **15 custom Editor tools** streamline level design:
 | **Engine** | Unity 2022.3.62f3 (Built-in Render Pipeline) |
 | **Language** | C# |
 | **Gesture Recognition** | MediaPipe (homuler Unity Plugin) |
-| **Asset Packs** | Pixel Adventure 1, Cave Assets |
+| **Asset Packs** | Cave Assets, Custom Sprites |
 | **Graphics** | Sprite-based 2D, Custom Shader (DarkVisionMask) |
 | **Physics** | Unity 2D Physics (Rigidbody2D) |
 | **Serialization** | Unity JsonUtility + Custom Snapshot System |
@@ -197,7 +197,6 @@ No-Mouse/
 │   ├── IDTK/                 # LDtk level definitions
 │   ├── Materials/            # Shared materials
 │   ├── Physics/              # Physics materials
-│   ├── Pixel Adventure 1/    # Main character & environment sprites
 │   ├── Prefabs/              # Reusable game objects
 │   ├── Resources/            # Gesture config & runtime sprites
 │   ├── Scenes/               # Game scenes
@@ -274,22 +273,10 @@ git push origin main
 **Important**: Generated snapshot files in `Assets/Snapshots/` should not be committed (already in `.gitignore`).
 
 ---
-
-## 📝 License
-
-This project is developed for educational purposes as part of the COMP3329 course at The University of Hong Kong.
-
-Asset packs used:
-- **Pixel Adventure 1** — by Pixel Frog ( itch.io )
-- **Cave Assets** — Custom / Third-party pixel art assets
-
----
-
 ## 🙏 Acknowledgments
 
 - **MediaPipe** — For the incredible hand tracking ML model
 - **homuler** — For the MediaPipe Unity Plugin
-- **Pixel Frog** — For the beautiful Pixel Adventure asset pack
 - **Unity Technologies** — For the game engine
 
 ---
