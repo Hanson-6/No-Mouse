@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 public static class MirrorSetup
 {
-    private const string MirrorTexturePath = "Assets/mirror_transparent.png";
+    private const string MirrorTexturePath = "Assets/Textures/mirror_transparent.png";
     private const string ShadowTexturePath = "Assets/Pixel Adventure 1/Assets/Other/Shadow.png";
     private const string PrefabFolder = "Assets/Prefabs";
     private const string MirrorPrefabPath = "Assets/Prefabs/Mirror.prefab";

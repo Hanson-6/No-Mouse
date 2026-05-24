@@ -15,7 +15,7 @@ public class MirrorEntryTrigger : MonoBehaviour
     private const string DefaultVideoFileName = "switch_to_mirror.mp4";
     private const string DefaultLdtkEnemyIid = "7f0f75f0-21a0-11f1-8579-f735b60fe489";
 #if UNITY_EDITOR
-    private const string VideoAssetPath = "Assets/Textures/Videos/switch_to_mirror.mp4";
+    private const string VideoAssetPath = "Assets/Videos/switch_to_mirror.mp4";
     private const string LeftWallPrefabPath = "Assets/Prefabs/LeftWall.prefab";
 #endif
 
@@ -364,7 +364,7 @@ public class MirrorEntryTrigger : MonoBehaviour
             ? DefaultVideoFileName
             : entryTransitionVideoFileName.Trim();
 
-        string projectPath = Path.Combine(Application.dataPath, "Textures", "Videos", fileName);
+        string projectPath = Path.Combine(Application.dataPath, "Videos", fileName);
         if (File.Exists(projectPath))
         {
             url = new System.Uri(projectPath).AbsoluteUri;

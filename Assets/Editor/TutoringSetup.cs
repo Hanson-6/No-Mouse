@@ -13,7 +13,7 @@ public static class TutoringSetup
 {
     private const string TUTORING_SCENE_PATH = "Assets/Scenes/Tutoring.unity";
     private const string TUTORING_LDTK_PATH = "Assets/IDTK/Tutoring.ldtk";
-    private const string TEX_MOVING_RULE   = "Assets/moving_rule.png";
+    private const string TEX_MOVING_RULE   = "Assets/Textures/Hints/moving_rule.png";
     private const string TEX_CAVE_SPRITES2 = "Assets/CaveAssets/Spritesheets/Decorations/CaveDetailSprites2.png";
     private const string TRIGGER_PREFAB_PATH = "Assets/Prefabs/HintTrigger.prefab";
     private const string CHECKPOINT_PREFAB_PATH = "Assets/Prefabs/Checkpoint.prefab";

@@ -117,12 +117,6 @@ public static class LDtkSceneSetup
         Debug.Log("[LDtkSceneSetup] 成功切换到 Tutoring.ldtk！请 Ctrl+S 保存场景。");
     }
 
-    [MenuItem("Tools/Create LDtk Test Scene")]
-    public static void CreateLDtkTestScene()
-    {
-        CreateLDtkScene("Assets/Scenes/LDtkLevel.unity", null);
-    }
-
     [MenuItem("Tools/Reload LDtk Terrain (Keep Player & Prefabs)")]
     public static void ReloadLDtkTerrain()
     {

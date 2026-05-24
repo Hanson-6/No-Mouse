@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 public static class MainMenuSetup
 {
-    private const string TexLogo = "Assets/Textures/GameTile.png";
-    private const string TexBg = "Assets/Textures/background_new.png";
+    private const string TexLogo = "Assets/Textures/Tiles/GameTile.png";
+    private const string TexBg = "Assets/Textures/Backgrounds/background_new.png";
     private const string TexTutorial = "Assets/Textures/Buttons/TutorialButton.png";
     private const string TexNewGame = "Assets/Textures/Buttons/NewGameButton.png";
     private const string TexContinue = "Assets/Textures/Buttons/ContinueButton.png";
@@ -19,19 +19,6 @@ public static class MainMenuSetup
     private const float BtnWidth = 380f;
     private const float BtnGap = 30f;
     private const float LogoToBtnGap = 50f;
-
-    [MenuItem("Tools/Fix Background Order")]
-    public static void FixBackgroundOrder()
-    {
-        var bg = GameObject.Find("Background");
-        if (bg != null)
-        {
-            bg.transform.SetSiblingIndex(0);
-            EditorSceneManager.MarkSceneDirty(bg.scene);
-            EditorSceneManager.SaveScene(bg.scene);
-            Debug.Log("[MainMenuSetup] Background moved to sibling index 0.");
-        }
-    }
 
     [MenuItem("Tools/Setup Main Menu Scene")]
     public static void Run()

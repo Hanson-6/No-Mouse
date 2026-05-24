@@ -28,7 +28,7 @@ public class EndPointSetup
         AnimationClip pressedClip = CreateClip("EndPressed", pressedSprites, 12f);
 
         // Create animator controller
-        string controllerPath = "Assets/Scripts/Animations/EndPointController.controller";
+        string controllerPath = "Assets/Animations/Environment/EndPointController.controller";
         Directory.CreateDirectory(Path.GetDirectoryName(controllerPath));
         var controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
 
@@ -122,7 +122,7 @@ public class EndPointSetup
 
     static AnimationClip CreateClip(string name, Sprite[] sprites, float fps)
     {
-        string dir = "Assets/Scripts/Animations";
+        string dir = "Assets/Animations/Environment";
         Directory.CreateDirectory(dir);
         string clipPath = dir + "/" + name + ".anim";
 

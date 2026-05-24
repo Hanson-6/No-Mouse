@@ -19,7 +19,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public static class BackgroundSetup
 {
-    const string MountainPath = "Assets/Textures/Mountain.png";
+    const string MountainPath = "Assets/Textures/Backgrounds/Mountain.png";
     const string PrefabPath   = "Assets/Prefabs/Background.prefab";
     const string BgLayer      = "Background";
 

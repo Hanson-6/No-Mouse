@@ -32,7 +32,7 @@ public static class SettlementPanelSetup
     private const string TEX_BANNER      = "Assets/Textures/Buttons/CelebrationBanner.png";
     private const string TEX_RESTART     = "Assets/Textures/Buttons/RestartLevelButton.png";
     private const string TEX_QUIT        = "Assets/Textures/Buttons/QuitButton.png";
-    private const string TEX_SPARK       = "Assets/Textures/SparkParticle.png";
+    private const string TEX_SPARK       = "Assets/Textures/Particles/SparkParticle.png";
 
     // 面板参考尺寸（最终会按贴图比例微调）
     private const float PANEL_W = 680f;

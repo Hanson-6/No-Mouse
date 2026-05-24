@@ -87,7 +87,7 @@ public static class PuzzleElementsSetup
 
         // Zero-friction material so the box doesn't stick to walls while being pushed
         var pm = new PhysicsMaterial2D("BoxPhysics") { friction = 0f, bounciness = 0f };
-        AssetDatabase.CreateAsset(pm, "Assets/Prefabs/BoxPhysics.physicsMaterial2D");
+        AssetDatabase.CreateAsset(pm, "Assets/Physics/BoxPhysics.physicsMaterial2D");
 
         var col = go.AddComponent<BoxCollider2D>();
         col.size           = new Vector2(3f, 2f);   // local units
