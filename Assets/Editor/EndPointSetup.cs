@@ -7,8 +7,8 @@ using System.Collections.Generic;
 
 public class EndPointSetup
 {
-    const string IDLE_PATH   = "Assets/Textures/Checkpoints/End/End (Idle).png";
-    const string PRESSED_PATH = "Assets/Textures/Checkpoints/End/End (Pressed) (64x64).png";
+    const string IDLE_PATH   = "Assets/GameSprites/Checkpoints/End/End (Idle).png";
+    const string PRESSED_PATH = "Assets/GameSprites/Checkpoints/End/End (Pressed) (64x64).png";
     const int FRAME_SIZE = 64;
 
     [MenuItem("Tools/Setup EndPoint Sprites & Animation")]

@@ -215,6 +215,7 @@ No-Mouse/
 │   │   ├── Player/           # PlayerController, SpiritHandDisplay, ShootingController
 │   │   ├── Puzzle/           # SwitchDoor, PushableBox, ButtonController
 │   │   └── UI/               # PauseMenu, SettlementPanel, EndPoint
+│   ├── GameSprites/            # Character, trap, terrain sprites
 │   ├── Shaders/              # Custom DarkVisionMask shader
 │   ├── Snapshots/            # Runtime save files (ignored by git)
 │   ├── StreamingAssets/      # MediaPipe hand landmarker model

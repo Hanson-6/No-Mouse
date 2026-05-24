@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 public static class MirrorSetup
 {
     private const string MirrorTexturePath = "Assets/Textures/mirror_transparent.png";
-    private const string ShadowTexturePath = "Assets/Textures/Mirror/Shadow.png";
+    private const string ShadowTexturePath = "Assets/GameSprites/Other/Shadow.png";
     private const string PrefabFolder = "Assets/Prefabs";
     private const string MirrorPrefabPath = "Assets/Prefabs/Mirror.prefab";
     private const float TargetMirrorHeight = 3.4f;

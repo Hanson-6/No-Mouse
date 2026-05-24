@@ -3,14 +3,14 @@ using UnityEditor;
 
 public class Phase3Setup
 {
-    const string FIRE_OFF_PATH = "Assets/Textures/Traps/Fire/Off.png";
-    const string FIRE_ON_PATH  = "Assets/Textures/Traps/Fire/On (16x32).png";
-    const string FIRE_HIT_PATH = "Assets/Textures/Traps/Fire/Hit (16x32).png";
-    const string STONE_IDLE_PATH = "Assets/Textures/Traps/SpikeHead/Idle.png";
-    const string SAW_PATH   = "Assets/Textures/Traps/Saw/On (38x38).png";
-    const string SPIKE_PATH = "Assets/Textures/Traps/Spikes/Idle.png";
-    const string ENEMY_PATH = "Assets/Textures/Characters/MaskDude/Idle (32x32).png";
-    const string BROWN_PATH = "Assets/Textures/Traps/Platforms/Brown On (32x8).png";
+    const string FIRE_OFF_PATH = "Assets/GameSprites/Traps/Fire/Off.png";
+    const string FIRE_ON_PATH  = "Assets/GameSprites/Traps/Fire/On (16x32).png";
+    const string FIRE_HIT_PATH = "Assets/GameSprites/Traps/Fire/Hit (16x32).png";
+    const string STONE_IDLE_PATH = "Assets/GameSprites/Traps/SpikeHead/Idle.png";
+    const string SAW_PATH   = "Assets/GameSprites/Traps/Saw/On (38x38).png";
+    const string SPIKE_PATH = "Assets/GameSprites/Traps/Spikes/Idle.png";
+    const string ENEMY_PATH = "Assets/GameSprites/Characters/MaskDude/Idle (32x32).png";
+    const string BROWN_PATH = "Assets/GameSprites/Traps/Platforms/Brown On (32x8).png";
 
     [MenuItem("Tools/Setup Phase3 Objects")]
     public static void Run()
