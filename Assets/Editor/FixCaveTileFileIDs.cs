@@ -19,7 +19,7 @@ using UnityEngine;
 ///   2. Delete only the .asset files (keep .meta so GUIDs are preserved)
 ///   3. Write fresh YAML with correct internalID for each sprite
 ///   4. AssetDatabase.Refresh() → Unity reimports using the existing GUIDs
-///   → Level1 CaveTilemapGrid and ScenePalette keep working.
+///   → CaveTilemapGrid and ScenePalette keep working.
 ///
 /// Menu: Tools/Fix Cave Tile FileIDs
 /// </summary>
@@ -34,7 +34,6 @@ public static class FixCaveTileFileIDs
         "CaveBackgroundTiles.png",
         "CaveDetailTiles.png",
         "CaveDetailTiles2.png",
-        "CaveRailsPlatformsTiles.png",
         "CaveTerrainDetailTiles.png",
         "CaveTerrainDetailTiles2.png",
         "CaveTerrainTiles.png",
@@ -211,24 +210,6 @@ public static class FixCaveTileFileIDs
         // ── STEP 4: Reimport — Unity finds existing .meta → reuses GUIDs ──────
         AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 
-        // ── STEP 5: Verify Demo Scene 1 references (read-only check) ──────────
-        //  Count how many tiles in the scene now resolve vs. are still null.
-        string demoScenePath = Path.Combine(DataPath, "CaveAssets/Scenes/Demo Scene 1.unity");
-        int resolvedTiles = 0, unresolvedTiles = 0;
-        if (File.Exists(demoScenePath))
-        {
-            // A tile reference in the scene looks like: guid: <textureGuid or tileGuid>
-            // We verify the created tile assets exist and have non-empty content.
-            foreach (var kvp in lookup)
-            {
-                string assetAbs = Path.Combine(AbsTilesDir, $"{kvp.Key}.asset");
-                if (File.Exists(assetAbs) && new FileInfo(assetAbs).Length > 50)
-                    resolvedTiles++;
-                else
-                    unresolvedTiles++;
-            }
-        }
-
         // ── Report ─────────────────────────────────────────────────────────────
         var sb = new StringBuilder();
         sb.AppendLine("=== Fix Cave Tile FileIDs — Complete ===\n");
@@ -247,15 +228,11 @@ public static class FixCaveTileFileIDs
         }
         sb.AppendLine($"  {"TOTAL",-35} {grand,4}");
 
-        sb.AppendLine("\nSTEP 3 — Demo Scene 1 verification:");
-        sb.AppendLine($"  Tile assets resolved: {resolvedTiles}");
-        sb.AppendLine($"  Tile assets missing:  {unresolvedTiles}");
-
         sb.AppendLine("\nSTEP 4 — 5 sample tile assets (fileID + guid):");
         foreach (var (name, id, guid) in samples)
             sb.AppendLine($"  {name,-35}  fileID={id,25}  guid={guid}");
 
-        sb.AppendLine("\nLevel1 / ScenePalette status:");
+        sb.AppendLine("\nScenePalette status:");
         sb.AppendLine("  .meta files preserved → GUIDs unchanged → no reassignment needed.");
         sb.AppendLine("  Close & reopen the Tile Palette window to flush the Editor display cache.");
 
