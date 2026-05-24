@@ -116,7 +116,6 @@ Over **15 custom Editor tools** streamline level design:
 | Tool | Purpose |
 |------|---------|
 | `Setup PinkMan Animations` | Auto-build animation clips & controller |
-| `Setup Level2 from Level1` | Wire player, camera, GameManager refs |
 | `Setup Cave Tilemap Prefab` | Create grid + tilemap + colliders |
 | `Rebuild Cave Ground` | 20x30 tile grid with cave sprites |
 | `Setup Background` | Parallax mountain background prefab |
@@ -132,7 +131,6 @@ Over **15 custom Editor tools** streamline level design:
 | **Engine** | Unity 2022.3.62f3 (Built-in Render Pipeline) |
 | **Language** | C# |
 | **Gesture Recognition** | MediaPipe (homuler Unity Plugin) |
-| **Asset Packs** | Cave Assets, Custom Sprites |
 | **Graphics** | Sprite-based 2D, Custom Shader (DarkVisionMask) |
 | **Physics** | Unity 2D Physics (Rigidbody2D) |
 | **Serialization** | Unity JsonUtility + Custom Snapshot System |
@@ -203,7 +201,6 @@ No-Mouse/
 │   │   ├── MainMenu.unity
 │   │   ├── Level2.unity
 │   │   ├── Tutoring.unity
-│   │   ├── Tutorial.unity
 │   │   └── LevelComplete.unity
 │   ├── Scripts/
 │   │   ├── Core/             # GameManager, SaveManager, GameData

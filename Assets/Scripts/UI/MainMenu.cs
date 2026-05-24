@@ -11,7 +11,6 @@ using GestureRecognition.Service;
 public class MainMenu : MonoBehaviour
 {
     private const string PreferredFirstLevelScenePath = "Assets/Scenes/Tutoring.unity";
-    private const string SecondaryFirstLevelScenePath = "Assets/Scenes/Tutorial.unity";
 
     [Tooltip("Build index of the first level scene.")]
     public int firstLevelIndex = 1;
@@ -124,11 +123,7 @@ public class MainMenu : MonoBehaviour
         if (preferredIndex >= 0)
             return preferredIndex;
 
-        int secondaryIndex = SceneUtility.GetBuildIndexByScenePath(SecondaryFirstLevelScenePath);
-        if (secondaryIndex >= 0)
-            return secondaryIndex;
-
-        Debug.LogWarning($"[MainMenu] Neither '{PreferredFirstLevelScenePath}' nor '{SecondaryFirstLevelScenePath}' is in Build Settings. Fallback to index 1.");
+        Debug.LogWarning($"[MainMenu] '{PreferredFirstLevelScenePath}' is not in Build Settings. Fallback to index 1.");
         return 1;
     }
 }

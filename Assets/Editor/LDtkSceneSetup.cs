@@ -11,12 +11,6 @@ public static class LDtkSceneSetup
     private const string DiagnosticPrefKey = "LDtkSceneSetup_Diagnostics";
     private const string DiagnosticMenuPath = "Tools/LDtk Diagnostic Logs";
 
-    [MenuItem("Tools/Create LDtk Level 1 Scene")]
-    public static void CreateLevel1Scene()
-    {
-        CreateLDtkScene("Assets/Scenes/Level1.unity", "Level_0");
-    }
-
     [MenuItem("Tools/Create LDtk Level 2 Scene")]
     public static void CreateLevel2Scene()
     {

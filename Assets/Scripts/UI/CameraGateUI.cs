@@ -11,7 +11,6 @@ using UnityEngine.UI;
 public class CameraGateUI : MonoBehaviour
 {
     private const string PreferredFirstLevelScenePath = "Assets/Scenes/Tutoring.unity";
-    private const string SecondaryFirstLevelScenePath = "Assets/Scenes/Tutorial.unity";
 
     [Header("Optional UI")]
     [SerializeField] private Text statusText;
@@ -187,11 +186,7 @@ public class CameraGateUI : MonoBehaviour
         if (preferredIndex >= 0)
             return preferredIndex;
 
-        int secondaryIndex = SceneUtility.GetBuildIndexByScenePath(SecondaryFirstLevelScenePath);
-        if (secondaryIndex >= 0)
-            return secondaryIndex;
-
-        Debug.LogWarning($"[CameraGateUI] Neither '{PreferredFirstLevelScenePath}' nor '{SecondaryFirstLevelScenePath}' is in Build Settings. Fallback to serialized firstLevelIndex={firstLevelIndex}.");
+        Debug.LogWarning($"[CameraGateUI] '{PreferredFirstLevelScenePath}' is not in Build Settings. Fallback to serialized firstLevelIndex={firstLevelIndex}.");
         return firstLevelIndex;
     }
 }
